@@ -31,12 +31,13 @@ export interface CardForm {
 export interface MpPayment { id: number | string; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number }
 
 /** Cobra el monto de la reserva (calculado en el servidor, nunca el del navegador). */
-export async function chargeCard(b: { id: string; code: string; amount: number; email: string; vehicle: string; date: string; time: string }, form: CardForm) {
+export async function chargeCard(b: { id: string; code: string; amount: number; email: string; vehicle: string; date: string; time: string; plate: string; name: string }, form: CardForm) {
   const idem = `${b.id}-${createHash("sha256").update(form.token).digest("hex").slice(0, 16)}`;
   const body = {
     transaction_amount: b.amount,
     token: form.token,
-    description: `Lavado ${b.vehicle} · ${b.date} ${b.time} · ${b.code}`,
+    // Aparece en el recibo de Mercado Pago: código único + placas para ubicar al cliente.
+    description: `LUXE GARAGE ${b.code} · Placas ${b.plate} · ${b.date} ${b.time}`,
     installments: 1,
     payment_method_id: form.payment_method_id,
     ...(form.issuer_id ? { issuer_id: Number(form.issuer_id) } : {}),
@@ -47,7 +48,7 @@ export async function chargeCard(b: { id: string; code: string; amount: number; 
     external_reference: b.id,
     notification_url: `${process.env.SITE_URL ?? SITE_URL}/api/mp/webhook`,
     statement_descriptor: "LUXE GARAGE",
-    metadata: { booking_code: b.code },
+    metadata: { booking_code: b.code, plate: b.plate },
   };
   return mp<MpPayment>("/v1/payments", { method: "POST", body: JSON.stringify(body), idempotency: idem });
 }

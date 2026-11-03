@@ -3,6 +3,7 @@ import HelpButton from "@/components/HelpButton";
 import { localNow } from "@/lib/booking-core";
 import LiveGarage from "@/components/LiveGarage";
 import RealVideo from "@/components/RealVideo";
+import TileRoom from "@/components/TileRoom";
 import { BUSINESS, SITE_URL, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import { getSettings, hoursLabel } from "@/lib/settings";
 
@@ -31,12 +32,12 @@ export default async function Home() {
     image: `${SITE_URL}/brand/google/logo-1024.png`,
     telephone: `+${BUSINESS.phone}`,
     address: { "@type": "PostalAddress", streetAddress: "Las Palomas", addressLocality: "Zamora", addressRegion: "Michoacán", addressCountry: "MX" },
-    openingHoursSpecification: [{
+    openingHoursSpecification: s.hours.flatMap((d, i) => d ? [{
       "@type": "OpeningHoursSpecification",
-      dayOfWeek: s.hours.days.map((d) => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d]),
-      opens: `${String(s.hours.open).padStart(2, "0")}:00`,
-      closes: `${String(s.hours.close % 24).padStart(2, "0")}:00`,
-    }],
+      dayOfWeek: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][i],
+      opens: `${String(d.open).padStart(2, "0")}:00`,
+      closes: `${String(d.close % 24).padStart(2, "0")}:00`,
+    }] : []),
     priceRange: `$${s.prices.carro}–$${s.prices.camioneta}`,
   };
 
@@ -61,30 +62,11 @@ export default async function Home() {
       <main>
         <LiveGarage hours={horario} mapsUrl={mapsLink} />
 
-        <section id="como" className="tile-bg px-5 py-20">
-          <div className="mx-auto max-w-5xl">
-            <Title kicker="ASÍ FUNCIONA" dark>Si está libre, está libre</Title>
-            <ol className="mt-12 grid gap-5 sm:grid-cols-3">
-              {[
-                ["I", "Míralo en vivo", "Verde: pasa ahora. Rojo: hay un auto lavándose. La cortina abajo: cerrado."],
-                ["II", "Llega o reserva", "Sin cita si está libre. Si quieres tu hora asegurada, resérvala y págala aquí."],
-                ["III", "Exterior o interior", "Exterior: no necesitas bajarte del auto. Interior: déjalo con nosotros mientras lo dejamos impecable."],
-              ].map(([n, t, d]) => (
-                <li key={n} className="rounded-2xl border border-black/10 bg-white/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,.06)] backdrop-blur">
-                  <span className="font-display text-3xl font-semibold text-[#a8862a]">{n}</span>
-                  <h3 className="mt-2 text-xl font-bold">{t}</h3>
-                  <p className="mt-1.5 text-[17px] leading-relaxed text-black/80">{d}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
         <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 py-20">
-          <Title kicker="RESERVA Y PAGO EN LÍNEA">Aparta tu hora</Title>
-          <p className="mt-4 text-center text-lg text-white/80">Elige, paga y listo. Te llega tu comprobante al instante.</p>
+          <Title kicker="RESERVA EN LÍNEA">Aparta tu hora</Title>
+          <p className="mt-4 text-center text-xl text-white/85">Elige la hora, paga y listo.</p>
           <div className="mt-10">
-            <BookingFlow prices={s.prices} openDays={s.hours.days} today={localNow().date} mpPublicKey={process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || null} />
+            <BookingFlow prices={s.prices} hours={s.hours} today={localNow().date} mpPublicKey={process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || null} />
           </div>
         </section>
 
@@ -98,20 +80,20 @@ export default async function Home() {
             <ul className="mt-6 space-y-3 text-left text-lg text-white/90">
               <li>✓ Eliges tus {s.subscriptionWashes} días del mes.</li>
               <li>✓ Sin cita: si el garage está libre, pasas.</li>
-              <li>✓ Exterior sin bajarte. Interior: déjalo cuando esté libre.</li>
+              <li>✓ Exterior e interior, o solo exterior sin bajarte.</li>
               <li>✓ A domicilio: +${s.prices.domicilio} por cada ida.</li>
             </ul>
             <p className="mt-6 text-xs text-white/60">Suscripción en línea muy pronto.</p>
           </div>
         </section>
 
-        <section id="lugar" className="tile-bg px-5 py-20">
-          <div className="mx-auto max-w-5xl">
-            <Title kicker="EL LUGAR REAL" dark>Azulejo, acero y cuidado</Title>
-            <p className="mx-auto mt-4 max-w-md text-center text-black/75">Nuestra fosa de acero negro y el equipo que deja tu auto como nuevo. Sin filtros.</p>
-            <div className="mt-10"><RealVideo /></div>
-          </div>
-        </section>
+        <TileRoom title={<>
+          <p className="text-xs font-bold tracking-[.4em] text-[#8a6d1a] md:text-sm">EL LUGAR REAL</p>
+          <h2 className="font-display mt-2 text-[2rem] font-semibold leading-tight text-[#141414] md:text-6xl">Si está libre,<br />está libre</h2>
+          <p className="mt-3 text-lg text-black/75 md:text-2xl">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
+        </>}>
+          <RealVideo />
+        </TileRoom>
 
         <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">
           <Title kicker="VISÍTANOS">{BUSINESS.location.split(",")[0]}</Title>

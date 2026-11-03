@@ -1,3 +1,4 @@
+import { isOpenAt, localNow, nextOpening } from "./booking-core";
 import { BUSINESS } from "./config";
 import type { Settings } from "./settings";
 import { kvGet, kvSet } from "./store";
@@ -10,7 +11,7 @@ import { kvGet, kvSet } from "./store";
 export type GarageStatus = "LIBRE" | "OCUPADO" | "CERRADO";
 export type OpenMode = "auto" | "open" | "closed";
 export interface GarageRecord { mode: OpenMode; modeDate: string | null; busy: boolean; updatedAt: string | null; open?: boolean }
-export interface PublicGarage { status: GarageStatus; updatedAt: string | null }
+export interface PublicGarage { status: GarageStatus; updatedAt: string | null; opens?: { label: string; inMinutes: number } | null }
 export type Reason = "manual-open" | "manual-closed" | "schedule-open" | "schedule-closed";
 
 const KEY = "lg:garage:v2";
@@ -38,19 +39,9 @@ export function localDate(d = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
 
-function localParts(d: Date) {
-  const f = new Intl.DateTimeFormat("en-US", {
-    timeZone: BUSINESS.timezone, weekday: "short", hour: "numeric", hour12: false,
-  }).formatToParts(d);
-  const wd = f.find((p) => p.type === "weekday")!.value;
-  const hour = Number(f.find((p) => p.type === "hour")!.value) % 24;
-  const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(wd);
-  return { day, hour };
-}
-
 export function isWithinHours(h: Settings["hours"], d = new Date()): boolean {
-  const { day, hour } = localParts(d);
-  return h.days.includes(day) && hour >= h.open && hour < h.close;
+  const n = localNow(d);
+  return isOpenAt(h, n.date, n.minutes);
 }
 
 /** ¿Está abierto ahora y por qué? (la decisión manual del día manda sobre el horario) */
@@ -62,6 +53,9 @@ export function openState(rec: GarageRecord, h: Settings["hours"], now = new Dat
 
 export function toPublic(rec: GarageRecord, h: Settings["hours"], now = new Date()): PublicGarage {
   // Al público: solo el estado, nunca datos de quién está.
-  const status: GarageStatus = !openState(rec, h, now).open ? "CERRADO" : rec.busy ? "OCUPADO" : "LIBRE";
-  return { status, updatedAt: rec.updatedAt };
+  const st = openState(rec, h, now);
+  const status: GarageStatus = !st.open ? "CERRADO" : rec.busy ? "OCUPADO" : "LIBRE";
+  // Cerrado: decimos cuándo abrimos (si lo cerraron a mano hoy, saltamos al siguiente día).
+  const opens = status === "CERRADO" ? nextOpening(h, localNow(now), st.reason === "manual-closed") : undefined;
+  return { status, updatedAt: rec.updatedAt, ...(opens !== undefined ? { opens } : {}) };
 }

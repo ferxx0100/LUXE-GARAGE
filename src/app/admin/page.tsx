@@ -6,14 +6,13 @@ import AdminAgenda from "@/components/AdminAgenda";
 type Settings = {
   prices: { carro: number; camioneta: number; domicilio: number; suscripcion: number };
   subscriptionWashes: number;
-  hours: { open: number; close: number; days: number[] };
+  hours: ({ open: number; close: number } | null)[];
   notice: string;
 };
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; updatedAt: string | null; public: Pub; reason: "manual-open" | "manual-closed" | "schedule-open" | "schedule-closed" };
 type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "memory" };
 
-const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const PRICE_FIELDS: { key: keyof Settings["prices"]; label: string }[] = [
   { key: "carro", label: "Lavado carro" },
   { key: "camioneta", label: "Lavado camioneta" },
@@ -40,6 +39,7 @@ export default function Admin() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  useEffect(() => { if (!msg || msg === "…") return; const t = setTimeout(() => setMsg(""), 4000); return () => clearTimeout(t); }, [msg]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"garage" | "agenda" | "ajustes">("agenda");
@@ -147,7 +147,7 @@ export default function Admin() {
         ))}
       </nav>
 
-      {tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} /></div>}
+      {tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} pub={g?.public ?? null} onFosa={(busyNow) => setGarage({ busy: busyNow })} /></div>}
 
       {tab === "garage" && <section className="mt-8">
         <h2 className="text-sm tracking-[.3em] text-white/50">SEMÁFORO DEL GARAGE</h2>
@@ -202,27 +202,31 @@ export default function Admin() {
 
           <section>
             <h2 className="text-sm tracking-[.3em] text-white/50">HORARIO</h2>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {(["open", "close"] as const).map((k) => (
-                <label key={k} className="block text-sm text-white/70">{k === "open" ? "Abre" : "Cierra"}
-                  <select className={`${input} mt-1`} value={form.hours[k]}
-                    onChange={(e) => set({ hours: { ...form.hours, [k]: Number(e.target.value) } })}>
-                    {Array.from({ length: 25 }, (_, h) => h).filter((h) => (k === "open" ? h < 24 : h > 0)).map((h) => (
-                      <option key={h} value={h} className="bg-ink">{h}:00</option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {DAYS.map((d, i) => {
-                const on = form.hours.days.includes(i);
+            <div className="mt-3 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10">
+              {[1, 2, 3, 4, 5, 6, 0].map((i) => {
+                const d = form.hours[i];
+                const setDay = (v: { open: number; close: number } | null) => set({ hours: form.hours.map((x, j) => (j === i ? v : x)) });
+                const opt = (h: number) => <option key={h} value={h} className="bg-ink">{h % 12 || 12} {h < 12 || h === 24 ? "am" : "pm"}</option>;
                 return (
-                  <button type="button" key={d} aria-pressed={on}
-                    onClick={() => set({ hours: { ...form.hours, days: on ? form.hours.days.filter((x) => x !== i) : [...form.hours.days, i].sort() } })}
-                    className={`rounded-full border px-4 py-2 text-sm ${on ? "border-gold bg-gold/15 text-gold" : "border-white/15 text-white/50"}`}>
-                    {d}
-                  </button>
+                  <div key={i} className={`flex items-center gap-3 px-4 py-3 ${d ? "bg-white/[.03]" : ""}`}>
+                    <button type="button" onClick={() => setDay(d ? null : { open: 12, close: 19 })} aria-pressed={!!d}
+                      className={`w-28 shrink-0 rounded-lg px-2 py-2 text-left text-base font-bold ${d ? "text-white" : "text-white/40 line-through"}`}>
+                      {["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][i]}
+                    </button>
+                    {d ? (
+                      <div className="flex flex-1 items-center gap-2">
+                        <select className={`${input} py-2`} value={d.open} onChange={(e) => setDay({ ...d, open: Number(e.target.value) })} aria-label="Abre">
+                          {Array.from({ length: 24 }, (_, h) => h).map(opt)}
+                        </select>
+                        <span className="text-white/60">a</span>
+                        <select className={`${input} py-2`} value={d.close} onChange={(e) => setDay({ ...d, close: Number(e.target.value) })} aria-label="Cierra">
+                          {Array.from({ length: 24 }, (_, h) => h + 1).map(opt)}
+                        </select>
+                      </div>
+                    ) : (
+                      <span className="flex-1 text-sm text-white/50">Cerrado · toca el día para abrir</span>
+                    )}
+                  </div>
                 );
               })}
             </div>

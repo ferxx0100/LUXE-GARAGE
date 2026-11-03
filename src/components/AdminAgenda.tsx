@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type Status = "hold" | "pending" | "confirmed" | "done" | "cancelled" | "conflict";
 interface Booking {
   id: string; code: string; status: Status; date: string; time: string;
-  vehicle: "carro" | "camioneta"; kind: "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
+  vehicle: "carro" | "camioneta"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
   name: string; phone: string; email: string; plate: string; notes: string; amount: number; paymentId?: string;
 }
 
@@ -23,7 +23,10 @@ const CHIP: Record<Status, { t: string; c: string }> = {
   conflict: { t: "⚠ Pagada sin horario", c: "bg-red-500/20 text-red-200 border-red-400/60" },
 };
 
-export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized: () => void; onMsg: (m: string) => void }) {
+type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
+export default function AdminAgenda({ onUnauthorized, onMsg, pub, onFosa }: {
+  onUnauthorized: () => void; onMsg: (m: string) => void; pub: Pub | null; onFosa: (busy: boolean) => Promise<void> | void;
+}) {
   const [today, setToday] = useState(mxToday);
   const [day, setDay] = useState(today);
   const [list, setList] = useState<Booking[] | null>(null);
@@ -39,6 +42,10 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
   }, [onUnauthorized]);
 
   useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, [load]);
+
+  // Conectado con el semáforo: "Llegó" pone la fosa en Ocupado; "Terminado" completa la cita y la deja Libre.
+  async function arrived(b: Booking) { await onFosa(true); onMsg(`${b.name.split(" ")[0]} llegó · semáforo en OCUPADO`); }
+  async function finished(b: Booking) { await act(b, "done"); if (b.place === "garage" && b.date === today) { await onFosa(false); onMsg("Terminado · semáforo en LIBRE"); } }
 
   async function act(b: Booking, action: "done" | "cancel" | "confirm") {
     if (action === "cancel" && !confirm(`¿Cancelar la cita de ${b.name} (${b.time})? El horario queda libre. Si ya pagó, haz el reembolso en Mercado Pago.`)) return;
@@ -68,6 +75,18 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
           ⚠ {alerts.length} pago(s) llegaron cuando el horario ya estaba ocupado. Contacta al cliente para reagendar o reembolsar.
         </p>
       )}
+
+      <div className={`mb-4 flex items-center justify-between gap-3 rounded-2xl border p-3 ${pub === "LIBRE" ? "border-emerald-400/50 bg-emerald-500/10" : pub === "OCUPADO" ? "border-red-400/50 bg-red-500/10" : "border-amber-300/40 bg-amber-300/[.07]"}`}>
+        <div className="flex items-center gap-3">
+          <span className={`size-4 rounded-full shadow-[0_0_14px_currentColor] ${pub === "LIBRE" ? "bg-emerald-400 text-emerald-400" : pub === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-amber-300 text-amber-300"}`} />
+          <div><p className="text-xs tracking-[.25em] text-white/60">SEMÁFORO</p><p className="font-display text-xl font-semibold">{pub ?? "…"}</p></div>
+        </div>
+        {pub !== "CERRADO" && pub && (
+          <button onClick={() => onFosa(pub === "LIBRE")} className={`rounded-xl px-4 py-3 text-base font-bold ${pub === "LIBRE" ? "bg-red-500 text-white" : "bg-emerald-500 text-ink"}`}>
+            {pub === "LIBRE" ? "Poner Ocupado" : "Poner Libre"}
+          </button>
+        )}
+      </div>
 
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔎 Buscar por código, nombre, teléfono o placas"
         className="mb-4 w-full rounded-xl border-2 border-white/12 bg-white/[.04] px-4 py-3.5 text-lg outline-none placeholder:text-white/45 focus:border-gold" aria-label="Buscar cita" />
@@ -120,7 +139,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
                   </div>
                   <p className="mt-1.5 truncate text-xl font-bold">{b.name}</p>
                   <p className="text-base text-white/80">
-                    {b.vehicle === "carro" ? "Carro" : "Camioneta"} · {b.kind === "exterior" ? "Exterior" : "Interior"}{b.plate ? ` · ${b.plate}` : ""} · <b className="text-gold">${b.amount}</b>
+                    {b.vehicle === "carro" ? "Carro" : "Camioneta"} · {b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} · <b className="text-gold">${b.amount}</b>
                   </p>
                   {b.place === "domicilio" && <p className="mt-1 text-base text-sky-200">📍 {b.address}</p>}
                   {b.notes && <p className="mt-1 text-sm italic text-white/65">“{b.notes}”</p>}
@@ -133,9 +152,13 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
                   <span className="col-span-2 border-l border-white/10 py-3 text-center text-white/45">{b.status === "done" ? "Completada" : "Cancelada"}</span>
                 ) : (
                   <>
-                    <button onClick={() => act(b, b.status === "pending" ? "confirm" : "done")} className="border-l border-white/10 py-3 text-emerald-300 hover:bg-white/5">
-                      {b.status === "pending" ? "✓ Confirmar" : "✓ Completada"}
-                    </button>
+                    {b.status === "pending" ? (
+                      <button onClick={() => act(b, "confirm")} className="border-l border-white/10 py-3 text-emerald-300 hover:bg-white/5">✓ Confirmar</button>
+                    ) : b.date === today && b.place === "garage" && pub === "LIBRE" ? (
+                      <button onClick={() => arrived(b)} className="border-l border-white/10 bg-gold/10 py-3 text-gold hover:bg-gold/20">🚗 Llegó</button>
+                    ) : (
+                      <button onClick={() => finished(b)} className="border-l border-white/10 py-3 text-emerald-300 hover:bg-white/5">✓ Terminado</button>
+                    )}
                     <button onClick={() => act(b, "cancel")} className="border-l border-white/10 py-3 text-red-300 hover:bg-white/5">✕ Cancelar</button>
                   </>
                 )}

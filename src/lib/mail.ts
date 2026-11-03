@@ -48,7 +48,7 @@ function rows(b: Booking): string {
   return `<tr><td style="padding:16px 28px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px dashed #3b331d;border-bottom:1px dashed #3b331d">
 ${r("Código", `<span style="font-family:Georgia,serif;font-size:22px;letter-spacing:2px;color:#d4af37">${b.code}</span>`)}
 ${r("Cuándo", `${esc(fmtDate(b.date))} · ${b.time} h`)}
-${r("Servicio", `Lavado ${b.kind} · ${b.vehicle === "carro" ? "Carro" : "Camioneta"}${b.plate ? ` · ${esc(b.plate)}` : ""}`)}
+${r("Servicio", `${b.kind === "exterior" ? "Solo exterior" : "Exterior e interior"} · ${b.vehicle === "carro" ? "Carro" : "Camioneta"}${b.plate ? ` · ${esc(b.plate)}` : ""}`)}
 ${r("Dónde", b.place === "domicilio" ? `A domicilio: ${esc(b.address)}` : esc(BUSINESS.location))}
 ${r("Total", `<span style="color:#d4af37;font-size:20px">$${b.amount} MXN</span>`)}
 </table></td></tr>`;

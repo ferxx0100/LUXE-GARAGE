@@ -40,6 +40,8 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
   background-size: 100% 100%, 46px 46px, 46px 46px;
   color: #141414;
 }
+/* Reflejo del video sobre el piso mojado (Safari/iPhone y Chrome) */
+.video-reflect { -webkit-box-reflect: below 10px linear-gradient(transparent 72%, rgba(255,255,255,.22)); }
 .hairline { height: 1px; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-gold) 70%, transparent), transparent); }
 
 /* Indicador "en vivo" */
@@ -54,6 +56,8 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 @keyframes lgPower { from { opacity: .35; } }
 .lg-chevron { animation: lgChevron 1.6s ease-in-out infinite; }
 @keyframes lgChevron { 0%,100% { opacity: .18; } 35% { opacity: 1; } 60% { opacity: .3; } }
+.lg-neon { animation: lgNeon 4s ease-in-out infinite; }
+@keyframes lgNeon { 0%,100% { opacity: 1; } 48% { opacity: 1; } 50% { opacity: .55; } 52% { opacity: 1; } 54% { opacity: .7; } 56% { opacity: 1; } }
 .lg-shutter { transition: transform 1.9s cubic-bezier(.6,.05,.3,1); }
 .lg-foam { opacity: 0; transition: opacity 1.2s ease 1.2s; }
 .lg-foam.on { opacity: 1; }
@@ -62,6 +66,6 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 @keyframes sheetIn { from { transform: translateY(24px); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in { animation: none; }
+  .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in, .lg-neon { animation: none; }
   .lg-shutter, .lg-foam { transition: none; }
 }

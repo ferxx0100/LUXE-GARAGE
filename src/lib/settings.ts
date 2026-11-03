@@ -7,13 +7,12 @@ const money = z.number().int().min(0).max(100000);
 export const Settings = z.object({
   prices: z.object({ carro: money, camioneta: money, domicilio: money, suscripcion: money }),
   subscriptionWashes: z.number().int().min(1).max(31),
-  hours: z
-    .object({
-      open: z.number().int().min(0).max(23),
-      close: z.number().int().min(1).max(24),
-      days: z.array(z.number().int().min(0).max(6)).max(7),
-    })
-    .refine((h) => h.close > h.open, { message: "El cierre debe ser después de la apertura" }),
+  // Índice 0 = domingo … 6 = sábado; null = cerrado ese día.
+  hours: z.array(
+    z.object({ open: z.number().int().min(0).max(23), close: z.number().int().min(1).max(24) })
+      .refine((d) => d.close > d.open, { message: "El cierre debe ser después de la apertura" })
+      .nullable(),
+  ).length(7),
   notice: z.string().trim().max(160),
 });
 export type Settings = z.infer<typeof Settings>;
@@ -21,7 +20,8 @@ export type Settings = z.infer<typeof Settings>;
 export const DEFAULT_SETTINGS: Settings = {
   prices: { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 },
   subscriptionWashes: 6,
-  hours: { open: 9, close: 19, days: [1, 2, 3, 4, 5, 6] },
+  // Lunes a jueves 12 pm–7 pm · viernes y sábado 1 pm–6 pm · domingo cerrado
+  hours: [null, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 13, close: 18 }, { open: 13, close: 18 }],
   notice: "",
 };
 
@@ -33,19 +33,16 @@ const KEY = "lg:settings";
  * en lugar de publicar precios equivocados.
  */
 export async function getSettings(): Promise<Settings> {
-  const p = Settings.safeParse(await kvGet(KEY));
-  return p.success ? p.data : DEFAULT_SETTINGS;
+  const raw = await kvGet<Record<string, unknown>>(KEY);
+  const p = Settings.safeParse(raw);
+  if (p.success) return p.data;
+  // Formato anterior (un solo horario para todos los días): conserva precios y aviso, usa el horario nuevo.
+  const old = Settings.omit({ hours: true }).safeParse(raw);
+  return old.success ? { ...old.data, hours: DEFAULT_SETTINGS.hours } : DEFAULT_SETTINGS;
 }
 
 export async function saveSettings(s: Settings): Promise<void> {
   await kvSet(KEY, s);
 }
 
-const DAY = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-export function hoursLabel(h: Settings["hours"]): string {
-  if (!h.days.length) return "Cerrado temporalmente";
-  const days = [...h.days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
-  const consecutive = days.every((d, i) => i === 0 || d === (days[i - 1] + 1) % 7);
-  const span = consecutive && days.length > 2 ? `${DAY[days[0]]}–${DAY[days.at(-1)!]}` : days.map((d) => DAY[d]).join(", ");
-  return `${span} · ${h.open}:00–${h.close}:00`;
-}
+export { hoursText as hoursLabel } from "./booking-core";

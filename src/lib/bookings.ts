@@ -12,15 +12,15 @@ export const BookingInput = z
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     time: z.string().regex(/^\d{2}:\d{2}$/),
     vehicle: z.enum(["carro", "camioneta"]),
-    kind: z.enum(["exterior", "interior"]),
+    kind: z.enum(["completo", "exterior"]),
     place: z.enum(["garage", "domicilio"]),
     address: z.string().trim().max(200).default(""),
     name: z.string().trim().min(2, "Escribe tu nombre").max(80),
     phone: z.string().trim().max(20).transform((s) => s.replace(/\D/g, "")).refine((d) => d.length >= 10 && d.length <= 13, "Teléfono a 10 dígitos"),
-    email: z.string().trim().toLowerCase().email("Correo inválido").max(120),
-    plate: z.string().trim().toUpperCase().max(12).regex(/^[A-Z0-9 -]*$/, "Placas inválidas").default(""),
+    email: z.string().trim().toLowerCase().email("Correo inválido").max(120).or(z.literal("")).default(""), // lo pide Mercado Pago al pagar
+    plate: z.string().trim().toUpperCase().min(5, "Escribe tus placas").max(12).regex(/^[A-Z0-9 -]*$/, "Placas inválidas"),
     notes: z.string().trim().max(300).default(""),
-    privacy: z.literal(true, { message: "Acepta el aviso de privacidad" }),
+    privacy: z.boolean().default(true), // aviso mostrado junto al botón de pagar (consentimiento tácito, datos no sensibles)
   })
   .refine((b) => b.place !== "domicilio" || b.address.length >= 8, { message: "Escribe la dirección completa", path: ["address"] });
 
@@ -100,6 +100,13 @@ export async function confirmBooking(id: string, paymentId: string): Promise<Boo
 }
 
 /** Pago "en revisión": mantenemos el horario apartado más tiempo. */
+/** Guarda el correo que el cliente dio en el formulario de pago (para mandarle su confirmación). */
+export async function setEmail(id: string, email: string): Promise<void> {
+  const b = await getBooking(id);
+  if (!b || b.email === email) return;
+  await kvSet(bk(id), { ...b, email, updatedAt: new Date().toISOString() }, b.status === "hold" ? 2 * 24 * 3600 : undefined);
+}
+
 export async function markPending(id: string, paymentId: string, status: string): Promise<void> {
   const b = await getBooking(id);
   if (!b || b.status !== "hold") return;

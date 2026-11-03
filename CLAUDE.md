@@ -9,7 +9,9 @@
 - Tipografía: Cinzel (romana, títulos) + Manrope (texto), servidas desde el propio sitio (@fontsource).
 - **Reserva pagada** = la única que aparta un horario del calendario. Horario lleno = no se puede reservar.
 - **Suscripción**: $555/mes, 6 lavadas al mes. Elige sus 6 días; no reserva hora: si está libre, pasa.
-- Exterior: sin bajarse del auto. Interior: deja el auto cuando esté libre, o domicilio.
+- Servicios (solo 2): **Exterior e interior** (deja el auto) y **Solo exterior** (sin bajarse). Mismo precio por vehículo.
+- Horario: lunes a jueves 12 pm–7 pm; viernes y sábado 1 pm–6 pm; domingo cerrado (editable por día en /admin → Ajustes).
+- Datos que pide la reserva: nombre, teléfono, placas (y dirección si es a domicilio). El correo lo pide Mercado Pago al pagar.
 - Domicilio: +$100 por cada ida (editable en /admin → Ajustes).
 - Solo existe **lavado normal**: carro $180, camioneta $220. No hay paquetes, VIP ni detailing.
 - Reserva = pago completo en línea (Mercado Pago, Apple Pay en Safari).

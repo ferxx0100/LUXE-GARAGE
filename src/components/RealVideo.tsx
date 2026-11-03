@@ -27,7 +27,7 @@ export default function RealVideo() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-sm overflow-hidden rounded-3xl border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,.6)]">
+    <div className="video-reflect relative mx-auto w-full overflow-hidden rounded-[26px] border-[3px] border-[#111] shadow-[0_40px_80px_rgba(0,0,0,.45),0_0_0_1px_rgba(212,175,55,.35)]">
       <video ref={ref} className="block aspect-[9/16] w-full object-cover" src="/media/luxe-real.mp4" poster="/media/luxe-poster.jpg"
         muted loop playsInline preload="none" aria-label="Video real del lavado en LUXE GARAGE" />
       <button onClick={toggle} aria-pressed={!muted}

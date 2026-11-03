@@ -4,10 +4,10 @@
 | Tema | Supuesto |
 |---|---|
 | Espacios | 1 solo espacio de lavado |
-| Horario | Lun–sáb 9:00–19:00, hora de Ciudad de México (`src/lib/config.ts`) |
+| Horario | Lun–jue 12–7 pm · Vie–sáb 1–6 pm · Dom cerrado |
 | Duración por servicio | 60 min por horario reservable |
 | Bloqueo mientras se paga | 15 min |
-| Lavado normal | Carro $180 · Camioneta $220 (mismo precio exterior/interior) |
+| Servicios | Exterior e interior / Solo exterior · Carro $180 · Camioneta $220 |
 | Domicilio | +$100 por cada ida |
 | Suscripción | $555/mes, 6 lavadas al mes; elige 6 días; sin reservar hora |
 | Apple Pay | Mercado Pago lo ofrece en MX (Checkout API, Safari). Requiere Apple Developer + dominio propio verificado |

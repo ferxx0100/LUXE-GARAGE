@@ -2,10 +2,12 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type Vehicle = "carro" | "camioneta";
-export type Kind = "exterior" | "interior";
+export type Kind = "completo" | "exterior"; // "Exterior e interior" | "Solo exterior"
 export type Place = "garage" | "domicilio";
 export interface Prices { carro: number; camioneta: number; domicilio: number; suscripcion: number }
-export interface Hours { open: number; close: number; days: number[] }
+/** Horario semanal: índice 0 = domingo … 6 = sábado; null = cerrado ese día. Horas enteras 0–24. */
+export type DayHours = { open: number; close: number } | null;
+export type Hours = DayHours[];
 
 /** El precio lo calcula SIEMPRE el servidor con la configuración, nunca el navegador. */
 export function priceFor(p: Prices, vehicle: Vehicle, place: Place): number {
@@ -39,10 +41,63 @@ export function addDays(date: string, n: number): string {
 
 /** Horarios reservables de un día (uno por hora; el último empieza una hora antes de cerrar). */
 export function slotsFor(h: Hours, date: string, slotMinutes = 60): string[] {
-  if (!isDateStr(date) || !h.days.includes(weekday(date))) return [];
+  const d = isDateStr(date) ? h[weekday(date)] : null;
+  if (!d) return [];
   const out: string[] = [];
-  for (let m = h.open * 60; m + slotMinutes <= h.close * 60; m += slotMinutes) out.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
+  for (let m = d.open * 60; m + slotMinutes <= d.close * 60; m += slotMinutes) out.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
   return out;
+}
+
+/** ¿Está dentro del horario en esa fecha/minuto del día? */
+export function isOpenAt(h: Hours, date: string, minutes: number): boolean {
+  const d = h[weekday(date)];
+  return !!d && minutes >= d.open * 60 && minutes < d.close * 60;
+}
+
+const DAY_NAME = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+/** 12 → "12 pm", 13 → "1 pm", 9 → "9 am" (claro para todos). */
+export function fmtHour(h: number): string {
+  const hh = h % 24, n = hh % 12 === 0 ? 12 : hh % 12;
+  return `${n} ${hh < 12 ? "am" : "pm"}`;
+}
+export const fmtTime = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return m ? `${fmtHour(h).replace(" ", `:${pad(m)} `)}` : fmtHour(h);
+};
+
+/**
+ * Próxima apertura a partir de ahora. skipToday: el dueño cerró a mano hoy.
+ * Devuelve el texto ("hoy a las 12 pm", "mañana martes a la 1 pm", "el viernes a la 1 pm") y los minutos que faltan.
+ */
+export function nextOpening(h: Hours, now: { date: string; minutes: number }, skipToday = false): { label: string; inMinutes: number } | null {
+  for (let i = 0; i < 8; i++) {
+    const date = addDays(now.date, i), d = h[weekday(date)];
+    if (!d || (i === 0 && (skipToday || now.minutes >= d.open * 60))) continue;
+    const at = `${d.open % 12 === 1 ? "a la" : "a las"} ${fmtHour(d.open)}`;
+    const label = i === 0 ? `hoy ${at}` : i === 1 ? `mañana ${DAY_NAME[weekday(date)]} ${at}` : `el ${DAY_NAME[weekday(date)]} ${at}`;
+    return { label, inMinutes: i * 1440 + d.open * 60 - now.minutes };
+  }
+  return null;
+}
+
+/** "Lunes a jueves de 12 pm a 7 pm · Viernes y sábado de 1 pm a 6 pm" */
+export function hoursText(h: Hours): string {
+  const NAME = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const groups: { days: number[]; open: number; close: number }[] = [];
+  for (const d of order) {
+    const x = h[d];
+    if (!x) continue;
+    const g = groups.at(-1);
+    const prev = g?.days.at(-1);
+    if (g && g.open === x.open && g.close === x.close && prev !== undefined && order.indexOf(d) === order.indexOf(prev) + 1) g.days.push(d);
+    else groups.push({ days: [d], open: x.open, close: x.close });
+  }
+  if (!groups.length) return "Cerrado temporalmente";
+  return groups.map((g) => {
+    const days = g.days.length === 1 ? NAME[g.days[0]] : g.days.length === 2 ? `${NAME[g.days[0]]} y ${NAME[g.days[1]].toLowerCase()}` : `${NAME[g.days[0]]} a ${NAME[g.days.at(-1)!].toLowerCase()}`;
+    return `${days} de ${fmtHour(g.open)} a ${fmtHour(g.close)}`;
+  }).join(" · ");
 }
 
 export const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));

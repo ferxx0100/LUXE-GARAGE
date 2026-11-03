@@ -147,7 +147,7 @@ const PARK_Z = 0.7, AWAY_Z = -3.4;
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-export default function GarageScene({ status }: { status: Status | null }) {
+export default function GarageScene({ status, opensShort }: { status: Status | null; opensShort?: string }) {
   const carRef = useRef<SVGGElement>(null);
   const brakeRef = useRef<SVGGElement>(null);
   const revRef = useRef<SVGGElement>(null);
@@ -226,6 +226,9 @@ export default function GarageScene({ status }: { status: Status | null }) {
         <pattern id="lg-slats" width="8" height="7" patternUnits="userSpaceOnUse"><rect width="8" height="7" fill="url(#lg-shutter)" /><rect y="5.6" width="8" height="1.4" fill="#1d1e20" /><rect y="0" width="8" height=".7" fill="#7b7f84" opacity=".6" /></pattern>
         <radialGradient id="lg-lamp"><stop offset="0" stopColor="#fff6dc" stopOpacity=".55" /><stop offset="1" stopColor="#fff6dc" stopOpacity="0" /></radialGradient>
         <radialGradient id="lg-spill"><stop offset="0" stopColor={sig ?? "#000"} stopOpacity=".55" /><stop offset="1" stopColor={sig ?? "#000"} stopOpacity="0" /></radialGradient>
+        <pattern id="lg-led" width="2.6" height="2.6" patternUnits="userSpaceOnUse"><path fillRule="evenodd" fill="#070707" opacity=".72" d="M0 0H2.6V2.6H0Z M1.3 .35 A.95 .95 0 1 0 1.301 .35Z" /></pattern>
+        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0a1638" /><stop offset="1" stopColor="#04060f" /></linearGradient>
+        <radialGradient id="lg-amber"><stop offset="0" stopColor="#ffb547" stopOpacity=".5" /><stop offset="1" stopColor="#ffb547" stopOpacity="0" /></radialGradient>
         <clipPath id="lg-door"><rect x={ENTRANCE.x0} y={ENTRANCE.y0} width={ENTRANCE.x1 - ENTRANCE.x0} height={ENTRANCE.y1 - ENTRANCE.y0} /></clipPath>
       </defs>
 
@@ -296,10 +299,28 @@ export default function GarageScene({ status }: { status: Status | null }) {
           <rect x={ENTRANCE.x0} y={ENTRANCE.y0} width={ENTRANCE.x1 - ENTRANCE.x0} height={ENTRANCE.y1 - ENTRANCE.y0} fill="url(#lg-slats)" />
           <rect x={ENTRANCE.x0} y={ENTRANCE.y1 - 6} width={ENTRANCE.x1 - ENTRANCE.x0} height="6" fill="#18191b" />
           <rect x={CX - 14} y={ENTRANCE.y1 - 12} width="28" height="4" rx="2" fill="#0e0f10" />
+          {/* candado */}
+          <g transform={`translate(${CX} ${ENTRANCE.y1 - 22})`}>
+            <path d="M-4 -4 V-7 a4 4 0 0 1 8 0 V-4" fill="none" stroke="#9a9ea4" strokeWidth="1.6" />
+            <rect x="-6" y="-4.5" width="12" height="9" rx="1.6" fill="#c9a54a" />
+          </g>
+          {/* letrero LED de cerrado */}
+          <g transform={`translate(${CX} ${(ENTRANCE.y0 + ENTRANCE.y1) / 2 - 8})`}>
+            <rect x="-92" y="-34" width="184" height="66" rx="7" fill="#070707" stroke="#2d2d30" strokeWidth="1.5" />
+            <g filter="url(#lg-glow-sm)" className={closed ? "lg-neon" : ""}>
+              <text x="0" y="2" textAnchor="middle" fontSize="27" fontWeight="800" letterSpacing="6" fill="#ffb547" style={{ fontFamily: "var(--font-sans)" }}>CERRADO</text>
+              {opensShort && <text x="0" y="22" textAnchor="middle" fontSize="10.5" fontWeight="700" letterSpacing="2.4" fill="#ffd79a" style={{ fontFamily: "var(--font-sans)" }}>{opensShort}</text>}
+            </g>
+            <rect x="-90" y="-32" width="180" height="62" rx="6" fill="url(#lg-led)" />
+          </g>
         </g>
       </g>
       {/* caja de la cortina y dintel */}
       <rect x={ENTRANCE.x0 - 6} y={ENTRANCE.y0 - 12} width={ENTRANCE.x1 - ENTRANCE.x0 + 12} height="13" rx="2" fill="#0b0b0c" stroke="#232325" />
+
+      {/* de noche (cerrado): todo se oscurece en azul, el letrero sigue encendido */}
+      <rect x="0" y="0" width="400" height="600" fill="url(#lg-night)" className="lg-fade" opacity={closed ? 0.55 : 0} style={{ mixBlendMode: "multiply" }} />
+      <ellipse cx={CX} cy={ENTRANCE.y1 + 18} rx="170" ry="40" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 1 : 0} />
 
       {/* letrero como el de la fachada real */}
       <g>

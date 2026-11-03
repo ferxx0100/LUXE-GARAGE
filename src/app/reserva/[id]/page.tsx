@@ -43,7 +43,7 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
         </div>
         <dl className="grid gap-4 px-6 py-6 text-lg">
           <div><dt className="text-sm text-white/60">Cuándo</dt><dd className="font-bold capitalize">{fmt(b.date)} · {b.time} h</dd></div>
-          <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-bold">Lavado {b.kind} · {b.vehicle === "carro" ? "Carro" : "Camioneta"}{b.plate ? ` · ${b.plate}` : ""}</dd></div>
+          <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-bold">{b.kind === "exterior" ? "Solo exterior" : "Exterior e interior"} · {b.vehicle === "carro" ? "Carro" : "Camioneta"}{b.plate ? ` · ${b.plate}` : ""}</dd></div>
           <div><dt className="text-sm text-white/60">Dónde</dt><dd className="font-bold">{b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location}</dd></div>
           <div><dt className="text-sm text-white/60">A nombre de</dt><dd className="font-bold">{b.name}</dd></div>
           <div className="flex items-end justify-between border-t border-white/10 pt-4">

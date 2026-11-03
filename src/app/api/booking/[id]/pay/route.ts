@@ -1,5 +1,5 @@
 import { sameOrigin } from "@/lib/auth";
-import { confirmBooking, getBooking, holdStillValid, markPending } from "@/lib/bookings";
+import { confirmBooking, getBooking, holdStillValid, markPending, setEmail } from "@/lib/bookings";
 import { chargeCard, MpError, rejectMessage, type CardForm } from "@/lib/payments/mercadopago";
 import { z } from "zod";
 
@@ -25,7 +25,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (b.status === "confirmed" || b.status === "done") return json({ status: "approved", id });
     if (b.status !== "hold" || !(await holdStillValid(b))) return json({ error: "Tu apartado expiró. Elige el horario de nuevo." }, 409);
 
-    const pay = await chargeCard(b, form.data as CardForm);
+    const email = form.data.payer?.email?.trim().toLowerCase() || b.email;
+    if (!email) return json({ error: "Escribe tu correo en el formulario de pago" }, 400);
+    if (email !== b.email) await setEmail(id, email); // para mandarle su confirmación
+    const pay = await chargeCard({ ...b, email }, form.data as CardForm);
     const pid = String(pay.id);
     if (pay.status === "approved") {
       const done = await confirmBooking(id, pid);

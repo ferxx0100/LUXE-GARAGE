@@ -9,8 +9,8 @@ import ReceiptSeal from "../../reserva/[id]/ReceiptSeal";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Tu membresía | LUXE GARAGE", robots: { index: false, follow: false } };
 
-const btnCyan = "inline-flex min-h-14 items-center justify-center rounded-full bg-[#22d3ee] px-6 text-lg font-bold text-[#031b2e] active:scale-[.97]";
-const btnLine = "inline-flex min-h-14 items-center justify-center rounded-full border border-[#22d3ee]/60 px-6 text-lg font-bold text-[#22d3ee] active:scale-[.97]";
+const btnCyan = "inline-flex min-h-14 items-center justify-center rounded-full bg-[#d4af37] px-6 text-lg font-bold text-[#0b0b0c] active:scale-[.97]";
+const btnLine = "inline-flex min-h-14 items-center justify-center rounded-full border border-[#d4af37]/60 px-6 text-lg font-bold text-[#d4af37] active:scale-[.97]";
 
 // Comprobante de la membresía (enlace secreto). Tema agua: cian sobre azul profundo.
 export default async function Membresia({ params }: { params: Promise<{ id: string }> }) {
@@ -34,18 +34,18 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
   }[m.status];
 
   return (
-    <div className="min-h-screen bg-[#031b2e] bg-[radial-gradient(120%_60%_at_50%_0%,rgba(34,211,238,.16),transparent_70%)]">
+    <div className="min-h-screen bg-[#0b0b0c] bg-[radial-gradient(120%_60%_at_50%_0%,rgba(212,175,55,.16),transparent_70%)]">
       <main className="mx-auto max-w-md px-5 pb-16 pt-10 text-white">
         {m.status === "pending" && <meta httpEquiv="refresh" content="20" />}
-        <a href="/" className="font-display text-sm tracking-[.25em] text-[#22d3ee]">← LUXE GARAGE</a>
-        <h1 className="font-display mt-6 text-4xl font-semibold leading-tight text-[#22d3ee]">{state.t}</h1>
+        <a href="/" className="font-display text-sm tracking-[.25em] text-[#d4af37]">← LUXE GARAGE</a>
+        <h1 className="font-display mt-6 text-4xl font-semibold leading-tight text-[#d4af37]">{state.t}</h1>
         <p className="mt-3 text-lg text-white/85">{state.s}</p>
 
-        <section className="mt-8 overflow-hidden rounded-3xl border border-[#22d3ee]/40 bg-gradient-to-b from-[#22d3ee]/[.10] to-transparent">
+        <section className="mt-8 overflow-hidden rounded-3xl border border-[#d4af37]/40 bg-gradient-to-b from-[#d4af37]/[.10] to-transparent">
           {live && <ReceiptSeal tone="cyan" endpoint={`/api/membership/${m.id}/seal`} initial={{ status: allUsed ? "done" : m.status, ...liveSeal(m.id) }} />}
-          <div className="border-y border-dashed border-[#22d3ee]/30 px-6 py-5">
+          <div className="border-y border-dashed border-[#d4af37]/30 px-6 py-5">
             <p className="text-xs font-semibold tracking-[.3em] text-white/60">MEMBRESÍA</p>
-            <p className="font-display text-3xl font-semibold tracking-wider text-[#22d3ee]">{m.code}</p>
+            <p className="font-display text-3xl font-semibold tracking-wider text-[#d4af37]">{m.code}</p>
           </div>
           <dl className="grid gap-4 px-6 py-6 text-lg">
             <div className="grid grid-cols-2 gap-4">
@@ -62,8 +62,8 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
               {washes.map((w, i) => {
                 const done = w.status === "done", off = w.status === "cancelled";
                 return (
-                  <li key={w.date} className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${done ? "border-white/10 bg-white/[.03] text-white/50" : "border-[#22d3ee]/25 bg-[#22d3ee]/[.06]"}`}>
-                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-bold ${done ? "bg-white/10" : "bg-[#22d3ee] text-[#031b2e]"}`}>{done ? "✓" : i + 1}</span>
+                  <li key={w.date} className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${done ? "border-white/10 bg-white/[.03] text-white/50" : "border-[#d4af37]/25 bg-[#d4af37]/[.06]"}`}>
+                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-bold ${done ? "bg-white/10" : "bg-[#d4af37] text-[#0b0b0c]"}`}>{done ? "✓" : i + 1}</span>
                     <span className="min-w-0 flex-1">
                       <span className={`block font-bold capitalize ${off ? "line-through" : ""}`}>{fmtDay(w.date)}</span>
                       <span className="block tabular-nums">{fmtRange(w.time, m.duration)}</span>
@@ -76,7 +76,7 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="flex items-end justify-between border-t border-white/10 px-6 py-5">
-            <div><p className="text-sm text-white/60">Total pagado</p><p className="font-display text-4xl font-semibold text-[#22d3ee]">${m.amount}</p></div>
+            <div><p className="text-sm text-white/60">Total pagado</p><p className="font-display text-4xl font-semibold text-[#d4af37]">${m.amount}</p></div>
             <span className="rounded-full bg-white/10 px-3 py-1 text-sm">{m.paymentStatus === "approved" ? "Pagado" : m.status === "cancelled" ? "Cancelada" : "Por confirmar"}</span>
           </div>
         </section>

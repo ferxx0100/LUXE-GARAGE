@@ -18,7 +18,7 @@ interface Garage {
 const COPY: Record<Status, { word: string; color: string; dot: string }> = {
   LIBRE: { word: "LIBRE", color: "text-[#0b8a43]", dot: "bg-[#13b257]" },
   OCUPADO: { word: "OCUPADO", color: "text-[#c8231a]", dot: "bg-[#e5372c]" },
-  CERRADO: { word: "CERRADO", color: "text-[#8a5300]", dot: "bg-[#c47a0a]" },
+  CERRADO: { word: "CERRADO", color: "text-[#8a6d1a]", dot: "bg-gold" },
 };
 
 function ago(iso: string | null): string {
@@ -120,9 +120,9 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
             </div>
           )}
           {status === "CERRADO" && (
-            <div className="mt-4 rounded-2xl border border-[#8a5300]/25 bg-white/70 px-5 py-4">
+            <div className="mt-4 rounded-2xl border border-[#8a6d1a]/25 bg-white/70 px-5 py-4">
               {g?.opens ? <p className="text-2xl font-bold">Abrimos {g.opens.label}</p> : <p className="text-2xl font-bold">Ahora estamos cerrados.</p>}
-              {countdown && <p className="mt-1 text-lg font-semibold tabular-nums text-[#8a5300]">{countdown}</p>}
+              {countdown && <p className="mt-1 text-lg font-semibold tabular-nums text-[#8a6d1a]">{countdown}</p>}
               <p className="mt-2 text-base text-black/65">Horario: {hours}</p>
             </div>
           )}

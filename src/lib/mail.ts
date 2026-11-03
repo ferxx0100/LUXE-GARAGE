@@ -134,12 +134,12 @@ export async function sendBookingCancelled(b: Booking): Promise<void> {
 export async function sendMembershipConfirmed(m: Membership): Promise<void> {
   const link = `${site()}/membresia/${m.id}`;
   const list = m.washes.map((w, i) =>
-    `<tr><td style="padding:8px 0;color:#22d3ee;font-weight:bold;width:34px;font-size:16px">${i + 1}.</td><td style="padding:8px 0;font-size:16px;font-weight:bold;color:#fff">${esc(when(w.date, w.time, m.duration))}</td></tr>`).join("");
-  const block = `<tr><td style="padding:16px 28px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px dashed #155e75;border-bottom:1px dashed #155e75">
-<tr><td colspan="2" style="padding:12px 0 4px;font-family:Georgia,serif;font-size:22px;letter-spacing:2px;color:#22d3ee">${esc(m.code)}</td></tr>
+    `<tr><td style="padding:8px 0;color:#d4af37;font-weight:bold;width:34px;font-size:16px">${i + 1}.</td><td style="padding:8px 0;font-size:16px;font-weight:bold;color:#fff">${esc(when(w.date, w.time, m.duration))}</td></tr>`).join("");
+  const block = `<tr><td style="padding:16px 28px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px dashed #3b331d;border-bottom:1px dashed #3b331d">
+<tr><td colspan="2" style="padding:12px 0 4px;font-family:Georgia,serif;font-size:22px;letter-spacing:2px;color:#d4af37">${esc(m.code)}</td></tr>
 <tr><td colspan="2" style="padding:0 0 8px;color:#9a978f;font-size:14px">${esc(service(m))} · vigente hasta el ${esc(fmtDay(m.validTo))}</td></tr>
 ${list}
-<tr><td colspan="2" style="padding:10px 0;font-size:16px;color:#fff">Total pagado: <span style="color:#22d3ee;font-size:20px;font-weight:bold">$${m.amount} MXN</span></td></tr>
+<tr><td colspan="2" style="padding:10px 0;font-size:16px;color:#fff">Total pagado: <span style="color:#d4af37;font-size:20px;font-weight:bold">$${m.amount} MXN</span></td></tr>
 </table></td></tr>`;
   const html = layout("¡Tu membresía está activa!", `
 <tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(m.name.split(" ")[0])}, tu pago fue aprobado. Estas son tus ${m.washes.length} lavadas; muestra tu código al llegar.</td></tr>

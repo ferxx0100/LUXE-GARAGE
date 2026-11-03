@@ -224,7 +224,7 @@ function Digit({ x, y, w, h, ch, on }: { x: number; y: number; w: number; h: num
   return (
     <g>
       {Object.entries(r).map(([k, [rx, ry, rw, rh]]) => (
-        <rect key={k} x={rx} y={ry} width={rw} height={rh} rx={t / 2} fill={lit.includes(k) ? on : "#2a1210"} opacity={lit.includes(k) ? 1 : 0.85} />
+        <rect key={k} x={rx} y={ry} width={rw} height={rh} rx={t / 2} fill={lit.includes(k) ? on : "#2a2410"} opacity={lit.includes(k) ? 1 : 0.85} />
       ))}
     </g>
   );
@@ -246,12 +246,12 @@ function useMxClock() {
 }
 function Scoreboard({ status, busy, opens }: { status: Status | null; busy: string | null; opens?: string }) {
   const c = useMxClock();
-  const neon = "#ff5a36";
+  const neon = "#f6d36b"; // neón oro (paleta: negro · crema · oro)
   const h12 = c ? String(c.h % 12 || 12).padStart(2, " ") : "  ";
   const mm = c ? String(c.m).padStart(2, "0") : "  ";
   const ap = c ? (c.h < 12 ? "AM" : "PM") : "";
   const row = status === "LIBRE" ? { t: "LIBRE · PASA", c: "#3dff8f" } : status === "OCUPADO" ? { t: busy ? `OCUPADO · ${busy}` : "OCUPADO", c: "#ff4b3e" }
-    : status === "CERRADO" ? { t: opens ?? "CERRADO", c: "#ffb547" } : { t: "EN VIVO", c: "#ffd79a" };
+    : status === "CERRADO" ? { t: opens ?? "CERRADO", c: "#e8c25a" } : { t: "EN VIVO", c: "#f6e2a0" };
   const pad = SB.w * 0.07, dh = SB.h * 0.5, dw = dh * 0.56, gap = dw * 0.28;
   const x0 = SB.x + pad, y0 = SB.y + SB.h * 0.12;
   const xs = [x0, x0 + dw + gap, x0 + 2 * dw + gap * 3.2, x0 + 3 * dw + gap * 4.2];
@@ -393,9 +393,9 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
         <linearGradient id="lg-goldv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6e2a0" /><stop offset=".55" stopColor="#d4af37" /><stop offset="1" stopColor="#8a6d1a" /></linearGradient>
         {/* luz */}
         <radialGradient id="lg-spill"><stop offset="0" stopColor={sig ?? "#fff"} stopOpacity=".5" /><stop offset="1" stopColor={sig ?? "#fff"} stopOpacity="0" /></radialGradient>
-        <radialGradient id="lg-amber"><stop offset="0" stopColor="#ffb547" stopOpacity=".55" /><stop offset="1" stopColor="#ffb547" stopOpacity="0" /></radialGradient>
+        <radialGradient id="lg-amber"><stop offset="0" stopColor="#e8c25a" stopOpacity=".55" /><stop offset="1" stopColor="#e8c25a" stopOpacity="0" /></radialGradient>
         <radialGradient id="lg-vig" cx=".5" cy=".5" r=".72"><stop offset=".6" stopColor="#1a1712" stopOpacity="0" /><stop offset="1" stopColor="#1a1712" stopOpacity=".2" /></radialGradient>
-        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e2a55" /><stop offset="1" stopColor="#2b3a6b" /></linearGradient>
+        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1a1712" /><stop offset="1" stopColor="#0b0b0c" /></linearGradient>
         <clipPath id="lg-door"><rect x={DOOR.x0} y={DOOR.y0} width={DW} height={DH} /></clipPath>
       </defs>
 
@@ -534,8 +534,8 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
           <g transform={`translate(${CX} ${(DOOR.y0 + DOOR.y1) / 2 - 6})`}>
             <rect x="-82" y="-32" width="164" height="60" rx="6" fill="#070707" stroke="#2d2d30" strokeWidth="1.5" />
             <g filter="url(#lg-glow-sm)" className={closed ? "lg-neon" : ""}>
-              <text x="0" y="1" textAnchor="middle" fontSize="23" fontWeight="800" letterSpacing="3.6" fill="#ffb547" style={SANS}>CERRADO</text>
-              {opensShort && <text x="0" y="19" textAnchor="middle" fontSize="9.5" fontWeight="700" letterSpacing="1.6" fill="#ffd79a" style={SANS} {...opensFit}>{opensShort}</text>}
+              <text x="0" y="1" textAnchor="middle" fontSize="23" fontWeight="800" letterSpacing="3.6" fill="#e8c25a" style={SANS}>CERRADO</text>
+              {opensShort && <text x="0" y="19" textAnchor="middle" fontSize="9.5" fontWeight="700" letterSpacing="1.6" fill="#f6e2a0" style={SANS} {...opensFit}>{opensShort}</text>}
             </g>
             <rect x="-80" y="-30" width="160" height="56" rx="5" fill="url(#lg-led)" />
           </g>

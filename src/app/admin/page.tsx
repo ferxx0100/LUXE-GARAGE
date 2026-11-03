@@ -138,7 +138,7 @@ export default function Admin() {
       style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)", paddingLeft: "max(env(safe-area-inset-left), 16px)", paddingRight: "max(env(safe-area-inset-right), 16px)" }}>
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className={`size-3 shrink-0 rounded-full shadow-[0_0_12px_currentColor] ${preview === "LIBRE" ? "bg-emerald-400 text-emerald-400" : preview === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-amber-300 text-amber-300"}`} aria-hidden />
+          <span className={`size-3 shrink-0 rounded-full shadow-[0_0_12px_currentColor] ${preview === "LIBRE" ? "bg-emerald-400 text-emerald-400" : preview === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-gold text-gold"}`} aria-hidden />
           <h1 className="font-display truncate text-xl font-semibold tracking-wide"><span className="text-gold-grad">LUXE</span> <span className="text-white/80">Panel</span></h1>
         </div>
         <div className="flex shrink-0 gap-2 whitespace-nowrap text-sm">
@@ -148,7 +148,7 @@ export default function Admin() {
       </header>
 
       {data?.storage === "memory" && (
-        <p className="mt-4 rounded-lg border border-amber-400/60 bg-amber-500/10 p-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-lg border border-gold/60 bg-gold/10 p-3 text-sm text-gold-hi">
           Almacenamiento temporal: los cambios no se comparten entre servidores ni sobreviven reinicios.
           Conecta Upstash Redis en Vercel (ver docs/VERCEL.md).
         </p>
@@ -175,7 +175,7 @@ export default function Admin() {
           </svg>
           <div>
             <p className="text-xs text-white/50">Así lo ve el cliente ahora:</p>
-            <p className={`font-display mt-1 text-3xl font-semibold ${preview === "LIBRE" ? "text-emerald-400" : preview === "OCUPADO" ? "text-red-400" : "text-zinc-400"}`}>{preview}</p>
+            <p className={`font-display mt-1 text-3xl font-semibold ${preview === "LIBRE" ? "text-emerald-400" : preview === "OCUPADO" ? "text-red-400" : "text-gold"}`}>{preview}</p>
             {preview === "OCUPADO" && g?.busyUntil && <p className="text-base text-white/85">Se desocupa aprox. <b>{fmt12(g.busyUntil)}</b></p>}
             <p className="mt-1 text-sm text-white/70">{why}</p>
           </div>
@@ -184,7 +184,7 @@ export default function Admin() {
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[.03] p-4">
           <p className="text-xs tracking-[.25em] text-white/60">NEGOCIO</p>
           <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Negocio">
-            {([["auto", "Automático", "Sigue el horario", "border-gold bg-gold/15 text-gold"], ["open", "Abierto hoy", "Aunque sea fuera de horario", "border-emerald-400 bg-emerald-500/20 text-emerald-200"], ["closed", "Cerrado hoy", "Baja la cortina", "border-zinc-300 bg-zinc-500/25 text-zinc-100"]] as const).map(([m, t, h, on]) => (
+            {([["auto", "Automático", "Sigue el horario", "border-gold bg-gold/15 text-gold"], ["open", "Abierto hoy", "Aunque sea fuera de horario", "border-gold bg-gold text-ink"], ["closed", "Cerrado hoy", "Baja la cortina", "border-white bg-white/15 text-white"]] as const).map(([m, t, h, on]) => (
               <button key={m} role="radio" aria-checked={g?.mode === m} disabled={busy} onClick={() => setGarage({ mode: m })}
                 className={`rounded-xl border-2 px-2 py-3 text-center transition active:scale-[.98] disabled:opacity-50 ${g?.mode === m ? on : "border-white/10 text-white/75"}`}>
                 <span className="block text-base font-bold leading-tight">{t}</span>

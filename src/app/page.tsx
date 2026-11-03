@@ -33,8 +33,8 @@ const Bubbles = () => (
 );
 const Drop = () => (
   <svg viewBox="0 0 20 24" className="mt-1 size-5 shrink-0" aria-hidden>
-    <path d="M10 1C10 1 2 10.5 2 15.5a8 8 0 0 0 16 0C18 10.5 10 1 10 1Z" fill="#22d3ee" />
-    <path d="M6.5 15.5a3.5 3.5 0 0 0 3.5 3.5" stroke="#e0fbff" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+    <path d="M10 1C10 1 2 10.5 2 15.5a8 8 0 0 0 16 0C18 10.5 10 1 10 1Z" fill="#d4af37" />
+    <path d="M6.5 15.5a3.5 3.5 0 0 0 3.5 3.5" stroke="#ffffff" strokeWidth="1.6" fill="none" strokeLinecap="round" />
   </svg>
 );
 
@@ -100,11 +100,11 @@ export default async function Home() {
             <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
           </svg>
           <div className="relative mx-auto max-w-md text-center">
-            <p className="text-[11px] font-bold tracking-[.4em] text-[#67e8f9]">MEMBRESÍA</p>
+            <p className="text-[11px] font-bold tracking-[.4em] text-[#f1d77a]">MEMBRESÍA</p>
             <h2 className="font-display mt-3 text-[2.1rem] leading-tight font-semibold sm:text-5xl">{s.subscriptionWashes} lavadas en 30 días</h2>
-            <div className="mt-8 rounded-[30px] border border-cyan-200/25 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(0,20,40,.45)] backdrop-blur-sm">
+            <div className="mt-8 rounded-[30px] border border-gold-hi/25 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(0,20,40,.45)] backdrop-blur-sm">
               <p className="font-display text-water-grad text-7xl font-semibold leading-none">${s.prices.suscripcion}</p>
-              <p className="mt-2 text-lg font-semibold text-cyan-50/85">al mes · pago único</p>
+              <p className="mt-2 text-lg font-semibold text-white/85">al mes · pago único</p>
               <ul className="mt-7 space-y-3.5 text-left text-xl leading-snug">
                 <li className="flex gap-3"><Drop />{s.subscriptionWashes} lavadas dentro de 30 días.</li>
                 <li className="flex gap-3"><Drop />Eliges tus días y horas al comprar.</li>
@@ -114,7 +114,7 @@ export default async function Home() {
               <MembershipFlow price={s.prices.suscripcion} washes={s.subscriptionWashes} prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
             </div>
           </div>
-          <svg className="lg-wave bottom-0 text-[#dcd8cf]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
+          <svg className="lg-wave bottom-0 text-[#f2f0eb]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
             <path fill="currentColor" d="M0 70h1200V42c-50 0-100-22-150-22s-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22S50 42 0 42Z" />
           </svg>
         </section>

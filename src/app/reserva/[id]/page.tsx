@@ -17,10 +17,10 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
   const state = {
     confirmed: { t: "¡Reserva confirmada!", c: "text-go", s: "Te esperamos. Muestra esta pantalla al llegar." },
     done: { t: "Servicio completado", c: "text-gold", s: "Gracias por tu visita." },
-    pending: { t: "Pago en revisión", c: "text-amber-300", s: "Mercado Pago está revisando tu pago. Esta página se actualiza sola." },
-    hold: { t: "Pago pendiente", c: "text-amber-300", s: "Tu hora estuvo apartada 15 minutos. Si no pagaste, vuelve a reservar." },
-    cancelled: { t: "Reserva cancelada", c: "text-zinc-300", s: "Si tienes dudas, toca Ayuda." },
-    conflict: { t: "Pago recibido", c: "text-amber-300", s: "Tu pago llegó, pero esa hora se ocupó. Te contactamos para reagendar o devolverte el dinero." },
+    pending: { t: "Pago en revisión", c: "text-gold", s: "Mercado Pago está revisando tu pago. Esta página se actualiza sola." },
+    hold: { t: "Pago pendiente", c: "text-gold", s: "Tu hora estuvo apartada 15 minutos. Si no pagaste, vuelve a reservar." },
+    cancelled: { t: "Reserva cancelada", c: "text-white/80", s: "Si tienes dudas, toca Ayuda." },
+    conflict: { t: "Pago recibido", c: "text-gold", s: "Tu pago llegó, pero esa hora se ocupó. Te contactamos para reagendar o devolverte el dinero." },
   }[b.status];
   const live = ["confirmed", "pending", "done", "cancelled"].includes(b.status);
   const range = fmtRange(b.time, durationOf(b));

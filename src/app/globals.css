@@ -5,7 +5,7 @@
   --color-ink-2: #121214;
   --color-gold: #d4af37;
   --color-gold-hi: #f1d77a;
-  --color-tile: #f1f0eb;
+  --color-tile: #f2f0eb;
   --color-go: #2ee87f;
   --color-stop: #ff3b30;
   /* Romana (Cinzel) para títulos: combina con el azulejo y el letrero. Manrope para leer. */
@@ -67,7 +67,7 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 
 /* ——— Hero claro: azulejo crema ——— */
 .tile-hero {
-  background-color: #efece6;
+  background-color: #f2f0eb; /* mismo crema en todo el sitio */
   background-image:
     radial-gradient(120% 70% at 20% 0%, rgba(255,255,255,.75), rgba(255,255,255,0) 60%),
     linear-gradient(#d3cec4 1px, transparent 1px),
@@ -83,31 +83,31 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 
 /* ——— Sección del video: mosaico gris/crema plano ——— */
 .tile-mosaic {
-  background-color: #dcd8cf;
+  background-color: #f2f0eb;
   background-image:
     linear-gradient(160deg, rgba(255,255,255,.35), rgba(255,255,255,0) 35%, rgba(255,255,255,.18) 55%, rgba(255,255,255,0) 70%),
-    linear-gradient(#c6c0b4 1.5px, transparent 1.5px),
-    linear-gradient(90deg, #c6c0b4 1.5px, transparent 1.5px);
+    linear-gradient(#d3cec4 1.5px, transparent 1.5px),
+    linear-gradient(90deg, #d3cec4 1.5px, transparent 1.5px);
   background-size: 100% 100%, 26px 26px, 26px 26px;
   color: #141414;
 }
 
-/* ——— Membresía: tema agua ——— */
+/* ——— Membresía: negro y oro con burbujas ——— */
 .water-bg {
   background:
-    radial-gradient(90% 50% at 50% 0%, rgba(34,211,238,.22), transparent 70%),
-    linear-gradient(180deg, #031b2e 0%, #063a5b 100%);
+    radial-gradient(90% 50% at 50% 0%, rgba(212,175,55,.22), transparent 70%),
+    linear-gradient(180deg, #0b0b0c 0%, #1a1712 100%);
 }
 .btn-water {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; border-radius: 999px;
-  font-weight: 800; color: #031b2e; letter-spacing: .02em;
-  background: linear-gradient(180deg, #a5f3fc, #22d3ee 60%, #0ea5c6);
-  box-shadow: 0 10px 30px rgba(34,211,238,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  font-weight: 800; color: #0b0b0c; letter-spacing: .02em;
+  background: linear-gradient(180deg, #f6e2a0, #d4af37 60%, #b8922a);
+  box-shadow: 0 10px 30px rgba(212,175,55,.35), inset 0 1px 0 rgba(255,255,255,.7);
   transition: transform .15s, filter .2s;
 }
 .btn-water:hover { filter: brightness(1.06); }
 .btn-water:active { transform: scale(.97); }
-.text-water-grad { background: linear-gradient(180deg, #ffffff, #a5f3fc 50%, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.text-water-grad { background: linear-gradient(180deg, #ffffff, #f6e2a0 50%, #d4af37); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 .lg-bubbles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 /* Burbuja de jabón: casi transparente, borde con reflejos de color y brillo; sube (externo) y se bambolea (interno). */
@@ -117,8 +117,8 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
   background:
     radial-gradient(circle at 30% 27%, rgba(255,255,255,.95) 0 5%, rgba(255,255,255,0) 13%),
     radial-gradient(circle at 68% 74%, rgba(255,255,255,.5) 0 3%, rgba(255,255,255,0) 8%),
-    radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 58%, rgba(165,243,252,.22) 78%, rgba(255,255,255,.55) 98%);
-  box-shadow: inset -3px -5px 10px rgba(196,181,253,.35), inset 4px 4px 9px rgba(253,224,71,.18), inset 0 0 0 1px rgba(255,255,255,.35), 0 0 14px rgba(103,232,249,.25);
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 58%, rgba(246,226,160,.22) 78%, rgba(255,255,255,.55) 98%);
+  box-shadow: inset -3px -5px 10px rgba(255,255,255,.35), inset 4px 4px 9px rgba(241,215,122,.18), inset 0 0 0 1px rgba(255,255,255,.35), 0 0 14px rgba(241,215,122,.25);
   animation: lgWobble var(--sw, 2.6s) ease-in-out infinite alternate;
 }
 @keyframes lgRise {
@@ -132,13 +132,13 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .lg-foam-band {
   position: absolute; left: -5%; right: -5%; bottom: -18px; height: 90px; pointer-events: none;
   background:
-    radial-gradient(28px 22px at 4% 60%, #fff 60%, transparent 62%), radial-gradient(36px 30px at 11% 70%, #f0fdff 60%, transparent 62%),
-    radial-gradient(24px 20px at 19% 55%, #fff 60%, transparent 62%), radial-gradient(40px 32px at 28% 72%, #e6fbff 60%, transparent 62%),
-    radial-gradient(26px 22px at 37% 58%, #fff 60%, transparent 62%), radial-gradient(38px 30px at 46% 74%, #f0fdff 60%, transparent 62%),
-    radial-gradient(28px 22px at 55% 60%, #fff 60%, transparent 62%), radial-gradient(42px 32px at 64% 72%, #e6fbff 60%, transparent 62%),
-    radial-gradient(26px 22px at 73% 57%, #fff 60%, transparent 62%), radial-gradient(36px 30px at 82% 70%, #f0fdff 60%, transparent 62%),
-    radial-gradient(28px 22px at 91% 60%, #fff 60%, transparent 62%), radial-gradient(40px 32px at 99% 72%, #e6fbff 60%, transparent 62%);
-  opacity: .9; filter: drop-shadow(0 -4px 10px rgba(103,232,249,.35)); animation: lgFoam 5s ease-in-out infinite alternate;
+    radial-gradient(28px 22px at 4% 60%, #fff 60%, transparent 62%), radial-gradient(36px 30px at 11% 70%, #ffffff 60%, transparent 62%),
+    radial-gradient(24px 20px at 19% 55%, #fff 60%, transparent 62%), radial-gradient(40px 32px at 28% 72%, #f4f1e8 60%, transparent 62%),
+    radial-gradient(26px 22px at 37% 58%, #fff 60%, transparent 62%), radial-gradient(38px 30px at 46% 74%, #ffffff 60%, transparent 62%),
+    radial-gradient(28px 22px at 55% 60%, #fff 60%, transparent 62%), radial-gradient(42px 32px at 64% 72%, #f4f1e8 60%, transparent 62%),
+    radial-gradient(26px 22px at 73% 57%, #fff 60%, transparent 62%), radial-gradient(36px 30px at 82% 70%, #ffffff 60%, transparent 62%),
+    radial-gradient(28px 22px at 91% 60%, #fff 60%, transparent 62%), radial-gradient(40px 32px at 99% 72%, #f4f1e8 60%, transparent 62%);
+  opacity: .9; filter: drop-shadow(0 -4px 10px rgba(241,215,122,.35)); animation: lgFoam 5s ease-in-out infinite alternate;
 }
 @keyframes lgFoam { to { transform: translateY(6px) scaleX(1.02); } }
 .mb-fade { animation: mbFade .2s ease both; }
@@ -150,8 +150,8 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .lg-caustic {
   position: absolute; inset: 0; pointer-events: none; opacity: .25; mix-blend-mode: screen;
   background:
-    radial-gradient(40% 25% at 20% 30%, rgba(103,232,249,.35), transparent 70%),
-    radial-gradient(35% 20% at 80% 60%, rgba(103,232,249,.3), transparent 70%);
+    radial-gradient(40% 25% at 20% 30%, rgba(241,215,122,.35), transparent 70%),
+    radial-gradient(35% 20% at 80% 60%, rgba(241,215,122,.3), transparent 70%);
   animation: lgCaustic 9s ease-in-out infinite alternate;
 }
 @keyframes lgCaustic { to { transform: translate3d(4%, -3%, 0) scale(1.08); opacity: .4; } }

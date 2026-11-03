@@ -5,8 +5,11 @@ const money = z.number().int().min(0).max(100000);
 
 // Todo lo que el dueño controla desde /admin. El servidor valida y es la única fuente de precios.
 export const Settings = z.object({
+  // suscripcion = precio de la membresía (pago por 30 días).
   prices: z.object({ carro: money, camioneta: money, domicilio: money, suscripcion: money }),
-  subscriptionWashes: z.number().int().min(1).max(31),
+  // Lavadas completas (exterior e interior) que incluye la membresía. Clave nueva: el valor viejo
+  // (subscriptionWashes: 6) se descarta y toma el de ahora (4).
+  membershipWashes: z.number().int().min(1).max(31).default(4),
   // Índice 0 = domingo … 6 = sábado; null = cerrado ese día.
   hours: z.array(
     z.object({ open: z.number().int().min(0).max(23), close: z.number().int().min(1).max(24) })
@@ -19,7 +22,7 @@ export type Settings = z.infer<typeof Settings>;
 
 export const DEFAULT_SETTINGS: Settings = {
   prices: { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 },
-  subscriptionWashes: 6,
+  membershipWashes: 4,
   // Lunes a jueves 12 pm–7 pm · viernes y sábado 1 pm–6 pm · domingo cerrado
   hours: [null, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 13, close: 18 }, { open: 13, close: 18 }],
   notice: "",

@@ -6,7 +6,7 @@ import { kvIncr } from "@/lib/store";
 export const dynamic = "force-dynamic";
 const json = (b: unknown, status = 200) => Response.json(b, { status, headers: { "Cache-Control": "no-store" } });
 
-// Membresía: aparta las 6 lavadas elegidas (todas o ninguna) por 15 min mientras el cliente paga.
+// Membresía: aparta las 4 lavadas elegidas (todas o ninguna) por 15 min mientras el cliente paga.
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return json({ error: "Origen no permitido" }, 403);
   if (!mpConfigured()) return json({ error: "Los pagos en línea se están activando. Intenta más tarde." }, 503);

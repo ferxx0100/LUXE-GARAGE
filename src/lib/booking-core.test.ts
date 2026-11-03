@@ -4,7 +4,7 @@ import { createHmac } from "node:crypto";
 import {
   addDays, blocksFromCells, candidateStarts, cellsFor, checkWashes, dayWindow, estimateFreeAt, fits, fmtRange, fmtTime, fromMin,
   hoursText, isDateStr, isOpenAt, localNow, maskName, maskPhone, membershipCode, nextFree, nextOpening, normalizeCode, priceFor,
-  sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, shortCode, spotLabel, toMin, verifyMpSignature,
+  sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
 } from "./booking-core.ts";
 
 const prices = { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 };
@@ -77,16 +77,26 @@ test("celdas de 10 min y bloques", () => {
   assert.deepEqual(blocksFromCells(cells), [{ start: 720, end: 740 }, { start: 740, end: 760 }]);
 });
 
-test("membresía: 6 días distintos dentro del mes y que quepan", () => {
+test("membresía: 4 lavadas completas en días distintos, dentro del mes y que quepan", () => {
   const now = { date: MON, minutes: hm("15:00") };
-  const ok = ["2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-09"].map((date) => ({ date, time: "13:00" }));
-  const base = { hours, dur: 30, count: 6, now, blocksByDate: {} };
+  const ok = ["2026-11-03", "2026-11-04", "2026-11-12", "2026-11-28"].map((date) => ({ date, time: "13:00" }));
+  const base = { hours, dur: SERVICE_MIN.completo, count: 4, now, blocksByDate: {} };
   assert.equal(checkWashes({ ...base, washes: ok }), null);
-  assert.match(checkWashes({ ...base, washes: ok.slice(0, 5) })!, /6 lavadas/);
-  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: "2026-11-03", time: "15:00" }] })!, /distinto/);
-  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: SUN, time: "13:00" }] })!, /mes/);
-  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: addDays(MON, 31), time: "13:00" }] })!, /mes/);
-  assert.match(checkWashes({ ...base, washes: ok, blocksByDate: { "2026-11-04": [{ start: hm("13:00"), end: hm("13:30") }] } })!, /miércoles 4/);
+  assert.match(checkWashes({ ...base, washes: ok.slice(0, 3) })!, /4 lavadas/);
+  assert.match(checkWashes({ ...base, washes: [...ok, { date: "2026-11-05", time: "13:00" }] })!, /4 lavadas/); // ni una de más
+  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 3), { date: "2026-11-03", time: "15:00" }] })!, /distinto/);
+  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 3), { date: SUN, time: "13:00" }] })!, /mes/);
+  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 3), { date: addDays(MON, 31), time: "13:00" }] })!, /mes/);
+  // El turno de 30 min se traslapa con una cita que ya existe (13:20–13:40) → no cabe.
+  assert.match(checkWashes({ ...base, washes: ok, blocksByDate: { "2026-11-04": [{ start: hm("13:20"), end: hm("13:40") }] } })!, /miércoles 4/);
+  // Pegado justo después de otra cita sí cabe.
+  assert.equal(checkWashes({ ...base, washes: ok, blocksByDate: { "2026-11-04": [{ start: hm("12:30"), end: hm("13:00") }] } }), null);
+});
+
+test("servicio: la lavada de membresía no se liga a un auto", () => {
+  assert.equal(serviceText({ kind: "completo" }), "Exterior e interior");
+  assert.equal(serviceText({ kind: "completo", vehicle: "camioneta", plate: "AAA-000-A" }), "Exterior e interior · Camioneta · AAA-000-A");
+  assert.equal(serviceText({ kind: "exterior", vehicle: "carro", plate: "" }), "Solo exterior · Carro");
 });
 
 test("abierto ahora, próxima apertura, textos y etiquetas", () => {

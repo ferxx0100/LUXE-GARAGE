@@ -5,7 +5,7 @@ import AdminAgenda, { FosaBar, fmt12 } from "@/components/AdminAgenda";
 
 type Settings = {
   prices: { carro: number; camioneta: number; domicilio: number; suscripcion: number };
-  subscriptionWashes: number;
+  membershipWashes: number;
   hours: ({ open: number; close: number } | null)[];
   notice: string;
 };
@@ -17,7 +17,7 @@ const PRICE_FIELDS: { key: keyof Settings["prices"]; label: string }[] = [
   { key: "carro", label: "Lavado carro" },
   { key: "camioneta", label: "Lavado camioneta" },
   { key: "domicilio", label: "Extra domicilio (por ida)" },
-  { key: "suscripcion", label: "Suscripción mensual" },
+  { key: "suscripcion", label: "Membresía (pago por 30 días)" },
 ];
 
 async function api(path: string, method = "GET", body?: unknown) {
@@ -210,9 +210,9 @@ export default function Admin() {
                     onChange={(e) => set({ prices: { ...form.prices, [f.key]: Math.max(0, Math.round(Number(e.target.value) || 0)) } })} />
                 </label>
               ))}
-              <label className="block text-sm text-white/70">Lavadas por mes (suscripción)
-                <input type="number" min={1} max={31} className={`${input} mt-1`} value={form.subscriptionWashes}
-                  onChange={(e) => set({ subscriptionWashes: Math.min(31, Math.max(1, Math.round(Number(e.target.value) || 1))) })} />
+              <label className="block text-sm text-white/70">Lavadas completas de la membresía
+                <input type="number" min={1} max={31} className={`${input} mt-1`} value={form.membershipWashes}
+                  onChange={(e) => set({ membershipWashes: Math.min(31, Math.max(1, Math.round(Number(e.target.value) || 1))) })} />
               </label>
             </div>
           </section>

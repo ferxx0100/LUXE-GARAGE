@@ -1,16 +1,17 @@
 # LUXE GARAGE — Lo que falta
 
-Estado: el código está en la rama `claude/busy-noether-my8mwr` y Vercel lo publica solo.
+Estado: producción sale de la rama `claude/busy-noether-my8mwr`. La entrega de membresía (4 lavadas) y tipografía está en `claude/happy-volta-ptpo2f` (vista previa en Vercel) hasta que se junte.
 Sitio: https://luxegaragee.com · Panel: https://luxegaragee.com/admin
 
 ---
 
 ## 1. Revisar en tu iPhone (sin verificar todavía)
-La última entrega compila y pasa las 16 pruebas automáticas, pero **no se vio en pantalla**. Revisa y manda captura de lo que se vea mal:
+La última entrega pasa las 17 pruebas automáticas; no se pudo compilar ni ver en pantalla en la sesión (sin acceso a npm), así que la vista previa de Vercel es la primera compilación. Revisa y manda captura de lo que se vea mal:
 - [ ] Hero blanco en 3D: estados LIBRE / OCUPADO / CERRADO (con hora actual y "se desocupa a las…").
 - [ ] Tarjeta "Próximo lugar" → botón "Apartar este lugar".
 - [ ] Reserva en 3 pasos (solo nombre y teléfono).
-- [ ] Membresía (tema agua con burbujas) → calendario de 6 días → pago.
+- [ ] Membresía (tema agua con burbujas) → calendario de 4 fechas con turno de 30 min → pago.
+- [ ] Tipografía nueva (más discreta): títulos en Cinzel, horas/precios/códigos en Manrope; pie con dirección y horario.
 - [ ] Sección del video sobre mosaico gris/crema.
 - [ ] Comprobante `/reserva/...` y `/membresia/...` (sello que cambia cada 30 s y reloj con segundos).
 - [ ] Panel: Agenda, Verificar recibo, Ocupado 30/20 min, Ajustes.

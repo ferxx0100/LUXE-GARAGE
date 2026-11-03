@@ -77,7 +77,7 @@ export default function ReceiptSeal({ endpoint, initial, tone = "gold" }: Props)
         </span>
       </div>
 
-      <p className="mt-5 font-display tabular-nums text-[2.6rem] font-semibold leading-none text-white" aria-live="off">
+      <p className="num mt-5 text-[2.6rem] font-light leading-none text-white" aria-live="off">
         {c ? <>{c.hm}<span className="rs-sec">:{c.s}</span> <span className="text-2xl text-white/70">{c.ap}</span></> : <span className="text-white/30">··:··:··</span>}
       </p>
       <p className="mt-2 text-base capitalize text-white/60">{now ? DAY.format(now) : " "}</p>

@@ -95,22 +95,22 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
         </div>
 
         <div className="px-5 pb-14 pt-6 md:p-0" aria-live="polite">
-          <p className="flex items-center gap-2 text-xs font-bold tracking-[.3em] text-black/60">
+          <p className="kicker flex items-center gap-2 text-black/55">
             <span className={`live-dot ${c?.dot ?? "bg-black/30"}`} />
-            EN VIVO · ¿ESTÁ LIBRE?
+            En vivo · ¿Está libre?
           </p>
-          <p className="mt-3 text-2xl font-semibold text-black/80" suppressHydrationWarning>
-            {clock ? <>{clock.lead} <b className="tabular-nums text-black">{clock.time}</b> {clock.ap}</> : <span className="opacity-0">Son las 0:00 pm</span>}
+          <p className="mt-3 text-xl text-black/70" suppressHydrationWarning>
+            {clock ? <>{clock.lead} <span className="num font-semibold text-black">{clock.time}</span> {clock.ap}</> : <span className="opacity-0">Son las 0:00 pm</span>}
           </p>
-          <h1 id="estado" className={`font-display mt-1 text-[3.6rem] leading-none font-bold tracking-[.06em] sm:text-7xl ${c?.color ?? "text-black/25"}`}>
+          <h1 id="estado" className={`font-display mt-1 text-[3.4rem] leading-none font-semibold tracking-[.07em] sm:text-7xl ${c?.color ?? "text-black/25"}`}>
             {c?.word ?? "···"}
           </h1>
 
-          {status === "LIBRE" && <p className="mt-4 text-2xl font-bold leading-snug">Ven ahora: no hay fila.</p>}
+          {status === "LIBRE" && <p className="mt-4 text-xl font-semibold leading-snug">Ven ahora: no hay fila.</p>}
           {status === "OCUPADO" && (
             <div className="mt-4 rounded-2xl border border-[#c8231a]/25 bg-white/70 px-5 py-4">
-              <p className="text-xl font-bold leading-snug">
-                {g?.busyUntil ? <>Se desocupa aprox. a las <span className="tabular-nums">{hour12(g.busyUntil)}</span>{freeIn !== null && <> ({inText(freeIn) || "pronto"})</>}</> : "Estamos lavando un auto."}
+              <p className="text-lg font-semibold leading-snug">
+                {g?.busyUntil ? <>Se desocupa aprox. a las <span className="num">{hour12(g.busyUntil)}</span>{freeIn !== null && <> ({inText(freeIn) || "pronto"})</>}</> : "Estamos lavando un auto."}
               </p>
               {freeIn !== null && (
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
@@ -121,8 +121,8 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
           )}
           {status === "CERRADO" && (
             <div className="mt-4 rounded-2xl border border-[#8a5300]/25 bg-white/70 px-5 py-4">
-              {g?.opens ? <p className="text-2xl font-bold">Abrimos {g.opens.label}</p> : <p className="text-2xl font-bold">Ahora estamos cerrados.</p>}
-              {countdown && <p className="mt-1 text-lg font-semibold tabular-nums text-[#8a5300]">{countdown}</p>}
+              {g?.opens ? <p className="text-xl font-semibold">Abrimos {g.opens.label}</p> : <p className="text-xl font-semibold">Ahora estamos cerrados.</p>}
+              {countdown && <p className="num mt-1 text-base font-medium text-[#8a5300]">{countdown}</p>}
               <p className="mt-2 text-base text-black/65">Horario: {hours}</p>
             </div>
           )}
@@ -131,20 +131,20 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
           {/* PRÓXIMO LUGAR */}
           {g?.next && (
             <div className="mt-6 rounded-[26px] border border-black/10 bg-[#0f0f10] p-5 text-white shadow-[0_24px_50px_rgba(20,15,5,.35)]">
-              <p className="text-xs font-bold tracking-[.3em] text-gold">PRÓXIMO LUGAR</p>
+              <p className="kicker text-gold">Próximo lugar</p>
               <div className="mt-3 grid grid-cols-2 gap-1.5 rounded-2xl bg-white/[.07] p-1.5" role="radiogroup" aria-label="Tipo de lavado">
                 {(["completo", "exterior"] as const).map((k) => (
                   <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
                     className={`min-h-14 rounded-xl px-2 py-2 text-center leading-tight transition ${kind === k ? "bg-gold text-ink" : "text-white/80"}`}>
-                    <span className="block text-base font-bold">{KIND[k].title}</span>
-                    <span className="block text-sm font-semibold opacity-75">{KIND[k].min} min</span>
+                    <span className="block text-base font-semibold">{KIND[k].title}</span>
+                    <span className="block text-sm opacity-75">{KIND[k].min} min</span>
                   </button>
                 ))}
               </div>
               {spot ? (
                 <>
-                  <p className="font-display mt-4 text-[3rem] leading-none font-semibold tabular-nums text-gold-grad">{hour12(spot.time)}</p>
-                  <p className="mt-2 text-xl font-semibold text-white/90">{spotSub}</p>
+                  <p className="num mt-4 text-[2.75rem] font-light leading-none text-gold-hi">{hour12(spot.time)}</p>
+                  <p className="mt-2 text-lg text-white/80">{spotSub}</p>
                   <button type="button" onClick={take} className="btn-gold mt-5 min-h-14 w-full text-xl">Apartar este lugar</button>
                 </>
               ) : (

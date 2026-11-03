@@ -5,13 +5,14 @@ import { DateStr, Email, getBookings, HOLD_SEC, indexCode, isBookingId, Name, PE
 import { sendMembershipConfirmed } from "./mail";
 import { claimCells, extendCells, kvGet, kvSet, ownsCells, readCells, redis, reserveCells } from "./store";
 
-// Membresía: pago único por 6 lavadas dentro de 30 días. Las fechas y horas se eligen AL COMPRAR
-// y apartan su lugar en la agenda igual que una reserva (una sola fosa, sin traslapes).
+// Membresía: pago único por 4 lavadas completas (exterior e interior, 30 min) dentro de 30 días.
+// Va a nombre de una persona, no de un auto: trae el carro que quiera en cada lavada.
+// Las fechas y turnos se eligen TODOS al comprar y apartan su lugar en la agenda igual que una
+// reserva (una sola fosa, sin traslapes).
 export const VALID_DAYS = 30;
+export const MEMBERSHIP_KIND: Kind = "completo";
 
 export const MembershipInput = z.object({
-  kind: z.enum(["completo", "exterior"]),
-  vehicle: z.enum(["carro", "camioneta"]),
   name: Name,
   phone: Phone,
   email: Email,
@@ -22,7 +23,9 @@ export const MembershipInput = z.object({
 export type MembershipStatus = "hold" | "pending" | "confirmed" | "cancelled" | "conflict";
 export interface Membership {
   id: string; code: string; status: MembershipStatus;
-  kind: Kind; vehicle: Vehicle; duration: number;
+  kind: Kind; duration: number;
+  /** Solo en membresías viejas: hoy la membresía no se liga a un auto. */
+  vehicle?: Vehicle;
   name: string; phone: string; email: string; plate: string;
   washes: { date: string; time: string }[]; bookingIds: string[];
   amount: number; validFrom: string; validTo: string;
@@ -37,10 +40,10 @@ const washId = (mid: string, i: number) => createHash("sha256").update(`lg-wash|
 
 type Result<T> = { ok: true; value: T } | { ok: false; status: number; error: string };
 
-/** Valida las 6 lavadas y aparta TODAS sus celdas por 15 min (o ninguna). */
+/** Valida las lavadas elegidas y aparta TODAS sus celdas por 15 min (o ninguna). */
 export async function createMembershipHold(input: z.infer<typeof MembershipInput>): Promise<Result<Membership>> {
   const c = await todayCtx();
-  const duration = SERVICE_MIN[input.kind];
+  const duration = SERVICE_MIN[MEMBERSHIP_KIND];
   const washes = [...input.washes].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
   // Lee solo las celdas de esas lavadas para decir exactamente cuál ya se ocupó.
   const keysPer = washes.map((w) => (isDateStr(w.date) && isTimeStr(w.time) ? cellsFor(w.date, toMin(w.time), duration) : []));
@@ -52,7 +55,7 @@ export async function createMembershipHold(input: z.infer<typeof MembershipInput
     blocksByDate[w.date] = blocksFromCells(cells);
   });
   const err = checkWashes({
-    hours: c.s.hours, washes, dur: duration, count: c.s.subscriptionWashes, now: c.now,
+    hours: c.s.hours, washes, dur: duration, count: c.s.membershipWashes, now: c.now,
     blocksByDate, busyUntilMin: c.busyMin, closedToday: c.closed, maxDays: VALID_DAYS,
   });
   if (err) return { ok: false, status: /ya no está/.test(err) ? 409 : 400, error: err };
@@ -61,7 +64,7 @@ export async function createMembershipHold(input: z.infer<typeof MembershipInput
   if (!(await reserveCells(keysPer.flat(), id, HOLD_SEC))) return { ok: false, status: 409, error: "Alguien acaba de apartar una de tus horas. Elige otra." };
   const now = new Date().toISOString();
   const m: Membership = {
-    id, code: membershipCode(id), status: "hold", kind: input.kind, vehicle: input.vehicle, duration,
+    id, code: membershipCode(id), status: "hold", kind: MEMBERSHIP_KIND, duration,
     name: input.name, phone: input.phone, email: input.email, plate: input.plate,
     washes, bookingIds: [], amount: c.s.prices.suscripcion,
     validFrom: c.now.date, validTo: addDays(c.now.date, VALID_DAYS), createdAt: now, updatedAt: now,
@@ -85,7 +88,7 @@ export async function setMembershipEmail(id: string, email: string): Promise<voi
   await kvSet(mk(id), { ...m, email, updatedAt: new Date().toISOString() }, m.status === "hold" ? 2 * 24 * 3600 : undefined);
 }
 
-/** Pago aprobado → fija las celdas de las 6 lavadas y crea sus reservas (idempotente). */
+/** Pago aprobado → fija las celdas de todas las lavadas y crea sus reservas (idempotente). */
 export async function confirmMembership(id: string, paymentId: string): Promise<Membership | null> {
   const m = await getMembership(id);
   if (!m) return null;
@@ -102,7 +105,7 @@ export async function confirmMembership(id: string, paymentId: string): Promise<
   await Promise.all(m.washes.map((w, i) => {
     const b: Booking = {
       id: bookingIds[i], code: shortCode(bookingIds[i]), status: "confirmed",
-      date: w.date, time: w.time, duration: m.duration, vehicle: m.vehicle, kind: m.kind, place: "garage", address: "",
+      date: w.date, time: w.time, duration: m.duration, ...(m.vehicle ? { vehicle: m.vehicle } : {}), kind: m.kind, place: "garage", address: "",
       name: m.name, phone: m.phone, email: m.email, plate: m.plate, notes: `Membresía ${m.code} · lavada ${i + 1} de ${m.washes.length}`,
       amount: 0, owner: m.id, membershipId: m.id, membershipCode: m.code, ...paid, createdAt: now,
     };
@@ -116,7 +119,7 @@ export async function confirmMembership(id: string, paymentId: string): Promise<
   return next;
 }
 
-/** Pago "en revisión": mantenemos las 6 horas apartadas más tiempo. */
+/** Pago "en revisión": mantenemos las horas apartadas más tiempo. */
 export async function markMembershipPending(id: string, paymentId: string, status: string): Promise<void> {
   const m = await getMembership(id);
   if (!m || m.status !== "hold") return;

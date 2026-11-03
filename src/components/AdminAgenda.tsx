@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type Status = "hold" | "pending" | "confirmed" | "done" | "cancelled" | "conflict";
 interface Booking {
   id: string; code: string; status: Status; date: string; time: string;
-  vehicle: "carro" | "camioneta"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
+  vehicle?: "carro" | "camioneta"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
   name: string; phone: string; email?: string; plate?: string; notes?: string; amount: number; paymentId?: string;
   duration?: number; membershipId?: string; membershipCode?: string;
 }
@@ -147,7 +147,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onF
               <div className="flex items-stretch">
                 <div className={`flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-0.5 px-1 py-3 ${b.place === "domicilio" ? "bg-sky-500/15" : b.membershipId ? "bg-cyan-500/10" : "bg-gold/10"}`}>
                   {found && <span className="text-xs font-bold">{DAY[wd(b.date)]} {Number(b.date.slice(8))} {MONTH[Number(b.date.slice(5, 7)) - 1]}</span>}
-                  <span className="font-display text-[1.7rem] font-semibold leading-none">{start.t}</span>
+                  <span className="num text-[1.7rem] font-semibold leading-none">{start.t}</span>
                   <span className="text-sm font-bold uppercase text-white/75">{start.ap}</span>
                   <span className="mt-1 text-[11px] font-bold tracking-wider text-white/60">{b.place === "domicilio" ? "DOMICILIO" : "GARAGE"}</span>
                 </div>
@@ -160,7 +160,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onF
                   <p className="mt-1.5 truncate text-xl font-bold">{b.name}</p>
                   <p className="text-base font-semibold text-white/90">🕓 {range12(b.time, dur)} <span className="font-normal text-white/55">· {dur} min</span></p>
                   <p className="text-base text-white/75">
-                    {b.vehicle === "carro" ? "Carro" : "Camioneta"} · {b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} ·{" "}
+                    {b.vehicle ? `${b.vehicle === "carro" ? "Carro" : "Camioneta"} · ` : ""}{b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} ·{" "}
                     {b.membershipId ? <b className="text-cyan-300">Incluido</b> : <b className="text-gold">${b.amount}</b>}
                   </p>
                   {b.place === "domicilio" && <p className="mt-1 break-words text-base text-sky-200">📍 {b.address}</p>}

@@ -6,14 +6,14 @@
 - En `/admin` → Garage: **Negocio** (Automático = sigue el horario / Abierto hoy / Cerrado hoy; lo manual dura solo ese día) y **Fosa** (Libre/Ocupado). En el futuro las cámaras moverán el de Fosa.
 - La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y fosa de rejillas de acero negro. Nada de imágenes generadas por IA.
 - Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en el botón "Ayuda" (urgente, mensaje, quejas).
-- Tipografía: Cinzel (romana, títulos) + Manrope (texto), servidas desde el propio sitio (@fontsource).
+- Tipografía: Cinzel (romana) SOLO en la marca, el letrero LIBRE/OCUPADO/CERRADO y los títulos de sección; Manrope en todo lo demás, incluidas horas, precios y códigos (utilidad `num`). Discreta: pocas negritas, sin texto con degradado, sin rótulos de relleno ni secciones que repitan información. Servidas desde el propio sitio (@fontsource).
 - **Reserva pagada** = la única que aparta un horario del calendario. Horario lleno = no se puede reservar.
-- **Suscripción**: $555/mes, 6 lavadas al mes. Elige sus 6 días; no reserva hora: si está libre, pasa.
+- **Membresía**: $555, 4 lavadas completas (exterior e interior, turnos de 30 min) dentro de 30 días. Las 4 fechas y turnos se eligen TODOS al comprar y apartan su lugar como una reserva. Va a nombre de la persona, no de un auto: trae el carro que quiera. Sin opción "solo exterior" en la membresía.
 - Servicios (solo 2): **Exterior e interior** (deja el auto) y **Solo exterior** (sin bajarse). Mismo precio por vehículo.
 - Horario: lunes a jueves 12 pm–7 pm; viernes y sábado 1 pm–6 pm; domingo cerrado (editable por día en /admin → Ajustes).
 - Datos que pide la reserva: SOLO nombre y teléfono (y dirección si es a domicilio). El correo lo pide Mercado Pago al pagar.
 - Agenda en celdas de 10 min: completo 30 min, solo exterior 20 min; "próximo lugar" en vivo; el panel marca Ocupado 30/20 min.
-- Membresía: 6 lavadas en 30 días, días y horas elegidos al comprar (`src/lib/memberships.ts`, `/membresia/[id]`).
+- Membresía en código: `src/lib/memberships.ts`, `/membresia/[id]`; precio en `prices.suscripcion` y número de lavadas en `membershipWashes` (editables en /admin → Ajustes).
 - Recibo anti-falsificación: sello de 3 dígitos que cambia cada 30 s (HMAC) + reloj con segundos; verificar en panel con el código.
 - Domicilio: +$100 por cada ida (editable en /admin → Ajustes).
 - Solo existe **lavado normal**: carro $180, camioneta $220. No hay paquetes, VIP ni detailing.

@@ -15,14 +15,26 @@
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; font-size: 17px; }
 @media (min-width: 768px) { html { font-size: 18px; } }
-body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+/* ——— Tipografía ———
+   Cinzel (romana) SOLO en la marca, el letrero de estado (LIBRE / OCUPADO / CERRADO) y los títulos.
+   Manrope en todo lo demás: texto, horas, precios y códigos. Pocas negritas; nada de texto con degradado. */
 .font-display { font-family: var(--font-display); }
+@layer base {
+  h1, h2, h3 { text-wrap: balance; }
+  p, li, dd { text-wrap: pretty; }
+}
+/* Cifras: horas, precios, códigos y cuentas regresivas. Tabulares para que no "bailen" al cambiar. */
+@utility num { font-family: var(--font-sans); font-variant-numeric: tabular-nums lining-nums; letter-spacing: -.01em; }
+/* Etiqueta pequeña en mayúsculas: solo para rótulos que orientan (En vivo, Próximo lugar, Código). */
+@utility kicker { font-size: .72rem; line-height: 1rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
 .text-gold-grad { background: linear-gradient(180deg, #fff1b8, #d4af37 55%, #8a6d1a); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 /* Botones (área táctil ≥ 48 px) */
 .btn-gold, .btn-line {
   display: inline-flex; align-items: center; justify-content: center; min-height: 3.25rem; padding: 0 1.5rem;
-  border-radius: 999px; font-weight: 700; letter-spacing: .02em; transition: transform .15s, background .2s, border-color .2s;
+  border-radius: 999px; font-weight: 650; letter-spacing: .01em; transition: transform .15s, background .2s, border-color .2s;
 }
 .btn-gold { background: var(--color-gold); color: #0b0b0b; }
 .btn-gold:hover { background: var(--color-gold-hi); }
@@ -76,7 +88,7 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 }
 .btn-line-dark {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; border-radius: 999px;
-  border: 2px solid rgba(20,20,20,.75); color: #141414; font-weight: 800; font-size: 1.1rem; background: rgba(255,255,255,.55);
+  border: 1.5px solid rgba(20,20,20,.7); color: #141414; font-weight: 650; font-size: 1.05rem; background: rgba(255,255,255,.55);
   transition: transform .15s, background .2s;
 }
 .btn-line-dark:active { transform: scale(.97); }
@@ -100,14 +112,13 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 }
 .btn-water {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; border-radius: 999px;
-  font-weight: 800; color: #031b2e; letter-spacing: .02em;
+  font-weight: 650; color: #031b2e; letter-spacing: .01em;
   background: linear-gradient(180deg, #a5f3fc, #22d3ee 60%, #0ea5c6);
   box-shadow: 0 10px 30px rgba(34,211,238,.35), inset 0 1px 0 rgba(255,255,255,.7);
   transition: transform .15s, filter .2s;
 }
 .btn-water:hover { filter: brightness(1.06); }
 .btn-water:active { transform: scale(.97); }
-.text-water-grad { background: linear-gradient(180deg, #ffffff, #a5f3fc 50%, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 .lg-bubbles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .lg-bubble {

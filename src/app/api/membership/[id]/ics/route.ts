@@ -3,7 +3,7 @@ import { getMembership } from "@/lib/memberships";
 
 export const dynamic = "force-dynamic";
 
-// Las 6 lavadas de la membresía en un solo archivo de calendario (alarma 1 h antes de cada una).
+// Las lavadas de la membresía en un solo archivo de calendario (alarma 1 h antes de cada una).
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const m = await getMembership(id).catch(() => null);

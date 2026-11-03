@@ -1,4 +1,4 @@
-import { fmtDay, fmtRange, maskPhone } from "@/lib/booking-core";
+import { fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/booking-core";
 import { durationOf, getBooking, liveSeal } from "@/lib/bookings";
 import { BUSINESS, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import type { Metadata } from "next";
@@ -28,16 +28,16 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
   return (
     <main className="mx-auto max-w-md px-5 pb-16 pt-10">
       {b.status === "pending" && <meta httpEquiv="refresh" content="20" />}
-      <a href="/" className="font-display text-sm tracking-[.25em] text-gold">← LUXE GARAGE</a>
-      <h1 className={`font-display mt-6 text-4xl font-semibold leading-tight ${state.c}`}>{state.t}</h1>
-      <p className="mt-3 text-lg text-white/85">{state.s}</p>
+      <a href="/" className="font-display text-sm font-medium tracking-[.22em] text-gold">← LUXE GARAGE</a>
+      <h1 className={`font-display mt-6 text-[2.1rem] font-medium leading-tight ${state.c}`}>{state.t}</h1>
+      <p className="mt-3 text-lg text-white/75">{state.s}</p>
 
       <section className="mt-8 overflow-hidden rounded-3xl border border-gold/40 bg-gradient-to-b from-gold/[.10] to-transparent">
         {live && <ReceiptSeal endpoint={`/api/booking/${b.id}/seal`} initial={{ status: b.status, ...liveSeal(b.id) }} />}
         <div className={`flex items-center justify-between border-y border-dashed border-gold/30 px-6 py-5 ${live ? "" : "border-t-0"}`}>
           <div>
-            <p className="text-xs font-semibold tracking-[.3em] text-white/60">CÓDIGO</p>
-            <p className="font-display text-3xl font-semibold tracking-wider text-gold">{b.code}</p>
+            <p className="kicker text-white/55">Código</p>
+            <p className="num mt-1 text-3xl font-semibold text-gold">{b.code}</p>
           </div>
           {!live && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -45,15 +45,15 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
           )}
         </div>
         <dl className="grid gap-4 px-6 py-6 text-lg">
-          <div><dt className="text-sm text-white/60">Cuándo</dt><dd className="font-bold"><span className="capitalize">{fmtDay(b.date)}</span><br />{range}</dd></div>
-          <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-bold">{b.kind === "exterior" ? "Solo exterior" : "Exterior e interior"} · {b.vehicle === "carro" ? "Carro" : "Camioneta"}</dd></div>
-          <div><dt className="text-sm text-white/60">Dónde</dt><dd className="font-bold">{b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location}</dd></div>
+          <div><dt className="text-sm text-white/60">Cuándo</dt><dd className="font-semibold"><span className="capitalize">{fmtDay(b.date)}</span><br />{range}</dd></div>
+          <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-semibold">{serviceText({ kind: b.kind, vehicle: b.vehicle })}</dd></div>
+          <div><dt className="text-sm text-white/60">Dónde</dt><dd className="font-semibold">{b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location}</dd></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><dt className="text-sm text-white/60">A nombre de</dt><dd className="font-bold">{b.name}</dd></div>
-            <div><dt className="text-sm text-white/60">Teléfono</dt><dd className="font-bold tabular-nums">{maskPhone(b.phone)}</dd></div>
+            <div><dt className="text-sm text-white/60">A nombre de</dt><dd className="font-semibold">{b.name}</dd></div>
+            <div><dt className="text-sm text-white/60">Teléfono</dt><dd className="num font-semibold">{maskPhone(b.phone)}</dd></div>
           </div>
           <div className="flex items-end justify-between border-t border-white/10 pt-4">
-            <div><dt className="text-sm text-white/60">{b.membershipCode ? "Membresía" : "Total pagado"}</dt><dd className="font-display text-gold-grad text-4xl font-semibold">{b.membershipCode ?? `$${b.amount}`}</dd></div>
+            <div><dt className="text-sm text-white/60">{b.membershipCode ? "Membresía" : "Total pagado"}</dt><dd className={`num font-light text-gold-hi ${b.membershipCode ? "text-3xl" : "text-4xl"}`}>{b.membershipCode ?? `$${b.amount}`}</dd></div>
             <span className="rounded-full bg-white/10 px-3 py-1 text-sm">{b.status === "cancelled" ? "Cancelada" : b.status === "done" ? "Usada" : b.paymentStatus === "approved" ? "Pagado" : "Por confirmar"}</span>
           </div>
         </dl>

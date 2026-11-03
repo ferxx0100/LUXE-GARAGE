@@ -40,7 +40,9 @@ export const BookingInput = z
 export type BookingStatus = "hold" | "pending" | "confirmed" | "done" | "cancelled" | "conflict";
 export interface Booking {
   id: string; code: string; status: BookingStatus;
-  date: string; time: string; duration: number; vehicle: Vehicle; kind: Kind; place: Place; address: string;
+  date: string; time: string; duration: number; kind: Kind; place: Place; address: string;
+  /** Sin vehículo = lavada de membresía: va a nombre de la persona y trae el auto que quiera. */
+  vehicle?: Vehicle;
   name: string; phone: string; email: string; plate: string; notes: string;
   amount: number; paymentId?: string; paymentStatus?: string; paidAt?: string;
   /** Dueño de las celdas de agenda: el propio id, o el de la membresía. */

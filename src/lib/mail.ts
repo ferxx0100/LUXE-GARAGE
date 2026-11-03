@@ -1,7 +1,7 @@
 // Correos transaccionales con Resend (API REST, sin dependencias).
 // Variables en Vercel: RESEND_API_KEY (Secret), MAIL_FROM ("LUXE GARAGE <reservas@luxegaragee.com>"),
 // MAIL_TO_ADMIN (correo del negocio). Sin RESEND_API_KEY no se envía nada y la reserva sigue normal.
-import { fmtDay, fmtRange, fromMin, toMin } from "./booking-core";
+import { fmtDay, fmtRange, fromMin, serviceText, toMin } from "./booking-core";
 import type { Booking } from "./bookings";
 import { BUSINESS, SITE_URL } from "./config";
 import type { Membership } from "./memberships";
@@ -69,8 +69,7 @@ ${inner}
 </table></td></tr></table></body></html>`;
 }
 
-const service = (x: { kind: string; vehicle: string; plate?: string }) =>
-  `${x.kind === "exterior" ? "Solo exterior" : "Exterior e interior"} · ${x.vehicle === "carro" ? "Carro" : "Camioneta"}${x.plate ? ` · ${x.plate}` : ""}`;
+const service = serviceText;
 
 function rows(b: Booking): string {
   const r = (k: string, v: string) => `<tr><td style="padding:8px 0;color:#9a978f;font-size:14px;width:110px">${k}</td><td style="padding:8px 0;font-size:16px;font-weight:bold;color:#fff">${v}</td></tr>`;
@@ -130,7 +129,7 @@ export async function sendBookingCancelled(b: Booking): Promise<void> {
   await send({ to: b.email, subject: `Reserva cancelada ${b.code}`, html, text: `Tu reserva ${b.code} fue cancelada.` }).catch(() => console.error("correo: cancelación no enviada", b.code));
 }
 
-/** Membresía pagada: las 6 citas al cliente (con .ics de 6 eventos) + aviso al negocio. */
+/** Membresía pagada: todas sus citas al cliente (un .ics con un evento por lavada) + aviso al negocio. */
 export async function sendMembershipConfirmed(m: Membership): Promise<void> {
   const link = `${site()}/membresia/${m.id}`;
   const list = m.washes.map((w, i) =>

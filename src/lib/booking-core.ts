@@ -294,6 +294,12 @@ export function verifyMpSignature(xSignature: string | null, xRequestId: string 
   return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(v1.toLowerCase(), "hex"));
 }
 
+/** "Exterior e interior · Camioneta · AAA-000-A". Sin vehículo (lavada de membresía) solo dice el servicio. */
+export function serviceText(x: { kind: string; vehicle?: string; plate?: string }): string {
+  const v = x.vehicle === "carro" ? "Carro" : x.vehicle === "camioneta" ? "Camioneta" : "";
+  return [x.kind === "exterior" ? "Solo exterior" : "Exterior e interior", v, x.plate ?? ""].filter(Boolean).join(" · ");
+}
+
 /** Enmascara datos personales para logs/vistas públicas: 55****6823, j***@dominio.com. */
 export function maskPhone(p: string) { const d = p.replace(/\D/g, ""); return d.length < 6 ? "****" : `${d.slice(0, 2)}****${d.slice(-4)}`; }
 export function maskName(n: string) { const [first, ...rest] = n.trim().split(/\s+/); return [first, ...rest.map((r) => `${r[0]}.`)].join(" "); }

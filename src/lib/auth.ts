@@ -8,9 +8,16 @@ const WINDOW = 15 * 60;
 
 const sha = (s: string) => createHash("sha256").update(s).digest();
 
+// Llave para firmar la sesión. Si no hay ADMIN_SESSION_SECRET, se deriva sola de la
+// contraseña + el token de Upstash (largo y secreto), así basta con ADMIN_PASSWORD.
+// Cambiar la contraseña invalida las sesiones abiertas.
 function secret(): string | null {
   const s = process.env.ADMIN_SESSION_SECRET;
-  return s && s.length >= 32 ? s : null;
+  if (s && s.length >= 32) return s;
+  const pass = process.env.ADMIN_PASSWORD ?? "";
+  const kv = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN ?? "";
+  if (pass.length < 12 || kv.length < 20) return null;
+  return createHash("sha256").update(`lg-session|${pass}|${kv}`).digest("base64url");
 }
 const sign = (payload: string, s: string) => createHmac("sha256", s).update(payload).digest("base64url");
 

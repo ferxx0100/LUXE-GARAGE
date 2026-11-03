@@ -18,7 +18,7 @@ Vercel → **Settings → Environment Variables** → marcar **Sensitive**:
 | Variable | Valor |
 |---|---|
 | `ADMIN_PASSWORD` | Tu contraseña del panel, **mínimo 12 caracteres**. |
-| `ADMIN_SESSION_SECRET` | Texto aleatorio de **32+ caracteres**. Generar con `openssl rand -base64 48` o con 1Password. |
+| `ADMIN_SESSION_SECRET` | *Opcional.* Si no la pones, se genera sola a partir de la contraseña y la clave de Upstash. |
 
 Nunca pegues estos valores en el chat ni en el repositorio.
 

@@ -3,7 +3,7 @@
 // MAIL_TO_ADMIN (correo del negocio). Sin RESEND_API_KEY no se envía nada y la reserva sigue normal.
 import { fmtDay, fmtRange, fromMin, toMin } from "./booking-core";
 import type { Booking } from "./bookings";
-import { BUSINESS, SITE_URL } from "./config";
+import { BUSINESS, SITE_URL, mapsLink } from "./config";
 import type { Membership } from "./memberships";
 
 const BASE = process.env.MAIL_API_BASE ?? "https://api.resend.com"; // MAIL_API_BASE: solo pruebas locales
@@ -100,7 +100,7 @@ async function send(msg: { to: string; subject: string; html: string; text: stri
 /** Confirmación al cliente (con la cita adjunta) + aviso al negocio. Nunca rompe la reserva si falla. */
 export async function sendBookingConfirmed(b: Booking): Promise<void> {
   const link = `${site()}/reserva/${b.id}`;
-  const maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("LUXE GARAGE Las Palomas Zamora Michoacán");
+  const maps = mapsLink;
   const html = layout("¡Tu lavado está reservado!", `
 <tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(b.name.split(" ")[0])}, tu pago fue aprobado. Muestra tu código al llegar.</td></tr>
 ${rows(b)}

@@ -47,7 +47,8 @@ export default async function Home() {
     logo: `${SITE_URL}/brand/google/emblem-1024.png`,
     image: `${SITE_URL}/brand/google/logo-1024.png`,
     telephone: `+${BUSINESS.phone}`,
-    address: { "@type": "PostalAddress", streetAddress: "Las Palomas", addressLocality: "Zamora", addressRegion: "Michoacán", addressCountry: "MX" },
+    address: { "@type": "PostalAddress", streetAddress: `${BUSINESS.address.street}, ${BUSINESS.address.colonia}`, postalCode: BUSINESS.address.cp, addressLocality: BUSINESS.address.city, addressRegion: BUSINESS.address.state, addressCountry: "MX" },
+    hasMap: mapsLink,
     openingHoursSpecification: s.hours.flatMap((d, i) => d ? [{
       "@type": "OpeningHoursSpecification",
       dayOfWeek: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][i],
@@ -76,7 +77,7 @@ export default async function Home() {
       </nav>
 
       <main>
-        <LiveGarage hours={horario} mapsUrl={mapsLink} />
+        <LiveGarage hours={horario} mapsUrl={mapsLink} street={`${BUSINESS.address.street}, ${BUSINESS.address.colonia}`} />
 
         <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 pb-24 pt-20">
           <Title kicker="RESERVA EN LÍNEA">Aparta tu hora</Title>
@@ -143,8 +144,8 @@ export default async function Home() {
         </section>
 
         <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">
-          <Title kicker="VISÍTANOS">{BUSINESS.location.split(",")[0]}</Title>
-          <p className="mt-4 text-white/85">{BUSINESS.location}</p>
+          <Title kicker="VISÍTANOS">{BUSINESS.address.street}</Title>
+          <p className="mt-4 text-white/85">{BUSINESS.address.colonia}, {BUSINESS.address.cp} {BUSINESS.address.city}, {BUSINESS.address.state}</p>
           <p className="mt-1 text-white/85">Horario: {horario}</p>
           <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="btn-line mt-8">Abrir en Mapas</a>
         </section>

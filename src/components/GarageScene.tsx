@@ -250,7 +250,8 @@ function Scoreboard({ status, busy, opens }: { status: Status | null; busy: stri
   const h12 = c ? String(c.h % 12 || 12).padStart(2, " ") : "  ";
   const mm = c ? String(c.m).padStart(2, "0") : "  ";
   const ap = c ? (c.h < 12 ? "AM" : "PM") : "";
-  const row = status === "LIBRE" ? { t: "LIBRE · PASA", c: "#3dff8f" } : status === "OCUPADO" ? { t: busy ? `OCUPADO · ${busy}` : "OCUPADO", c: "#ff4b3e" }
+  const alt = c ? Math.floor(c.s / 3) % 2 === 1 : false; // cambia cada 3 s
+  const row = status === "LIBRE" ? (alt ? { t: "APARTA TU LUGAR", c: "#f6d36b" } : { t: "LIBRE · PASA", c: "#3dff8f" }) : status === "OCUPADO" ? { t: busy ? `OCUPADO · ${busy}` : "OCUPADO", c: "#ff4b3e" }
     : status === "CERRADO" ? { t: opens ?? "CERRADO", c: "#e8c25a" } : { t: "EN VIVO", c: "#f6e2a0" };
   const pad = SB.w * 0.07, dh = SB.h * 0.5, dw = dh * 0.56, gap = dw * 0.28;
   const x0 = SB.x + pad, y0 = SB.y + SB.h * 0.12;

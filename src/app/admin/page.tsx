@@ -38,6 +38,7 @@ export default function Admin() {
   const [form, setForm] = useState<Settings | null>(null);
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"garage" | "agenda" | "ajustes">("agenda");
@@ -92,11 +93,22 @@ export default function Admin() {
       <main className="mx-auto max-w-sm p-6 pt-24">
         <h1 className="font-display text-2xl text-gold">Panel LUXE GARAGE</h1>
         <form onSubmit={login} className="mt-6 space-y-3">
-          <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="Contraseña" className={input} required />
-          <button disabled={busy || !password} className="w-full rounded-lg bg-gold py-3 font-semibold text-black disabled:opacity-50">Entrar</button>
+          <div className="relative">
+            <input type={show ? "text" : "password"} autoComplete="current-password" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+              value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña"
+              className={`${input} py-4 pr-14 text-lg`} required aria-label="Contraseña del panel" />
+            <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Ocultar contraseña" : "Ver contraseña"} aria-pressed={show}
+              className="absolute right-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-white/70 hover:text-white">
+              {show ? (
+                <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.1A9.7 9.7 0 0112 5c5 0 9 4.5 10 7a12.6 12.6 0 01-3.2 4.3M6.6 6.6A12.7 12.7 0 002 12c1 2.5 5 7 10 7a9.6 9.6 0 004.1-.9" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+              )}
+            </button>
+          </div>
+          <button disabled={busy || !password} className="w-full rounded-xl bg-gold py-4 text-lg font-semibold text-black disabled:opacity-50">{busy ? "Entrando…" : "Entrar"}</button>
         </form>
-        <p className="mt-4 min-h-5 text-sm text-red-300" role="status">{msg}</p>
+        <p className="mt-4 min-h-5 text-base text-red-300" role="status">{msg}</p>
       </main>
     );
 

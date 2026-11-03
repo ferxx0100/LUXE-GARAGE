@@ -39,15 +39,6 @@ export function addDays(date: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Horarios reservables de un día (uno por hora; el último empieza una hora antes de cerrar). */
-export function slotsFor(h: Hours, date: string, slotMinutes = 60): string[] {
-  const d = isDateStr(date) ? h[weekday(date)] : null;
-  if (!d) return [];
-  const out: string[] = [];
-  for (let m = d.open * 60; m + slotMinutes <= d.close * 60; m += slotMinutes) out.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
-  return out;
-}
-
 /** ¿Está dentro del horario en esa fecha/minuto del día? */
 export function isOpenAt(h: Hours, date: string, minutes: number): boolean {
   const d = h[weekday(date)];
@@ -100,17 +91,167 @@ export function hoursText(h: Hours): string {
   }).join(" · ");
 }
 
-export const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+/* ───────── Fechas y horas para el cliente ───────── */
+const MONTH = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+/** "lunes 3 de noviembre" */
+export function fmtDay(date: string): string {
+  const x = new Date(`${date}T12:00:00Z`);
+  return `${DAY_NAME[x.getUTCDay()]} ${x.getUTCDate()} de ${MONTH[x.getUTCMonth()]}`;
+}
+
+/** Siempre con minutos: "16:00" → "4:00 pm", "12:30" → "12:30 pm". */
+export function fmtClock(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  return fmtHour(h).replace(" ", `:${pad(m)} `);
+}
+
+/** "a la 1 pm" / "a las 4:30 pm" */
+export const atTime = (t: string) => `${Number(t.slice(0, 2)) % 12 === 1 ? "a la" : "a las"} ${fmtTime(t)}`;
+
+/** Rango del servicio: ("16:00", 30) → "4:00 pm – 4:30 pm". */
+export const fmtRange = (time: string, duration: number) => `${fmtClock(time)} – ${fmtClock(fromMin(toMin(time) + duration))}`;
+
+/** Días entre dos fechas "YYYY-MM-DD" (b − a). */
+export const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86400000);
+
+/** Texto del próximo lugar: "hoy 4:30 pm", "mañana miércoles 12 pm", "el viernes 1 pm" (y con fecha si es en más de una semana). */
+export function spotLabel(date: string, time: string, now: { date: string }): string {
+  const diff = daysBetween(now.date, date), t = fmtTime(time), day = DAY_NAME[weekday(date)];
+  if (diff === 0) return `hoy ${t}`;
+  if (diff === 1) return `mañana ${day} ${t}`;
+  if (diff > 1 && diff < 7) return `el ${day} ${t}`;
+  return `el ${fmtDay(date)} ${t}`;
+}
+
+/* ───────── Agenda de UNA sola fosa, en celdas de 10 minutos ───────── */
+/** Duración del servicio en minutos: con interior deja el auto 30 min; solo exterior, 20 min sin bajarse. */
+export const SERVICE_MIN = { completo: 30, exterior: 20 } as const satisfies Record<Kind, number>;
+export const CELL = 10;        // tamaño de la celda de agenda (min)
+export const LEAD_MIN = 10;    // hoy: la cita empieza al menos 10 min después de "ahora"
+export const MAX_DAYS = 30;    // se reserva hasta 30 días adelante
+
+export type Block = { start: number; end: number }; // minutos del día, [start, end)
+export type Now = { date: string; minutes: number };
+/** Próximo lugar reservable en línea (lo que muestra el hero). */
+export type Spot = { date: string; time: string; inMinutes: number; label: string };
+
+/** "HH:MM" ↔ minutos del día. */
+export const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+export const fromMin = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+export const isTimeStr = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+
+/** Apertura y cierre de ese día en minutos, o null si está cerrado (o la fecha no existe). */
+export function dayWindow(h: Hours, date: string): { open: number; close: number } | null {
+  const d = isDateStr(date) ? h[weekday(date)] : null;
+  return d ? { open: d.open * 60, close: d.close * 60 } : null;
+}
+
+/** ¿La fecha está entre hoy y hoy + maxDays? */
+export const inRange = (date: string, today: string, maxDays = MAX_DAYS) => isDateStr(date) && date >= today && date <= addDays(today, maxDays);
 
 /**
- * ¿Se puede reservar este horario ahora? Debe existir en el horario del día, estar dentro de la
- * ventana de días permitida y empezar al menos `leadMinutes` después de la hora actual.
+ * ¿Cabe un servicio de `dur` minutos que empieza en `start`?
+ * Rejilla de 10 min, dentro del horario, sin pasarse del cierre y sin traslaparse con otros bloques.
+ * Si `now` es del mismo día: al menos LEAD_MIN después de ahora y después de que se desocupe la fosa (busyUntilMin).
  */
-export function canBook(h: Hours, date: string, time: string, now: { date: string; minutes: number }, maxDays = 30, leadMinutes = 30): boolean {
-  if (!slotsFor(h, date).includes(time)) return false;
-  if (date < now.date || date > addDays(now.date, maxDays)) return false;
-  if (date === now.date && toMinutes(time) < now.minutes + leadMinutes) return false;
-  return true;
+export function fits(h: Hours, date: string, start: number, dur: number, blocks: Block[], now?: Now, busyUntilMin?: number | null): boolean {
+  const w = dayWindow(h, date);
+  if (!w || !Number.isInteger(start) || start % CELL !== 0 || dur <= 0 || dur % CELL !== 0) return false;
+  if (start < w.open || start + dur > w.close) return false;
+  if (now) {
+    if (date < now.date) return false;
+    if (date === now.date) {
+      if (start < now.minutes + LEAD_MIN) return false;
+      if (busyUntilMin != null && start < busyUntilMin) return false;
+    }
+  }
+  return blocks.every((b) => start + dur <= b.start || start >= b.end);
+}
+
+/** Primer inicio factible del día (rejilla de 10 min), o null si ya no cabe nada. */
+export function nextFree(h: Hours, date: string, dur: number, blocks: Block[], now?: Now, busyUntilMin?: number | null): number | null {
+  const w = dayWindow(h, date);
+  if (!w) return null;
+  for (let m = w.open; m + dur <= w.close; m += CELL) if (fits(h, date, m, dur, blocks, now, busyUntilMin)) return m;
+  return null;
+}
+
+/**
+ * Horas que ofrecemos al cliente (ascendentes, múltiplos de 10):
+ * rejilla de su duración desde la apertura (cada 30 o cada 20 min)
+ * ∪ horas en que terminan citas existentes (para pegar la siguiente) ∪ el inicio libre más próximo.
+ */
+export function candidateStarts(h: Hours, date: string, dur: number, blocks: Block[], now?: Now, busyUntilMin?: number | null): number[] {
+  const w = dayWindow(h, date);
+  if (!w) return [];
+  const set = new Set<number>();
+  for (let m = w.open; m + dur <= w.close; m += dur) set.add(m);
+  for (const b of blocks) set.add(b.end);
+  const nx = nextFree(h, date, dur, blocks, now, busyUntilMin);
+  if (nx != null) set.add(nx);
+  return [...set].filter((m) => fits(h, date, m, dur, blocks, now, busyUntilMin)).sort((a, b) => a - b);
+}
+
+/** Claves de las celdas que ocupa un servicio: "lg:cell:YYYY-MM-DD:HHMM". */
+export function cellsFor(date: string, start: number, dur: number): string[] {
+  const out: string[] = [];
+  for (let m = start; m < start + dur; m += CELL) out.push(`lg:cell:${date}:${fromMin(m).replace(":", "")}`);
+  return out;
+}
+
+/** Celdas leídas del almacén (inicio + dueño) → bloques ocupados. Celdas seguidas del mismo dueño = un bloque. */
+export function blocksFromCells(cells: { start: number; owner: string | null }[]): Block[] {
+  const out: (Block & { owner: string })[] = [];
+  for (const c of [...cells].sort((a, b) => a.start - b.start)) {
+    if (!c.owner) continue;
+    const last = out.at(-1);
+    if (last && last.owner === c.owner && last.end === c.start) last.end = c.start + CELL;
+    else out.push({ start: c.start, end: c.start + CELL, owner: c.owner });
+  }
+  return out.map(({ start, end }) => ({ start, end }));
+}
+
+/**
+ * Valida las lavadas que elige un miembro al comprar su membresía (todas en el servidor).
+ * Devuelve el error para el cliente o null si todo cabe.
+ */
+export function checkWashes(o: {
+  hours: Hours; washes: { date: string; time: string }[]; dur: number; count: number; now: Now;
+  blocksByDate: Record<string, Block[]>; busyUntilMin?: number | null; closedToday?: boolean; maxDays?: number;
+}): string | null {
+  if (o.washes.length !== o.count) return `Elige tus ${o.count} lavadas.`;
+  if (new Set(o.washes.map((w) => w.date)).size !== o.washes.length) return "Elige un día distinto para cada lavada.";
+  for (const w of o.washes) {
+    if (!isDateStr(w.date) || !isTimeStr(w.time)) return "Revisa las fechas de tus lavadas.";
+    if (!inRange(w.date, o.now.date, o.maxDays ?? MAX_DAYS)) return "Todas tus lavadas deben quedar dentro de tu mes de membresía.";
+    const taken = o.closedToday && w.date === o.now.date;
+    if (taken || !fits(o.hours, w.date, toMin(w.time), o.dur, o.blocksByDate[w.date] ?? [], o.now, o.busyUntilMin)) {
+      return `La lavada del ${fmtDay(w.date)} ${atTime(w.time)} ya no está disponible. Elige otra hora.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * ¿A qué hora (minutos del día) se desocupa la fosa? `since` = cuándo se marcó OCUPADO, `minutes` = duración marcada.
+ * Si ya pasó la hora estimada (o se marcó otro día) y sigue ocupado, estimamos ahora + 5 min.
+ */
+export function estimateFreeAt(since: Now | null, minutes: number, now: Now): number {
+  const end = since && since.date === now.date ? since.minutes + minutes : -1;
+  return end > now.minutes ? end : now.minutes + 5;
+}
+
+/* ───────── Sello vivo del comprobante ───────── */
+export const SEAL_SEC = 30;
+/** Ventana de 30 s a la que pertenece un instante. */
+export const sealWindow = (ms = Date.now()) => Math.floor(ms / 1000 / SEAL_SEC);
+/** Segundos que le quedan a la ventana actual (1–30). */
+export const sealSecondsLeft = (ms = Date.now()) => SEAL_SEC - (Math.floor(ms / 1000) % SEAL_SEC);
+/** Sello de 3 dígitos: HMAC-SHA256(llave del servidor, dueño:ventana). Sin la llave no se puede adivinar. */
+export function sealFor(key: string, ownerId: string, window: number): string {
+  const mac = createHmac("sha256", key).update(`${ownerId}:${window}`).digest();
+  return String(mac.readUInt32BE(0) % 1000).padStart(3, "0");
 }
 
 /** Código corto legible para el cliente (sin 0/O/1/I para no confundir). */
@@ -120,6 +261,22 @@ export function shortCode(id: string): string {
   let s = "";
   for (let i = 0; i < 6; i++) s += abc[bytes[i % bytes.length] % abc.length];
   return `LG-${s}`;
+}
+
+/** Lo que escribe el empleado ("lg m4k 2p9", "LGM4K2P9") → "LG-M4K2P9", o null si no parece un código. */
+export function normalizeCode(raw: string): string | null {
+  const s = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const body = s.startsWith("LG") && s.length === 8 ? s.slice(2) : s;
+  return /^[A-Z0-9]{6}$/.test(body) ? `LG-${body}` : null;
+}
+
+/** Código de membresía: "LG-M" + 5 caracteres. */
+export function membershipCode(id: string): string {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = Buffer.from(id, "base64url");
+  let s = "";
+  for (let i = 0; i < 5; i++) s += abc[bytes[(i + 6) % bytes.length] % abc.length];
+  return `LG-M${s}`;
 }
 
 /**

@@ -13,7 +13,7 @@ export default function Privacidad() {
       <h2 className="mt-8 text-xl font-bold text-white">Responsable</h2>
       <p>{BUSINESS.name}, {BUSINESS.location}. Contacto: +{BUSINESS.phone}.</p>
       <h2 className="mt-8 text-xl font-bold text-white">Datos que recabamos</h2>
-      <p>Nombre, teléfono, correo, placas (opcional), dirección (solo si eliges servicio a domicilio) y notas que nos dejes. No recabamos datos sensibles. Los datos de tu tarjeta los procesa Mercado Pago; nosotros nunca los vemos ni los guardamos.</p>
+      <p>Nombre y teléfono; el correo que pide Mercado Pago para enviarte tu recibo; la dirección (solo si eliges servicio a domicilio) y las notas que nos dejes. No pedimos placas. No recabamos datos sensibles. Los datos de tu tarjeta los procesa Mercado Pago; nosotros nunca los vemos ni los guardamos.</p>
       <h2 className="mt-8 text-xl font-bold text-white">Para qué los usamos</h2>
       <p>Finalidad necesaria: agendar, cobrar y realizar tu servicio, y contactarte sobre tu reserva. No los usamos para publicidad sin tu consentimiento por separado.</p>
       <h2 className="mt-8 text-xl font-bold text-white">Con quién los compartimos</h2>

@@ -6,7 +6,7 @@ import { kvIncr } from "@/lib/store";
 export const dynamic = "force-dynamic";
 const json = (b: unknown, status = 200) => Response.json(b, { status, headers: { "Cache-Control": "no-store" } });
 
-// Aparta un horario por 15 min mientras el cliente paga.
+// Aparta la hora (celdas de 10 min) por 15 min mientras el cliente paga. Solo pedimos nombre y teléfono.
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return json({ error: "Origen no permitido" }, 403);
   if (!mpConfigured()) return json({ error: "Los pagos en línea se están activando. Intenta más tarde." }, 503);
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const r = await createHold(parsed.data);
     if (!r.ok) return json({ error: r.error }, r.status);
     const b = r.value;
-    return json({ id: b.id, code: b.code, amount: b.amount, email: b.email });
+    return json({ id: b.id, code: b.code, amount: b.amount, duration: b.duration });
   } catch {
     return json({ error: "No pudimos apartar el horario. Intenta de nuevo." }, 503);
   }

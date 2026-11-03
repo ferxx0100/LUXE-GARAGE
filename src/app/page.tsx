@@ -2,8 +2,8 @@ import BookingFlow from "@/components/BookingFlow";
 import HelpButton from "@/components/HelpButton";
 import { localNow } from "@/lib/booking-core";
 import LiveGarage from "@/components/LiveGarage";
+import MembershipFlow from "@/components/MembershipFlow";
 import RealVideo from "@/components/RealVideo";
-import TileRoom from "@/components/TileRoom";
 import { BUSINESS, SITE_URL, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import { getSettings, hoursLabel } from "@/lib/settings";
 
@@ -17,9 +17,31 @@ const Title = ({ kicker, children, dark }: { kicker: string; children: React.Rea
   </header>
 );
 
+// Burbujas de la membresía: posiciones fijas (mismo HTML en servidor y navegador).
+const BUBBLES = Array.from({ length: 34 }, (_, i) => {
+  const r = (n: number) => { const v = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453; return v - Math.floor(v); };
+  return { x: `${Math.round(r(1) * 100)}%`, s: `${Math.round(6 + r(2) * 30)}px`, d: `${(7 + r(3) * 9).toFixed(1)}s`, w: `${(-r(4) * 14).toFixed(1)}s`, sway: `${Math.round((r(5) - 0.5) * 60)}px`, y: `${Math.round(10 + r(6) * 80)}%` };
+});
+const Bubbles = () => (
+  <div className="lg-bubbles" aria-hidden>
+    <div className="lg-caustic" />
+    {BUBBLES.map((b, i) => (
+      <span key={i} className="lg-bubble" style={{ "--x": b.x, "--s": b.s, "--d": b.d, "--w": b.w, "--sway": b.sway, "--y": b.y } as React.CSSProperties} />
+    ))}
+  </div>
+);
+const Drop = () => (
+  <svg viewBox="0 0 20 24" className="mt-1 size-5 shrink-0" aria-hidden>
+    <path d="M10 1C10 1 2 10.5 2 15.5a8 8 0 0 0 16 0C18 10.5 10 1 10 1Z" fill="#22d3ee" />
+    <path d="M6.5 15.5a3.5 3.5 0 0 0 3.5 3.5" stroke="#e0fbff" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+  </svg>
+);
+
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
+  const today = localNow().date;
+  const mpKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || null;
   const help = { tel: telLink, whatsapp: whatsappLink("Hola, necesito ayuda con LUXE GARAGE"), phoneDisplay: BUSINESS.phoneDisplay, hours: horario };
 
   // Datos para Google: negocio local con logo, teléfono, horario y precios.
@@ -63,37 +85,50 @@ export default async function Home() {
         <LiveGarage hours={horario} mapsUrl={mapsLink} />
 
         <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 py-20">
-          <Title kicker="RESERVA EN LÍNEA">Aparta tu hora</Title>
-          <p className="mt-4 text-center text-xl text-white/85">Elige la hora, paga y listo.</p>
+          <Title kicker="RESERVA EN LÍNEA">Aparta tu lugar</Title>
+          <p className="mt-4 text-center text-xl text-white/85">Elige qué lavamos y la hora, paga y listo.</p>
           <div className="mt-10">
-            <BookingFlow prices={s.prices} hours={s.hours} today={localNow().date} mpPublicKey={process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || null} />
+            <BookingFlow prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
           </div>
         </section>
 
-        <div className="hairline mx-auto max-w-3xl" />
-
-        <section id="suscripcion" className="mx-auto max-w-5xl px-5 py-20">
-          <Title kicker="SUSCRIPCIÓN MENSUAL">{s.subscriptionWashes} lavadas al mes</Title>
-          <div className="mx-auto mt-10 max-w-md rounded-3xl border border-gold/50 bg-gradient-to-b from-gold/[.12] to-transparent p-7 text-center">
-            <p className="font-display text-gold-grad text-6xl font-semibold">${s.prices.suscripcion}</p>
-            <p className="mt-1 text-sm text-white/75">al mes</p>
-            <ul className="mt-6 space-y-3 text-left text-lg text-white/90">
-              <li>✓ Eliges tus {s.subscriptionWashes} días del mes.</li>
-              <li>✓ Sin cita: si el garage está libre, pasas.</li>
-              <li>✓ Exterior e interior, o solo exterior sin bajarte.</li>
-              <li>✓ A domicilio: +${s.prices.domicilio} por cada ida.</li>
-            </ul>
-            <p className="mt-6 text-xs text-white/60">Suscripción en línea muy pronto.</p>
+        {/* Membresía: tema agua, con burbujas */}
+        <section id="membresia" className="water-bg relative scroll-mt-14 overflow-hidden px-5 py-24 text-white">
+          <Bubbles />
+          <svg className="lg-wave top-0 text-[#09090a]" style={{ "--d": "18s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
+            <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
+          </svg>
+          <div className="relative mx-auto max-w-md text-center">
+            <p className="text-[11px] font-bold tracking-[.4em] text-[#67e8f9]">MEMBRESÍA</p>
+            <h2 className="font-display mt-3 text-[2.1rem] leading-tight font-semibold sm:text-5xl">{s.subscriptionWashes} lavadas en 30 días</h2>
+            <div className="mt-8 rounded-[30px] border border-cyan-200/25 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(0,20,40,.45)] backdrop-blur-sm">
+              <p className="font-display text-water-grad text-7xl font-semibold leading-none">${s.prices.suscripcion}</p>
+              <p className="mt-2 text-lg font-semibold text-cyan-50/85">al mes · pago único</p>
+              <ul className="mt-7 space-y-3.5 text-left text-xl leading-snug">
+                <li className="flex gap-3"><Drop />{s.subscriptionWashes} lavadas dentro de 30 días.</li>
+                <li className="flex gap-3"><Drop />Eliges tus días y horas al comprar.</li>
+                <li className="flex gap-3"><Drop />Tu lugar queda asegurado: llegas y pasas.</li>
+                <li className="flex gap-3"><Drop />Exterior e interior, o solo exterior sin bajarte.</li>
+              </ul>
+              <MembershipFlow price={s.prices.suscripcion} washes={s.subscriptionWashes} prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
+            </div>
           </div>
+          <svg className="lg-wave bottom-0 text-[#dcd8cf]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
+            <path fill="currentColor" d="M0 70h1200V42c-50 0-100-22-150-22s-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22S50 42 0 42Z" />
+          </svg>
         </section>
 
-        <TileRoom title={<>
-          <p className="text-xs font-bold tracking-[.4em] text-[#8a6d1a] md:text-sm">EL LUGAR REAL</p>
-          <h2 className="font-display mt-2 text-[2rem] font-semibold leading-tight text-[#141414] md:text-6xl">Si está libre,<br />está libre</h2>
-          <p className="mt-3 text-lg text-black/75 md:text-2xl">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
-        </>}>
-          <RealVideo />
-        </TileRoom>
+        {/* El lugar real: video sobre mosaico */}
+        <section id="video" className="tile-mosaic px-5 pb-28 pt-20">
+          <header className="mx-auto max-w-xl text-center">
+            <p className="text-xs font-bold tracking-[.4em] text-[#7a5f12]">EL LUGAR REAL</p>
+            <h2 className="font-display mt-2 text-[2.1rem] font-semibold leading-tight text-[#141414] md:text-5xl">Si está libre,<br />está libre</h2>
+            <p className="mt-3 text-xl text-black/75">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
+          </header>
+          <div className="mx-auto mt-10 max-w-[21rem]">
+            <RealVideo />
+          </div>
+        </section>
 
         <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">
           <Title kicker="VISÍTANOS">{BUSINESS.location.split(",")[0]}</Title>

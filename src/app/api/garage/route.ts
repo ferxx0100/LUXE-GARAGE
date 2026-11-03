@@ -1,15 +1,13 @@
-import { getGarage, toPublic } from "@/lib/garage-state";
-import { getSettings } from "@/lib/settings";
+import { publicGarage } from "@/lib/bookings";
 
 export const dynamic = "force-dynamic";
 
-// Público: solo el estado, nunca datos de quién está. La CDN de Vercel lo guarda 2 s:
-// miles de visitantes = una lectura al almacén cada 2 s, no una por visitante.
+// Público: estado, hora y próximo lugar libre; nunca datos de quién está. La CDN de Vercel lo guarda 4 s:
+// miles de visitantes = unas cuantas lecturas al almacén, no una por visitante.
 export async function GET() {
   try {
-    const [rec, s] = await Promise.all([getGarage(), getSettings()]);
-    return Response.json(toPublic(rec, s.hours), {
-      headers: { "Cache-Control": "public, max-age=0, s-maxage=1, stale-while-revalidate=3" },
+    return Response.json(await publicGarage(), {
+      headers: { "Cache-Control": "public, max-age=0, s-maxage=4, stale-while-revalidate=4" },
     });
   } catch {
     return Response.json({ error: "No disponible" }, { status: 503, headers: { "Cache-Control": "no-store" } });

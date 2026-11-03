@@ -1,6 +1,7 @@
 // Mercado Pago (Checkout API + Card Payment Brick). Solo servidor: usa el Access Token.
 // El navegador nunca ve datos de tarjeta: el Brick de Mercado Pago los convierte en un token.
 import { createHash } from "node:crypto";
+import { z } from "zod";
 import { SITE_URL } from "../config";
 
 const BASE = process.env.MP_API_BASE ?? "https://api.mercadopago.com"; // MP_API_BASE: solo para pruebas locales
@@ -28,16 +29,27 @@ export interface CardForm {
   token: string; payment_method_id: string; issuer_id?: string | number; installments?: number;
   payer?: { email?: string; identification?: { type?: string; number?: string } };
 }
+/** Lo que manda el Card Payment Brick (un token, nunca la tarjeta). */
+export const CardFormSchema = z.object({
+  token: z.string().min(8).max(200),
+  payment_method_id: z.string().min(2).max(40),
+  issuer_id: z.union([z.string().max(40), z.number()]).optional(),
+  installments: z.number().int().optional(),
+  payer: z.object({ email: z.string().email().max(120).optional(), identification: z.object({ type: z.string().max(20).optional(), number: z.string().max(30).optional() }).optional() }).optional(),
+});
+
 export interface MpPayment { id: number | string; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number }
 
-/** Cobra el monto de la reserva (calculado en el servidor, nunca el del navegador). */
-export async function chargeCard(b: { id: string; code: string; amount: number; email: string; vehicle: string; date: string; time: string; plate: string; name: string }, form: CardForm) {
+/**
+ * Cobra el monto de la reserva o membresía (calculado en el servidor, nunca el del navegador).
+ * `id` = reserva o membresía (external_reference). `description` aparece en el recibo de Mercado Pago.
+ */
+export async function chargeCard(b: { id: string; code: string; amount: number; email: string; description: string }, form: CardForm) {
   const idem = `${b.id}-${createHash("sha256").update(form.token).digest("hex").slice(0, 16)}`;
   const body = {
     transaction_amount: b.amount,
     token: form.token,
-    // Aparece en el recibo de Mercado Pago: código único + placas para ubicar al cliente.
-    description: `LUXE GARAGE ${b.code} · Placas ${b.plate} · ${b.date} ${b.time}`,
+    description: b.description.slice(0, 200),
     installments: 1,
     payment_method_id: form.payment_method_id,
     ...(form.issuer_id ? { issuer_id: Number(form.issuer_id) } : {}),
@@ -48,7 +60,7 @@ export async function chargeCard(b: { id: string; code: string; amount: number; 
     external_reference: b.id,
     notification_url: `${process.env.SITE_URL ?? SITE_URL}/api/mp/webhook`,
     statement_descriptor: "LUXE GARAGE",
-    metadata: { booking_code: b.code, plate: b.plate },
+    metadata: { code: b.code },
   };
   return mp<MpPayment>("/v1/payments", { method: "POST", body: JSON.stringify(body), idempotency: idem });
 }

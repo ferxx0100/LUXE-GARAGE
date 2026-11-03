@@ -3,10 +3,12 @@ import { useEffect, useRef } from "react";
 
 export type Status = "LIBRE" | "OCUPADO" | "CERRADO";
 
-/* ───────── Perspectiva de un punto: cámara parada afuera, mirando hacia la fosa ─────────
-   Medidas reales aproximadas en metros: bahía 3.2 m de ancho, 2.6 m de alto, 6 m de fondo. */
-const F = 420, ZC = 5, CAM = 1.4, HZ = 250, CX = 200;
-const W = 1.6, H = 2.6, D = 6;
+/* ───────── Perspectiva de un punto: parados DENTRO del pasillo de azulejo blanco, mirando hacia la bahía ─────────
+   Metros aprox.: pasillo 5.2 m de ancho × 3.5 m de alto; al fondo (z=0) la pared con la entrada de la bahía
+   de 3.2 × 2.5 m; la bahía mide 6 m de fondo. La cámara está 8 m antes de esa pared, a 1.5 m del piso. */
+const F = 440, ZC = 8, CAM = 1.5, HZ = 300, CX = 200;
+const CW = 2.6, CH = 3.5, ZN = -6.5; // pasillo: medio ancho, alto, z más cercano a la cámara
+const W = 1.6, H = 2.5, D = 6; // bahía: medio ancho, alto, fondo
 const sc = (z: number) => F / (z + ZC);
 const X = (x: number, z: number) => CX + x * sc(z);
 const Y = (y: number, z: number) => HZ + (CAM - y) * sc(z);
@@ -15,15 +17,50 @@ const p = ([x, y, z]: V) => `${X(x, z).toFixed(1)},${Y(y, z).toFixed(1)}`;
 const poly = (...v: V[]) => v.map(p).join(" ");
 const seg = (a: V, b: V) => `M${p(a)}L${p(b)}`;
 const range = (a: number, b: number, n: number) => Array.from({ length: n + 1 }, (_, i) => a + ((b - a) * i) / n);
+/** franja horizontal (piso o techo) a lo largo de z, centrada en x */
+const strip = (x: number, hw: number, y: number, za: number, zb: number) => poly([x - hw, y, za], [x + hw, y, za], [x + hw, y, zb], [x - hw, y, zb]);
+/** rectángulo de frente a la cámara (z constante) en coordenadas de pantalla */
+const face = (x0: number, y0: number, x1: number, y1: number, z: number) => ({ x: X(x0, z), y: Y(y1, z), w: X(x1, z) - X(x0, z), h: Y(y0, z) - Y(y1, z) });
 
-// Azulejo (como el del lugar): retícula cuadrada con junta gris.
+/* ───────── Pasillo ───────── */
+const END = { x0: X(-CW, 0), x1: X(CW, 0), y0: Y(CH, 0), y1: Y(0, 0) };
+const DOOR = { x0: X(-W, 0), x1: X(W, 0), y0: Y(H, 0), y1: Y(0, 0) };
+const DW = DOOR.x1 - DOOR.x0, DH = DOOR.y1 - DOOR.y0;
+
+// Azulejo de la pared del fondo, alrededor del hueco de la bahía.
+const TILES_END = [
+  ...range(-CW, CW, 18).map((x) => (Math.abs(x) < W ? seg([x, H, 0], [x, CH, 0]) : seg([x, 0, 0], [x, CH, 0]))),
+  ...range(0, CH, 12).map((y) => (y < H ? seg([-CW, y, 0], [-W, y, 0]) + seg([W, y, 0], [CW, y, 0]) : seg([-CW, y, 0], [CW, y, 0]))),
+].join("");
+// Azulejo de las paredes del pasillo (convergen hacia la entrada).
+const tilesCorr = (s: number) =>
+  [...range(-3.3, 0, 11).map((z) => seg([s * CW, 0, z], [s * CW, CH, z])), ...range(0, CH, 12).map((y) => seg([s * CW, y, -4], [s * CW, y, 0]))].join("");
+const TILES_CORR = tilesCorr(-1) + tilesCorr(1);
+// Plafón del techo.
+const CEIL_GRID = [
+  ...[-1.95, -0.65, 0.65, 1.95].map((x) => seg([x, CH, ZN], [x, CH, 0])),
+  ...range(-4.55, -0.65, 6).map((z) => seg([-CW, CH, z], [CW, CH, z])),
+].join("");
+const FLOOR_JOINTS = [-1.7, -3.5, -5.3].map((z) => seg([-CW, 0, z], [CW, 0, z])).join("");
+// Sombra de contacto en las esquinas (piso–pared y pared–techo).
+const AO_FLOOR = [seg([-CW, 0, -4], [-CW, 0, 0]), seg([-CW, 0, 0], [-W, 0, 0]), seg([W, 0, 0], [CW, 0, 0]), seg([CW, 0, 0], [CW, 0, -4])].join("");
+const AO_TOP = [seg([-CW, 0, 0], [-CW, CH, 0]), seg([CW, 0, 0], [CW, CH, 0]), seg([-CW, CH, 0], [CW, CH, 0]), seg([-CW, CH, -4], [-CW, CH, 0]), seg([CW, CH, -4], [CW, CH, 0])].join("");
+// Tubos fluorescentes del pasillo: dos hileras de lámparas.
+const TUBES: [number, number, number][] = [-1.25, 1.25].flatMap((x) => [[-5.9, -4.7], [-3.9, -2.7], [-1.9, -0.7]].map(([a, b]) => [x, a, b] as [number, number, number]));
+
+// Flechas de luz en el piso del pasillo, apuntando hacia la bahía.
+const CHEVRONS = [-4.4, -3.4, -2.4, -1.4].map((z) =>
+  poly([-0.6, 0, z], [0, 0, z + 0.42], [0.6, 0, z], [0.6, 0, z + 0.2], [0, 0, z + 0.62], [-0.6, 0, z + 0.2]),
+);
+
+/* ───────── Bahía (lo que se ve por la entrada) ───────── */
 const TILES_BACK = [
   ...range(-W, W, 12).map((x) => seg([x, 0, D], [x, H, D])),
   ...range(0, H, 10).map((y) => seg([-W, y, D], [W, y, D])),
 ].join("");
 const tilesSide = (s: number) =>
   [...range(0, D, 20).map((z) => seg([s * W, 0, z], [s * W, H, z])), ...range(0, H, 10).map((y) => seg([s * W, y, 0], [s * W, y, D]))].join("");
-const TILES_L = tilesSide(-1), TILES_R = tilesSide(1);
+const TILES_BAY = tilesSide(-1) + tilesSide(1);
 
 // La fosa: rejillas de acero negro en cuadrícula (2 columnas × 5 filas) con marco grueso.
 const FX = 0.95, FZ0 = 0.45, FZ1 = 5.65, ROWS = 5;
@@ -40,12 +77,15 @@ for (const [xa, xb] of [[-FX + 0.05, -0.035], [0.035, FX - 0.05]]) {
   }
 }
 
-// Flechas de luz en el piso de la entrada (afuera), apuntando hacia la fosa.
-const CHEVRONS = [-2.7, -2.0, -1.3, -0.6].map((z) =>
-  poly([-0.5, 0, z], [0, 0, z + 0.36], [0.5, 0, z], [0.5, 0, z + 0.15], [0, 0, z + 0.51], [-0.5, 0, z + 0.15]),
-);
-
-const ENTRANCE = { x0: X(-W, 0), x1: X(W, 0), y0: Y(H, 0), y1: Y(0, 0) };
+/* ───────── Piezas montadas en la pared del fondo ───────── */
+const SEM_K = 0.88; // semáforo (44×124 a escala 1) a la izquierda de la entrada, lado del conductor
+const SEM = { x: X(-2.1, 0) - 22 * SEM_K, y: Y(2.42, 0) };
+const SEM_CX = X(-2.1, 0), SEM_BOTTOM = SEM.y + 124 * SEM_K;
+const LAMP_Y = { OCUPADO: SEM.y + 34 * SEM_K, LIBRE: SEM.y + 90 * SEM_K };
+const SIGN = face(-1.75, 2.7, 1.75, 3.38, -0.12); // letrero LUXE GARAGE sobre la entrada
+const HOUSING = face(-1.74, 2.5, 1.74, 2.64, -0.16); // caja de la cortina
+const LED = face(-1.2, 2.07, 1.2, 2.47, -0.05); // display de matriz de puntos bajo el dintel
+const RAIL_L = face(-W - 0.08, 0, -W, H, -0.02), RAIL_R = face(W, 0, W + 0.08, H, -0.02);
 
 /* ───────── Semáforo LED de matriz de puntos (7×7) ───────── */
 const GRID = range(-3, 3, 6);
@@ -86,12 +126,23 @@ export function Semaforo({ status, x = 0, y = 0 }: { status: Status | null; x?: 
 }
 
 /* ───────── Honda Accord (11.ª gen.) gris, vista trasera. Unidades: cm, origen al piso al centro ───────── */
+const BODY = "M-91 -24 L-94 -60 Q-94 -84 -84 -91 Q0 -96 84 -91 Q94 -84 94 -60 L91 -24Z";
 function Accord({ brakeRef, revRef, foam }: { brakeRef: React.Ref<SVGGElement>; revRef: React.Ref<SVGGElement>; foam: boolean }) {
   const lampL = "M-93 -83 L-58 -85 L-56 -75 L-91 -71 Z";
   const lampR = "M93 -83 L58 -85 L56 -75 L91 -71 Z";
   return (
     <g>
-      <ellipse cx="0" cy="-1" rx="112" ry="12" fill="#000" opacity=".7" filter="url(#lg-blur)" />
+      {/* reflejo en el piso pulido */}
+      <g transform="scale(1 -1)" opacity=".14" filter="url(#lg-blur)">
+        <rect x="-93" y="-34" width="27" height="34" fill="#0a0a0a" />
+        <rect x="66" y="-34" width="27" height="34" fill="#0a0a0a" />
+        <path d={BODY} fill="url(#lg-paint)" />
+        <path d={lampL} fill="#e0261d" />
+        <path d={lampR} fill="#e0261d" />
+      </g>
+      {/* sombra de contacto */}
+      <ellipse cx="0" cy="-1" rx="112" ry="12" fill="#2a2620" opacity=".42" filter="url(#lg-blur)" />
+      <ellipse cx="0" cy="0" rx="98" ry="4" fill="#000" opacity=".55" filter="url(#lg-soft)" />
       {/* llantas */}
       <rect x="-93" y="-34" width="27" height="34" rx="5" fill="#0a0a0a" />
       <rect x="66" y="-34" width="27" height="34" rx="5" fill="#0a0a0a" />
@@ -101,12 +152,12 @@ function Accord({ brakeRef, revRef, foam }: { brakeRef: React.Ref<SVGGElement>; 
       {/* cabina (pilares C) y medallón */}
       <path d="M-78 -90 L-61 -133 Q-52 -145 -30 -146 L30 -146 Q52 -145 61 -133 L78 -90Z" fill="url(#lg-paint)" />
       <path d="M-66 -93 L-51 -131 Q-45 -139 -28 -140 L28 -140 Q45 -139 51 -131 L66 -93 Q0 -88 -66 -93Z" fill="url(#lg-glass)" />
-      <path d="M-40 -136 L-14 -136 L-38 -96 L-56 -96Z" fill="#fff" opacity=".07" />
-      <path d="M8 -136 L22 -136 L4 -95 L-8 -95Z" fill="#fff" opacity=".05" />
+      <path d="M-40 -136 L-14 -136 L-38 -96 L-56 -96Z" fill="#fff" opacity=".1" />
+      <path d="M8 -136 L22 -136 L4 -95 L-8 -95Z" fill="#fff" opacity=".07" />
       {/* carrocería */}
-      <path d="M-91 -24 L-94 -60 Q-94 -84 -84 -91 Q0 -96 84 -91 Q94 -84 94 -60 L91 -24Z" fill="url(#lg-paint)" />
-      <path d="M-84 -91 Q0 -96 84 -91 L82 -87 Q0 -91 -82 -87Z" fill="#e7eaed" opacity=".55" />
-      <path d="M-90 -64 Q0 -67 90 -64" stroke="#fff" strokeOpacity=".18" strokeWidth="1.2" fill="none" />
+      <path d={BODY} fill="url(#lg-paint)" />
+      <path d="M-84 -91 Q0 -96 84 -91 L82 -87 Q0 -91 -82 -87Z" fill="#f2f4f6" opacity=".6" />
+      <path d="M-90 -64 Q0 -67 90 -64" stroke="#fff" strokeOpacity=".22" strokeWidth="1.2" fill="none" />
       {/* barra LED de lado a lado (sello del Accord) */}
       <path d={lampL} fill="#3b0d0c" />
       <path d={lampR} fill="#3b0d0c" />
@@ -142,12 +193,24 @@ function Accord({ brakeRef, revRef, foam }: { brakeRef: React.Ref<SVGGElement>; 
   );
 }
 
+/* Escudo del logotipo (mismo trazo que el letrero real). */
+function Shield({ fill }: { fill: string }) {
+  return (
+    <>
+      <path d="M-52-62 L0-78 L52-62 V8 Q52 46 0 74 Q-52 46 -52 8Z" fill="none" stroke={fill} strokeWidth="5" />
+      <g fill={fill} transform="skewX(-10)"><path d="M-26-38h14l-8 52h26l-2 11h-38z" /><path d="M6-38h34l-2 10H16l-5 30h14l1-8h-8l1-9h22l-5 30H4z" /></g>
+    </>
+  );
+}
+
 /* ───────── Escena ───────── */
-const PARK_Z = 0.7, AWAY_Z = -3.4;
+const PARK_Z = 0.8, AWAY_Z = -6;
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const SANS = { fontFamily: "var(--font-sans)" };
+const DISPLAY = { fontFamily: "var(--font-display)" };
 
-export default function GarageScene({ status, opensShort }: { status: Status | null; opensShort?: string }) {
+export default function GarageScene({ status, opensShort, busyShort }: { status: Status | null; opensShort?: string; busyShort?: string }) {
   const carRef = useRef<SVGGElement>(null);
   const brakeRef = useRef<SVGGElement>(null);
   const revRef = useRef<SVGGElement>(null);
@@ -155,7 +218,7 @@ export default function GarageScene({ status, opensShort }: { status: Status | n
   const raf = useRef(0);
   const parked = status === "OCUPADO";
 
-  // Animación del auto: entra de frente a la cámara hasta la fosa, o sale en reversa.
+  // Animación del auto: entra desde junto a la cámara por el pasillo hasta la fosa, o sale en reversa.
   useEffect(() => {
     const car = carRef.current, brake = brakeRef.current, rev = revRef.current;
     if (!car || !brake || !rev) return;
@@ -174,7 +237,7 @@ export default function GarageScene({ status, opensShort }: { status: Status | n
       return;
     }
     const entering = to > from;
-    const dur = entering ? 3200 : 2600;
+    const dur = entering ? 3400 : 2600;
     const t0 = performance.now();
     const step = (now: number) => {
       const t = Math.min(1, (now - t0) / dur);
@@ -204,141 +267,228 @@ export default function GarageScene({ status, opensShort }: { status: Status | n
 
   const sig = status === "LIBRE" || status === "OCUPADO" ? SIG[status] : null;
   const closed = status === "CERRADO";
+  const busy = status === "OCUPADO" && busyShort ? busyShort.toUpperCase() : null;
+  const [busyA, ...busyB] = busy ? busy.split(" ") : [];
+  const busyMax = LED.w - 12;
+  const busyFit = busy && busy.length * 8.6 > busyMax ? { textLength: busyMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
+  const opensFit = opensShort && opensShort.length * 7.4 > 150 ? { textLength: 150, lengthAdjust: "spacingAndGlyphs" as const } : {};
+  const shutterY = closed ? 0 : -DH - 4;
+  const label = !status
+    ? "Garage en vivo: conectando"
+    : status === "LIBRE"
+      ? "Garage en vivo: libre, puedes pasar"
+      : status === "OCUPADO"
+        ? `Garage en vivo: ocupado${busyShort ? `, ${busyShort.toLowerCase()}` : ""}`
+        : `Garage en vivo: cerrado${opensShort ? `, ${opensShort.toLowerCase()}` : ""}`;
 
   return (
-    <svg viewBox="0 14 400 530" className="block h-auto w-full select-none" role="img"
-      aria-label={status ? `Garage en vivo: ${status.toLowerCase()}` : "Garage en vivo: conectando"}>
+    <svg viewBox="0 0 400 600" className="block h-auto w-full select-none" role="img" aria-label={label}>
+      <style>{`
+        .lg-halo{animation:lgHalo 2.8s ease-in-out infinite}
+        @keyframes lgHalo{0%,100%{opacity:.6}50%{opacity:.95}}
+        .lg-dm{animation:lgDm 3.4s ease-in-out infinite}
+        @keyframes lgDm{0%,100%{opacity:1}50%{opacity:.8}}
+        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-dm{animation:none}}
+      `}</style>
       <defs>
         <filter id="lg-blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="4" /></filter>
+        <filter id="lg-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.8" /></filter>
         <filter id="lg-glow-sm" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         <filter id="lg-glow-lg" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" /></filter>
-        <linearGradient id="lg-facade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0d0d0e" /><stop offset="1" stopColor="#1b1b1d" /></linearGradient>
-        <linearGradient id="lg-drive" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e1e20" /><stop offset="1" stopColor="#080809" /></linearGradient>
-        <linearGradient id="lg-back" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6f5f1" /><stop offset="1" stopColor="#e2e0da" /></linearGradient>
-        <linearGradient id="lg-wallL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#c9c6bf" /><stop offset="1" stopColor="#eeede8" /></linearGradient>
-        <linearGradient id="lg-wallR" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stopColor="#c9c6bf" /><stop offset="1" stopColor="#eeede8" /></linearGradient>
-        <linearGradient id="lg-ceil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#bfbdb7" /><stop offset="1" stopColor="#e6e4de" /></linearGradient>
-        <linearGradient id="lg-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a3a19c" /><stop offset="1" stopColor="#6c6a66" /></linearGradient>
+        {/* pasillo */}
+        <linearGradient id="lg-c-ceil" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={END.y0}><stop offset="0" stopColor="#e2e0da" /><stop offset="1" stopColor="#f1f0eb" /></linearGradient>
+        <linearGradient id="lg-c-wallL" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={END.x0} y2="0"><stop offset="0" stopColor="#e0ded7" /><stop offset="1" stopColor="#f7f6f2" /></linearGradient>
+        <linearGradient id="lg-c-wallR" gradientUnits="userSpaceOnUse" x1="400" y1="0" x2={END.x1} y2="0"><stop offset="0" stopColor="#dddbd4" /><stop offset="1" stopColor="#f5f4f0" /></linearGradient>
+        <linearGradient id="lg-c-end" gradientUnits="userSpaceOnUse" x1="0" y1={END.y0} x2="0" y2={END.y1}><stop offset="0" stopColor="#fbfaf7" /><stop offset="1" stopColor="#ebe9e3" /></linearGradient>
+        <linearGradient id="lg-c-floor" gradientUnits="userSpaceOnUse" x1="0" y1={END.y1} x2="0" y2="600"><stop offset="0" stopColor="#d9d8d3" /><stop offset=".45" stopColor="#c6c5c0" /><stop offset="1" stopColor="#a7a6a1" /></linearGradient>
+        <linearGradient id="lg-refl" gradientUnits="userSpaceOnUse" x1="0" y1={DOOR.y1} x2="0" y2={DOOR.y1 + DH * 0.7}><stop offset="0" stopColor="#fffdf4" stopOpacity=".85" /><stop offset="1" stopColor="#fffdf4" stopOpacity="0" /></linearGradient>
+        <linearGradient id="lg-box" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a3a6ab" /><stop offset="1" stopColor="#6d7075" /></linearGradient>
+        <linearGradient id="lg-rail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#6c6f74" /><stop offset=".5" stopColor="#b9bcc0" /><stop offset="1" stopColor="#585b60" /></linearGradient>
+        {/* bahía */}
+        <linearGradient id="lg-back" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fbfaf6" /><stop offset="1" stopColor="#e9e7e1" /></linearGradient>
+        <linearGradient id="lg-wallL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#d9d6cf" /><stop offset="1" stopColor="#f4f3ef" /></linearGradient>
+        <linearGradient id="lg-wallR" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stopColor="#d9d6cf" /><stop offset="1" stopColor="#f4f3ef" /></linearGradient>
+        <linearGradient id="lg-ceil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d3d1cb" /><stop offset="1" stopColor="#efeee9" /></linearGradient>
+        <linearGradient id="lg-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d2d0cb" /><stop offset="1" stopColor="#b2b0ab" /></linearGradient>
         <linearGradient id="lg-steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1b1c1e" /><stop offset="1" stopColor="#0b0b0c" /></linearGradient>
+        {/* auto, cortina, letreros */}
         <linearGradient id="lg-paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c3c7cb" /><stop offset=".38" stopColor="#8e9399" /><stop offset=".7" stopColor="#62676d" /><stop offset="1" stopColor="#3b3e42" /></linearGradient>
-        <linearGradient id="lg-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2b3138" /><stop offset="1" stopColor="#0b0d10" /></linearGradient>
-        <linearGradient id="lg-shutter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5d6065" /><stop offset=".5" stopColor="#45484c" /><stop offset="1" stopColor="#2f3134" /></linearGradient>
-        <pattern id="lg-slats" width="8" height="7" patternUnits="userSpaceOnUse"><rect width="8" height="7" fill="url(#lg-shutter)" /><rect y="5.6" width="8" height="1.4" fill="#1d1e20" /><rect y="0" width="8" height=".7" fill="#7b7f84" opacity=".6" /></pattern>
-        <radialGradient id="lg-lamp"><stop offset="0" stopColor="#fff6dc" stopOpacity=".55" /><stop offset="1" stopColor="#fff6dc" stopOpacity="0" /></radialGradient>
-        <radialGradient id="lg-spill"><stop offset="0" stopColor={sig ?? "#000"} stopOpacity=".55" /><stop offset="1" stopColor={sig ?? "#000"} stopOpacity="0" /></radialGradient>
+        <linearGradient id="lg-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3a424b" /><stop offset="1" stopColor="#0b0d10" /></linearGradient>
+        <linearGradient id="lg-shutter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8d9095" /><stop offset=".5" stopColor="#74777c" /><stop offset="1" stopColor="#5a5d61" /></linearGradient>
+        <pattern id="lg-slats" width="8" height="7" patternUnits="userSpaceOnUse"><rect width="8" height="7" fill="url(#lg-shutter)" /><rect y="5.6" width="8" height="1.4" fill="#3c3e41" /><rect y="0" width="8" height=".7" fill="#c4c7cb" opacity=".6" /></pattern>
         <pattern id="lg-led" width="2.6" height="2.6" patternUnits="userSpaceOnUse"><path fillRule="evenodd" fill="#070707" opacity=".72" d="M0 0H2.6V2.6H0Z M1.3 .35 A.95 .95 0 1 0 1.301 .35Z" /></pattern>
-        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0a1638" /><stop offset="1" stopColor="#04060f" /></linearGradient>
-        <radialGradient id="lg-amber"><stop offset="0" stopColor="#ffb547" stopOpacity=".5" /><stop offset="1" stopColor="#ffb547" stopOpacity="0" /></radialGradient>
-        <clipPath id="lg-door"><rect x={ENTRANCE.x0} y={ENTRANCE.y0} width={ENTRANCE.x1 - ENTRANCE.x0} height={ENTRANCE.y1 - ENTRANCE.y0} /></clipPath>
+        <linearGradient id="lg-goldv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6e2a0" /><stop offset=".55" stopColor="#d4af37" /><stop offset="1" stopColor="#8a6d1a" /></linearGradient>
+        {/* luz */}
+        <radialGradient id="lg-spill"><stop offset="0" stopColor={sig ?? "#fff"} stopOpacity=".5" /><stop offset="1" stopColor={sig ?? "#fff"} stopOpacity="0" /></radialGradient>
+        <radialGradient id="lg-amber"><stop offset="0" stopColor="#ffb547" stopOpacity=".55" /><stop offset="1" stopColor="#ffb547" stopOpacity="0" /></radialGradient>
+        <radialGradient id="lg-vig" cx=".5" cy=".5" r=".72"><stop offset=".6" stopColor="#1a1712" stopOpacity="0" /><stop offset="1" stopColor="#1a1712" stopOpacity=".2" /></radialGradient>
+        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e2a55" /><stop offset="1" stopColor="#2b3a6b" /></linearGradient>
+        <clipPath id="lg-door"><rect x={DOOR.x0} y={DOOR.y0} width={DW} height={DH} /></clipPath>
       </defs>
 
-      {/* ─── Interior ─── */}
+      {/* ─── Pasillo: techo, paredes y piso ─── */}
+      <polygon points={poly([-CW, CH, ZN], [CW, CH, ZN], [CW, CH, 0], [-CW, CH, 0])} fill="url(#lg-c-ceil)" />
+      <path d={CEIL_GRID} stroke="#cfcdc6" strokeWidth=".7" fill="none" />
+      <polygon points={poly([-CW, 0, ZN], [-CW, CH, ZN], [-CW, CH, 0], [-CW, 0, 0])} fill="url(#lg-c-wallL)" />
+      <polygon points={poly([CW, 0, ZN], [CW, CH, ZN], [CW, CH, 0], [CW, 0, 0])} fill="url(#lg-c-wallR)" />
+      <polygon points={poly([-CW, 0, ZN], [-CW, 0.12, ZN], [-CW, 0.12, 0], [-CW, 0, 0])} fill="#bdbab2" />
+      <polygon points={poly([CW, 0, ZN], [CW, 0.12, ZN], [CW, 0.12, 0], [CW, 0, 0])} fill="#bdbab2" />
+      <path d={TILES_CORR} stroke="#cbc8c0" strokeWidth=".6" fill="none" />
+      {/* brillo del azulejo vidriado */}
+      <polygon points={poly([-CW, 0.4, -2.4], [-CW, 3.1, -1.9], [-CW, 3.1, -0.9], [-CW, 0.4, -1.5])} fill="#fff" opacity=".55" filter="url(#lg-soft)" />
+      <polygon points={poly([CW, 0.5, -2.1], [CW, 3.2, -1.5], [CW, 3.2, -0.7], [CW, 0.5, -1.2])} fill="#fff" opacity=".45" filter="url(#lg-soft)" />
+      <polygon points={poly([-CW, 0, ZN], [CW, 0, ZN], [CW, 0, 0], [-CW, 0, 0])} fill="url(#lg-c-floor)" />
+      <path d={FLOOR_JOINTS} stroke="#a3a29d" strokeWidth=".9" opacity=".55" fill="none" />
+      {/* reflejo de los tubos en el concreto pulido */}
+      <g opacity=".28" filter="url(#lg-soft)">
+        {[-1.25, 1.25].map((x) => <polygon key={x} points={strip(x, 0.07, 0, -4.6, -0.25)} fill="#fff" />)}
+      </g>
+
+      {/* tubos fluorescentes del pasillo */}
+      <g className="lg-fluor">
+        {TUBES.map(([x, a, b]) => (
+          <g key={`${x}${a}`}>
+            <polygon points={strip(x, 0.34, CH - 0.01, a - 0.25, b + 0.25)} fill="#fffbe8" opacity=".6" filter="url(#lg-glow-lg)" />
+            <polygon points={strip(x, 0.13, CH - 0.005, a, b)} fill="#f6f5f0" stroke="#c6c4bd" strokeWidth=".6" />
+            <polygon points={strip(x, 0.045, CH - 0.01, a + 0.05, b - 0.05)} fill="#fffef8" />
+          </g>
+        ))}
+      </g>
+
+      {/* ─── Pared del fondo con la entrada de la bahía ─── */}
+      <path fillRule="evenodd" fill="url(#lg-c-end)"
+        d={`M${END.x0} ${END.y0}H${END.x1}V${END.y1}H${END.x0}Z M${DOOR.x0} ${DOOR.y0}H${DOOR.x1}V${DOOR.y1}H${DOOR.x0}Z`} />
+      <path d={TILES_END} stroke="#cdcac2" strokeWidth=".55" fill="none" />
+      <polygon points={poly([1.78, 0.3, 0], [1.98, 3.2, 0], [2.28, 3.2, 0], [2.08, 0.3, 0])} fill="#fff" opacity=".6" filter="url(#lg-soft)" />
+      <polygon points={poly([-2.52, 2.5, 0], [-2.46, 3.35, 0], [-2.28, 3.35, 0], [-2.34, 2.5, 0])} fill="#fff" opacity=".5" filter="url(#lg-soft)" />
+
+      {/* ─── Interior de la bahía (azulejo iluminado y fosa) ─── */}
       <g clipPath="url(#lg-door)">
         <polygon points={poly([-W, H, 0], [W, H, 0], [W, H, D], [-W, H, D])} fill="url(#lg-ceil)" />
         <polygon points={poly([-W, 0, 0], [-W, H, 0], [-W, H, D], [-W, 0, D])} fill="url(#lg-wallL)" />
         <polygon points={poly([W, 0, 0], [W, H, 0], [W, H, D], [W, 0, D])} fill="url(#lg-wallR)" />
         <polygon points={poly([-W, 0, D], [W, 0, D], [W, H, D], [-W, H, D])} fill="url(#lg-back)" />
-        <path d={TILES_BACK + TILES_L + TILES_R} stroke="#b9b5ac" strokeWidth=".55" fill="none" />
-        {/* brillo del azulejo */}
-        <polygon points={poly([-W, 0.4, 0.3], [-W, 2.3, 0.3], [-W, 2.3, 2.2], [-W, 0.4, 1.4])} fill="#fff" opacity=".18" />
-        <polygon points={poly([W, 0.6, 1], [W, 2.4, 1.2], [W, 2.4, 3], [W, 0.6, 2.4])} fill="#fff" opacity=".12" />
+        <path d={TILES_BACK + TILES_BAY} stroke="#c2beb5" strokeWidth=".5" fill="none" />
+        <polygon points={poly([-W, 0.4, 0.3], [-W, 2.3, 0.3], [-W, 2.3, 2.2], [-W, 0.4, 1.4])} fill="#fff" opacity=".35" />
+        <polygon points={poly([W, 0.6, 1], [W, 2.4, 1.2], [W, 2.4, 3], [W, 0.6, 2.4])} fill="#fff" opacity=".25" />
         {/* logo en la pared del fondo, como el real */}
-        <g transform={`translate(${CX} ${Y(1.78, D).toFixed(1)}) scale(.13)`} opacity=".9">
-          <path d="M-52-62 L0-78 L52-62 V8 Q52 46 0 74 Q-52 46 -52 8Z" fill="none" stroke="#9c8b5e" strokeWidth="5" />
-          <g fill="#a8915a" transform="skewX(-10)"><path d="M-26-38h14l-8 52h26l-2 11h-38z" /><path d="M6-38h34l-2 10H16l-5 30h14l1-8h-8l1-9h22l-5 30H4z" /></g>
-        </g>
-        <text x={CX} y={Y(1.3, D)} textAnchor="middle" fontSize="4.6" letterSpacing="1.4" fill="#8f8a7d" style={{ fontFamily: "var(--font-display)" }}>LUXE GARAGE</text>
-        {/* piso y fosa de acero negro */}
+        <g transform={`translate(${CX} ${Y(1.78, D).toFixed(1)}) scale(.13)`} opacity=".9"><Shield fill="#a8915a" /></g>
+        <text x={CX} y={Y(1.3, D)} textAnchor="middle" fontSize="4.6" letterSpacing="1.4" fill="#8f8a7d" style={DISPLAY}>LUXE GARAGE</text>
+        {/* piso y fosa de rejillas de acero negro */}
         <polygon points={poly([-W, 0, 0], [W, 0, 0], [W, 0, D], [-W, 0, D])} fill="url(#lg-floor)" />
         <polygon points={poly([-FX, 0, FZ0], [FX, 0, FZ0], [FX, 0, FZ1], [-FX, 0, FZ1])} fill="#030303" />
         {PANELS.map((pn, i) => (
           <g key={i}>
             <polygon points={pn.poly} fill="url(#lg-steel)" />
-            <path d={pn.bars} stroke="#34363a" strokeWidth=".45" fill="none" />
+            <path d={pn.bars} stroke="#3a3c40" strokeWidth=".45" fill="none" />
           </g>
         ))}
-        {/* reflejo de los tubos en el piso mojado */}
-        <polygon points={poly([-0.82, 0, 0.3], [-0.68, 0, 0.3], [-0.68, 0, 5.6], [-0.82, 0, 5.6])} fill="#fff" opacity=".16" filter="url(#lg-glow-sm)" />
-        <polygon points={poly([0.68, 0, 0.3], [0.82, 0, 0.3], [0.82, 0, 5.6], [0.68, 0, 5.6])} fill="#fff" opacity=".16" filter="url(#lg-glow-sm)" />
-        {/* tubos fluorescentes */}
+        <polygon points={poly([-0.82, 0, 0.3], [-0.68, 0, 0.3], [-0.68, 0, 5.6], [-0.82, 0, 5.6])} fill="#fff" opacity=".2" filter="url(#lg-glow-sm)" />
+        <polygon points={poly([0.68, 0, 0.3], [0.82, 0, 0.3], [0.82, 0, 5.6], [0.68, 0, 5.6])} fill="#fff" opacity=".2" filter="url(#lg-glow-sm)" />
         <g className="lg-fluor">
           {[-0.75, 0.75].map((x) => (
             <g key={x}>
-              <polygon points={poly([x - 0.12, H - 0.01, 0.3], [x + 0.12, H - 0.01, 0.3], [x + 0.12, H - 0.01, 5.7], [x - 0.12, H - 0.01, 5.7])} fill="#fffbe8" opacity=".5" filter="url(#lg-glow-lg)" />
-              <polygon points={poly([x - 0.03, H - 0.02, 0.4], [x + 0.03, H - 0.02, 0.4], [x + 0.03, H - 0.02, 5.6], [x - 0.03, H - 0.02, 5.6])} fill="#fffef6" />
+              <polygon points={strip(x, 0.12, H - 0.01, 0.3, 5.7)} fill="#fffbe8" opacity=".55" filter="url(#lg-glow-lg)" />
+              <polygon points={strip(x, 0.03, H - 0.02, 0.4, 5.6)} fill="#fffef6" />
             </g>
           ))}
         </g>
-        {/* sombra de la orilla de la puerta */}
-        <rect x={ENTRANCE.x0} y={ENTRANCE.y0} width={ENTRANCE.x1 - ENTRANCE.x0} height={ENTRANCE.y1 - ENTRANCE.y0} fill="none" stroke="#000" strokeWidth="10" opacity=".35" filter="url(#lg-blur)" />
+        <rect x={DOOR.x0} y={DOOR.y0} width={DW} height={DH} fill="none" stroke="#3a352c" strokeWidth="8" opacity=".22" filter="url(#lg-blur)" />
       </g>
 
-      {/* ─── Exterior: fachada y entrada ─── */}
-      <path fillRule="evenodd" fill="url(#lg-facade)"
-        d={`M0 0H400V${ENTRANCE.y1}H0Z M${ENTRANCE.x0} ${ENTRANCE.y0}H${ENTRANCE.x1}V${ENTRANCE.y1}H${ENTRANCE.x0}Z`} />
-      <rect x="0" y={ENTRANCE.y1} width="400" height={600 - ENTRANCE.y1} fill="url(#lg-drive)" />
-      <path d={[seg([-W, 0, 0], [-W, 0, -3.3]), seg([W, 0, 0], [W, 0, -3.3]), seg([-2.6, 0, -1.4], [2.6, 0, -1.4]), seg([-2.6, 0, -2.6], [2.6, 0, -2.6])].join("")} stroke="#2a2a2d" strokeWidth=".8" />
-      {/* luz del interior que sale al piso */}
-      <polygon points={poly([-W, 0, 0], [W, 0, 0], [W * 1.5, 0, -2.6], [-W * 1.5, 0, -2.6])} fill="#fff8e6" opacity=".06" />
-      {/* color de estado que baña la entrada */}
-      <ellipse cx={CX} cy={ENTRANCE.y1 + 40} rx="220" ry="80" fill="url(#lg-spill)" className="lg-fade" opacity={sig ? 1 : 0} />
-      <ellipse cx="38" cy="240" rx="80" ry="120" fill="url(#lg-spill)" className="lg-fade" opacity={sig ? 0.9 : 0} />
+      {/* guías de la cortina y caja enrollable */}
+      <rect x={RAIL_L.x} y={RAIL_L.y} width={RAIL_L.w} height={RAIL_L.h} fill="url(#lg-rail)" />
+      <rect x={RAIL_R.x} y={RAIL_R.y} width={RAIL_R.w} height={RAIL_R.h} fill="url(#lg-rail)" />
+
+      {/* cortina de acero (cerrado) */}
+      <g clipPath="url(#lg-door)">
+        <g className="lg-shutter" style={{ transform: `translateY(${shutterY}px)` }}>
+          <rect x={DOOR.x0} y={DOOR.y0} width={DW} height={DH} fill="url(#lg-slats)" />
+          <rect x={DOOR.x0} y={DOOR.y1 - 6} width={DW} height="6" fill="#3a3c3f" />
+          <rect x={CX - 14} y={DOOR.y1 - 12} width="28" height="4" rx="2" fill="#2a2b2d" />
+          <g transform={`translate(${CX} ${DOOR.y1 - 22})`}>
+            <path d="M-4 -4 V-7 a4 4 0 0 1 8 0 V-4" fill="none" stroke="#c4c7cc" strokeWidth="1.6" />
+            <rect x="-6" y="-4.5" width="12" height="9" rx="1.6" fill="#c9a54a" />
+          </g>
+        </g>
+      </g>
+      <rect x={HOUSING.x} y={HOUSING.y} width={HOUSING.w} height={HOUSING.h} rx="1.5" fill="url(#lg-box)" />
+      <polygon points={poly([-1.74, 2.5, 0], [1.74, 2.5, 0], [1.74, 2.5, -0.16], [-1.74, 2.5, -0.16])} fill="#4b4d51" />
+
+      {/* reflejos en el piso pulido: la entrada iluminada y el semáforo */}
+      <rect x={DOOR.x0} y={DOOR.y1} width={DW} height={DH * 0.7} fill="url(#lg-refl)" opacity={closed ? 0.2 : 0.6} filter="url(#lg-soft)" className="lg-fade" />
+      <rect x={SEM.x} y={2 * DOOR.y1 - SEM_BOTTOM} width={44 * SEM_K} height={124 * SEM_K * 0.6} rx="4" fill="#0a0a0b" opacity=".1" filter="url(#lg-soft)" />
+      {sig && (
+        <ellipse cx={SEM_CX} cy={2 * DOOR.y1 - LAMP_Y[status as "LIBRE" | "OCUPADO"]} rx="10" ry="24" fill={sig} opacity=".3" filter="url(#lg-blur)" />
+      )}
+      <path d={AO_FLOOR} stroke="#6f6c65" strokeWidth="4" opacity=".3" filter="url(#lg-soft)" fill="none" />
+      <path d={AO_TOP} stroke="#8a867d" strokeWidth="3" opacity=".22" filter="url(#lg-soft)" fill="none" />
+
+      {/* luz de color del estado que baña el pasillo */}
+      <rect width="400" height="600" fill={sig ?? "#fff"} opacity={sig ? 0.05 : 0} className="lg-fade" />
+      <ellipse cx={CX} cy={DOOR.y1 + 12} rx="230" ry="88" fill="url(#lg-spill)" opacity={sig ? 0.85 : 0} className="lg-fade" />
+      <ellipse cx={SEM_CX} cy={(SEM.y + SEM_BOTTOM) / 2} rx="52" ry="78" fill="url(#lg-spill)" opacity={sig ? 0.75 : 0} className={sig ? "lg-fade lg-halo" : "lg-fade"} />
 
       {/* flechas de luz verde en el piso: “pasa” */}
       {CHEVRONS.map((c, i) => (
-        <polygon key={i} points={c} fill={status === "LIBRE" ? SIG.LIBRE : "#202022"}
+        <polygon key={i} points={c} fill={status === "LIBRE" ? SIG.LIBRE : "#b3b2ad"} stroke={status === "LIBRE" ? "none" : "#a2a19c"} strokeWidth=".6"
           className={status === "LIBRE" ? "lg-chevron" : ""} style={{ animationDelay: `${i * 0.22}s` }}
           filter={status === "LIBRE" ? "url(#lg-glow-sm)" : undefined} />
       ))}
       {/* franja LED del umbral */}
-      <line x1={ENTRANCE.x0} y1={ENTRANCE.y1} x2={ENTRANCE.x1} y2={ENTRANCE.y1} stroke={sig ?? "#222"} strokeWidth="2.6" className="lg-fade" filter={sig ? "url(#lg-glow-sm)" : undefined} />
+      <line x1={DOOR.x0} y1={DOOR.y1} x2={DOOR.x1} y2={DOOR.y1} stroke={sig ?? "#9d9c97"} strokeWidth="2.6" className="lg-fade" filter={sig ? "url(#lg-glow-sm)" : undefined} />
 
-      {/* cortina de acero (cerrado) */}
+      {/* semáforo en la pared, del lado del conductor */}
+      <rect x={SEM.x + 3} y={SEM.y + 4} width={44 * SEM_K} height={124 * SEM_K} rx="8" fill="#2a2620" opacity=".28" filter="url(#lg-soft)" />
+      <g className="lg-power" transform={`translate(${SEM.x.toFixed(1)} ${SEM.y.toFixed(1)}) scale(${SEM_K})`}><Semaforo status={status} /></g>
+
+      {/* display de matriz de puntos: a qué hora se desocupa */}
+      {busy && (
+        <g className="lg-dm">
+          <rect x={LED.x} y={LED.y} width={LED.w} height={LED.h} rx="2.5" fill="#0a0a0b" stroke="#2c2c2f" />
+          <g filter="url(#lg-glow-sm)">
+            <text x={CX} y={LED.y + LED.h / 2 + 4.1} textAnchor="middle" fontSize="11.5" fontWeight="800" letterSpacing="1.1" style={SANS} {...busyFit}>
+              <tspan fill="#fff4dc">{busyA}</tspan>
+              {busyB.length > 0 && <tspan fill="#ffb547">{` ${busyB.join(" ")}`}</tspan>}
+            </text>
+          </g>
+          <rect x={LED.x + 1} y={LED.y + 1} width={LED.w - 2} height={LED.h - 2} rx="2" fill="url(#lg-led)" />
+        </g>
+      )}
+
+      {/* sombra del letrero sobre el azulejo */}
+      <rect x={SIGN.x + 2} y={SIGN.y + 4} width={SIGN.w} height={SIGN.h} rx="3" fill="#2a2620" opacity=".3" filter="url(#lg-soft)" />
+
+      <rect width="400" height="600" fill="url(#lg-vig)" />
+
+      {/* de noche (cerrado): todo se oscurece en azul, los letreros siguen encendidos */}
+      <rect width="400" height="600" fill="url(#lg-night)" className="lg-fade" opacity={closed ? 0.8 : 0} style={{ mixBlendMode: "multiply" }} />
+      <ellipse cx={CX} cy={DOOR.y1 + 16} rx="175" ry="46" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 1 : 0} />
+      <ellipse cx={CX} cy={SIGN.y + SIGN.h / 2} rx="150" ry="42" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 0.45 : 0} />
+
+      {/* letrero LED ámbar de la cortina */}
       <g clipPath="url(#lg-door)">
-        <g className="lg-shutter" style={{ transform: `translateY(${closed ? 0 : -(ENTRANCE.y1 - ENTRANCE.y0) - 4}px)` }}>
-          <rect x={ENTRANCE.x0} y={ENTRANCE.y0} width={ENTRANCE.x1 - ENTRANCE.x0} height={ENTRANCE.y1 - ENTRANCE.y0} fill="url(#lg-slats)" />
-          <rect x={ENTRANCE.x0} y={ENTRANCE.y1 - 6} width={ENTRANCE.x1 - ENTRANCE.x0} height="6" fill="#18191b" />
-          <rect x={CX - 14} y={ENTRANCE.y1 - 12} width="28" height="4" rx="2" fill="#0e0f10" />
-          {/* candado */}
-          <g transform={`translate(${CX} ${ENTRANCE.y1 - 22})`}>
-            <path d="M-4 -4 V-7 a4 4 0 0 1 8 0 V-4" fill="none" stroke="#9a9ea4" strokeWidth="1.6" />
-            <rect x="-6" y="-4.5" width="12" height="9" rx="1.6" fill="#c9a54a" />
-          </g>
-          {/* letrero LED de cerrado */}
-          <g transform={`translate(${CX} ${(ENTRANCE.y0 + ENTRANCE.y1) / 2 - 8})`}>
-            <rect x="-92" y="-34" width="184" height="66" rx="7" fill="#070707" stroke="#2d2d30" strokeWidth="1.5" />
+        <g className="lg-shutter" style={{ transform: `translateY(${shutterY}px)` }}>
+          <g transform={`translate(${CX} ${(DOOR.y0 + DOOR.y1) / 2 - 6})`}>
+            <rect x="-82" y="-32" width="164" height="60" rx="6" fill="#070707" stroke="#2d2d30" strokeWidth="1.5" />
             <g filter="url(#lg-glow-sm)" className={closed ? "lg-neon" : ""}>
-              <text x="0" y="2" textAnchor="middle" fontSize="27" fontWeight="800" letterSpacing="6" fill="#ffb547" style={{ fontFamily: "var(--font-sans)" }}>CERRADO</text>
-              {opensShort && <text x="0" y="22" textAnchor="middle" fontSize="10.5" fontWeight="700" letterSpacing="2.4" fill="#ffd79a" style={{ fontFamily: "var(--font-sans)" }}>{opensShort}</text>}
+              <text x="0" y="1" textAnchor="middle" fontSize="23" fontWeight="800" letterSpacing="3.6" fill="#ffb547" style={SANS}>CERRADO</text>
+              {opensShort && <text x="0" y="19" textAnchor="middle" fontSize="9.5" fontWeight="700" letterSpacing="1.6" fill="#ffd79a" style={SANS} {...opensFit}>{opensShort}</text>}
             </g>
-            <rect x="-90" y="-32" width="180" height="62" rx="6" fill="url(#lg-led)" />
+            <rect x="-80" y="-30" width="160" height="56" rx="5" fill="url(#lg-led)" />
           </g>
         </g>
       </g>
-      {/* caja de la cortina y dintel */}
-      <rect x={ENTRANCE.x0 - 6} y={ENTRANCE.y0 - 12} width={ENTRANCE.x1 - ENTRANCE.x0 + 12} height="13" rx="2" fill="#0b0b0c" stroke="#232325" />
 
-      {/* de noche (cerrado): todo se oscurece en azul, el letrero sigue encendido */}
-      <rect x="0" y="0" width="400" height="600" fill="url(#lg-night)" className="lg-fade" opacity={closed ? 0.55 : 0} style={{ mixBlendMode: "multiply" }} />
-      <ellipse cx={CX} cy={ENTRANCE.y1 + 18} rx="170" ry="40" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 1 : 0} />
-
-      {/* letrero como el de la fachada real */}
+      {/* letrero negro y oro sobre la entrada (iluminado) */}
       <g>
-        <path d="M128 30 q4 -14 14 -12 M272 30 q-4 -14 -14 -12" stroke="#2c2c2e" strokeWidth="2" fill="none" />
-        <ellipse cx="200" cy="64" rx="150" ry="46" fill="url(#lg-lamp)" opacity=".5" />
-        <rect x="70" y="40" width="260" height="80" rx="3" fill="#050505" stroke="#3b331d" />
-        <rect x="74" y="44" width="252" height="72" rx="2" fill="none" stroke="#c9a54a" strokeOpacity=".55" strokeWidth=".8" />
-        <g transform="translate(108 80) scale(.34)">
-          <path d="M-52-62 L0-78 L52-62 V8 Q52 46 0 74 Q-52 46 -52 8Z" fill="none" stroke="url(#lg-goldv)" strokeWidth="5" />
-          <g fill="url(#lg-goldv)" transform="skewX(-10)"><path d="M-26-38h14l-8 52h26l-2 11h-38z" /><path d="M6-38h34l-2 10H16l-5 30h14l1-8h-8l1-9h22l-5 30H4z" /></g>
-        </g>
-        <linearGradient id="lg-goldv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6e2a0" /><stop offset=".55" stopColor="#d4af37" /><stop offset="1" stopColor="#8a6d1a" /></linearGradient>
-        <text x="232" y="84" textAnchor="middle" fontSize="19" fontWeight="600" letterSpacing="2.5" fill="url(#lg-goldv)" style={{ fontFamily: "var(--font-display)" }}>LUXE GARAGE</text>
-        <text x="232" y="101" textAnchor="middle" fontSize="6.2" letterSpacing="2.4" fill="#bfa45a" style={{ fontFamily: "var(--font-sans)" }}>AUTO DETAILING &amp; CAR CARE</text>
+        <rect x={SIGN.x} y={SIGN.y} width={SIGN.w} height={SIGN.h} rx="2.5" fill="#060606" stroke="#3b331d" />
+        <rect x={SIGN.x + 2.5} y={SIGN.y + 2.5} width={SIGN.w - 5} height={SIGN.h - 5} rx="1.5" fill="none" stroke="#c9a54a" strokeOpacity=".6" strokeWidth=".7" />
+        <g transform={`translate(${(SIGN.x + 21).toFixed(1)} ${(SIGN.y + SIGN.h / 2).toFixed(1)}) scale(.2)`}><Shield fill="url(#lg-goldv)" /></g>
+        <text x={SIGN.x + 37 + (SIGN.w - 43) / 2} y={SIGN.y + SIGN.h / 2 + 2.6} textAnchor="middle" fontSize="14.5" fontWeight="600" letterSpacing="1.6" fill="url(#lg-goldv)" style={DISPLAY}>LUXE GARAGE</text>
+        <text x={SIGN.x + 37 + (SIGN.w - 43) / 2} y={SIGN.y + SIGN.h - 6.5} textAnchor="middle" fontSize="5.2" letterSpacing="1.5" fill="#c9ad62" style={SANS}>AUTO DETAILING &amp; CAR CARE</text>
+        <rect x={SIGN.x + 1} y={SIGN.y + 1} width={SIGN.w - 2} height={SIGN.h * 0.42} rx="2" fill="#fff" opacity=".05" />
       </g>
-
-      {/* semáforo del lado del conductor */}
-      <g className="lg-power"><Semaforo status={status} x={12} y={176} /></g>
 
       {/* el auto */}
       <g ref={carRef} style={{ opacity: 0 }}>

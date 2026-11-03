@@ -1,4 +1,4 @@
-import { createHash, createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { kvIncr, redis } from "./store";
 
 const COOKIE = "lg_admin";
@@ -25,6 +25,14 @@ function secret(): string | null {
   return createHash("sha256").update(`lg-session|${pass}|${kv}`).digest("base64url");
 }
 const sign = (payload: string, s: string) => createHmac("sha256", s).update(payload).digest("base64url");
+
+// Llave para el sello vivo de los comprobantes. Deriva de la misma llave secreta del servidor
+// (nunca sale de aquí). Sin almacén configurado (desarrollo local) usa una al azar por proceso.
+const g = globalThis as unknown as { __lgDevKey?: string };
+export function serverKey(): string {
+  const base = secret() ?? (g.__lgDevKey ??= randomBytes(32).toString("base64url"));
+  return createHash("sha256").update(`lg-seal|${base}`).digest("base64url");
+}
 
 export function adminConfigured(): boolean {
   return !!secret();

@@ -65,6 +65,81 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .sheet-in { animation: sheetIn .28s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes sheetIn { from { transform: translateY(24px); opacity: 0; } }
 
+/* ——— Hero claro: azulejo crema ——— */
+.tile-hero {
+  background-color: #efece6;
+  background-image:
+    radial-gradient(120% 70% at 20% 0%, rgba(255,255,255,.75), rgba(255,255,255,0) 60%),
+    linear-gradient(#d3cec4 1px, transparent 1px),
+    linear-gradient(90deg, #d3cec4 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+}
+.btn-line-dark {
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; border-radius: 999px;
+  border: 2px solid rgba(20,20,20,.75); color: #141414; font-weight: 800; font-size: 1.1rem; background: rgba(255,255,255,.55);
+  transition: transform .15s, background .2s;
+}
+.btn-line-dark:active { transform: scale(.97); }
+
+/* ——— Sección del video: mosaico gris/crema plano ——— */
+.tile-mosaic {
+  background-color: #dcd8cf;
+  background-image:
+    linear-gradient(160deg, rgba(255,255,255,.35), rgba(255,255,255,0) 35%, rgba(255,255,255,.18) 55%, rgba(255,255,255,0) 70%),
+    linear-gradient(#c6c0b4 1.5px, transparent 1.5px),
+    linear-gradient(90deg, #c6c0b4 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 26px 26px, 26px 26px;
+  color: #141414;
+}
+
+/* ——— Membresía: tema agua ——— */
+.water-bg {
+  background:
+    radial-gradient(90% 50% at 50% 0%, rgba(34,211,238,.22), transparent 70%),
+    linear-gradient(180deg, #031b2e 0%, #063a5b 100%);
+}
+.btn-water {
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; border-radius: 999px;
+  font-weight: 800; color: #031b2e; letter-spacing: .02em;
+  background: linear-gradient(180deg, #a5f3fc, #22d3ee 60%, #0ea5c6);
+  box-shadow: 0 10px 30px rgba(34,211,238,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  transition: transform .15s, filter .2s;
+}
+.btn-water:hover { filter: brightness(1.06); }
+.btn-water:active { transform: scale(.97); }
+.text-water-grad { background: linear-gradient(180deg, #ffffff, #a5f3fc 50%, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.lg-bubbles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.lg-bubble {
+  position: absolute; bottom: -60px; left: var(--x); width: var(--s); height: var(--s); border-radius: 999px;
+  background: radial-gradient(circle at 32% 30%, rgba(255,255,255,.95) 0 9%, rgba(165,243,252,.35) 22%, rgba(34,211,238,.08) 60%, rgba(103,232,249,.45) 100%);
+  box-shadow: inset 0 0 6px rgba(255,255,255,.35), 0 0 12px rgba(34,211,238,.25);
+  animation: lgRise var(--d) linear var(--w) infinite;
+  opacity: 0;
+}
+@keyframes lgRise {
+  0% { transform: translate3d(0,0,0) scale(.7); opacity: 0; }
+  10% { opacity: .9; }
+  50% { transform: translate3d(var(--sway), -55vh, 0) scale(1); }
+  90% { opacity: .85; }
+  100% { transform: translate3d(calc(var(--sway) * -1), -120vh, 0) scale(1.08); opacity: 0; }
+}
+.lg-wave { position: absolute; left: 0; width: 200%; height: 70px; animation: lgWave var(--d, 14s) linear infinite; }
+@keyframes lgWave { to { transform: translateX(-50%); } }
+.lg-caustic {
+  position: absolute; inset: 0; pointer-events: none; opacity: .25; mix-blend-mode: screen;
+  background:
+    radial-gradient(40% 25% at 20% 30%, rgba(103,232,249,.35), transparent 70%),
+    radial-gradient(35% 20% at 80% 60%, rgba(103,232,249,.3), transparent 70%);
+  animation: lgCaustic 9s ease-in-out infinite alternate;
+}
+@keyframes lgCaustic { to { transform: translate3d(4%, -3%, 0) scale(1.08); opacity: .4; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-bubble, .lg-wave, .lg-caustic { animation: none; }
+  .lg-bubble { opacity: .5; bottom: auto; top: var(--y, 50%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in, .lg-neon { animation: none; }
   .lg-shutter, .lg-foam { transition: none; }

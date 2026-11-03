@@ -86,3 +86,50 @@ export async function kvIncr(key: string, ttlSec: number): Promise<number> {
   if (n === 1) await redis("EXPIRE", key, ttlSec);
   return n;
 }
+
+/* ───────── Celdas de agenda (10 min): todas o ninguna ─────────
+ * En Upstash cada operación es un script Lua (atómico: nadie se mete a la mitad).
+ * En memoria se hace lo mismo en JS (un solo hilo = también atómico). */
+const LUA = {
+  // Aparta por ttl: solo si todas están libres o ya son del mismo dueño.
+  reserve: "for i=1,#KEYS do local v=redis.call('GET',KEYS[i]) if v and v~=ARGV[1] then return 0 end end for i=1,#KEYS do redis.call('SET',KEYS[i],ARGV[1],'EX',ARGV[2]) end return 1",
+  // Fija para siempre (pago aprobado): misma regla, sin caducidad.
+  claim: "for i=1,#KEYS do local v=redis.call('GET',KEYS[i]) if v and v~=ARGV[1] then return 0 end end for i=1,#KEYS do redis.call('SET',KEYS[i],ARGV[1]) end return 1",
+  // Alarga el apartado (pago en revisión). No toca celdas ya fijadas ni ajenas.
+  extend: "local n=0 for i=1,#KEYS do if redis.call('GET',KEYS[i])==ARGV[1] and redis.call('TTL',KEYS[i])>0 then redis.call('EXPIRE',KEYS[i],ARGV[2]) n=n+1 end end return n",
+  // Libera solo las celdas de ese dueño.
+  release: "local n=0 for i=1,#KEYS do if redis.call('GET',KEYS[i])==ARGV[1] then redis.call('DEL',KEYS[i]) n=n+1 end end return n",
+} as const;
+
+function memCells(op: keyof typeof LUA, keys: string[], owner: string, ttlSec?: number): number {
+  const free = () => keys.every((k) => { const v = live(k)?.v; return v === undefined || v === owner; });
+  const exp = ttlSec ? Date.now() + ttlSec * 1000 : undefined;
+  switch (op) {
+    case "reserve": case "claim":
+      if (!free()) return 0;
+      for (const k of keys) mem().set(k, { v: owner, exp: op === "reserve" ? exp : undefined });
+      return 1;
+    case "extend": return keys.filter((k) => { const e = live(k); if (e?.v !== owner || !e.exp) return false; e.exp = exp; return true; }).length;
+    case "release": return keys.filter((k) => live(k)?.v === owner && mem().delete(k)).length;
+  }
+}
+
+async function cells(op: keyof typeof LUA, keys: string[], owner: string, ttlSec?: number): Promise<number> {
+  if (!keys.length) return 0;
+  if (storeKind === "memory") return memCells(op, keys, owner, ttlSec);
+  const args: Arg[] = ttlSec ? [owner, ttlSec] : [owner];
+  return Number(await rest(["EVAL", LUA[op], keys.length, ...keys, ...args]));
+}
+
+/** Aparta todas las celdas por `ttlSec` (o ninguna). */
+export const reserveCells = async (keys: string[], owner: string, ttlSec: number) => (await cells("reserve", keys, owner, ttlSec)) === 1;
+/** Fija todas las celdas sin caducidad si están libres o son del dueño; si alguna es de otro, no cambia nada y devuelve false. */
+export const claimCells = async (keys: string[], owner: string) => (await cells("claim", keys, owner)) === 1;
+/** Alarga el apartado de las celdas que siguen siendo del dueño. */
+export const extendCells = (keys: string[], owner: string, ttlSec: number) => cells("extend", keys, owner, ttlSec);
+/** Borra solo las celdas del dueño. */
+export const releaseCells = (keys: string[], owner: string) => cells("release", keys, owner);
+/** Dueño de cada celda (null = libre). */
+export const readCells = async (keys: string[]) => (keys.length ? await redis<(string | null)[]>("MGET", ...keys) : []);
+/** ¿Todas las celdas siguen siendo de este dueño? */
+export const ownsCells = async (keys: string[], owner: string) => keys.length > 0 && (await readCells(keys)).every((v) => v === owner);

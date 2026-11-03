@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Semaforo } from "@/components/GarageScene";
-import AdminAgenda from "@/components/AdminAgenda";
+import AdminAgenda, { FosaBar, fmt12 } from "@/components/AdminAgenda";
 
 type Settings = {
   prices: { carro: number; camioneta: number; domicilio: number; suscripcion: number };
@@ -10,7 +10,7 @@ type Settings = {
   notice: string;
 };
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
-type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; updatedAt: string | null; public: Pub; reason: "manual-open" | "manual-closed" | "schedule-open" | "schedule-closed" };
+type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busySince?: string | null; busyMinutes?: number | null; busyUntil?: string | null; updatedAt: string | null; public: Pub; reason: "manual-open" | "manual-closed" | "schedule-open" | "schedule-closed" };
 type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "memory" };
 
 const PRICE_FIELDS: { key: keyof Settings["prices"]; label: string }[] = [
@@ -53,6 +53,16 @@ export default function Admin() {
     setForm(r.data.settings);
   }, []);
   useEffect(() => { load(); }, [load]);
+  // El semáforo puede cambiar desde otro teléfono: refresca solo el garage (no pisa el formulario de ajustes).
+  useEffect(() => {
+    if (!authed) return;
+    const id = setInterval(async () => {
+      const r = await api("settings");
+      if (r.status === 401) return setAuthed(false);
+      if (r.ok) setData((d) => (d ? { ...d, garage: r.data.garage } : r.data));
+    }, 20000);
+    return () => clearInterval(id);
+  }, [authed]);
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -63,7 +73,7 @@ export default function Admin() {
     if (r.ok) { setMsg(""); load(); } else setMsg(r.data.error ?? "Error");
   }
 
-  async function setGarage(patch: Partial<Pick<Garage, "mode" | "busy">>) {
+  async function setGarage(patch: { mode?: Garage["mode"]; busy?: boolean; minutes?: 20 | 30 }) {
     setBusy(true);
     const r = await api("garage", "POST", patch);
     setBusy(false);
@@ -124,12 +134,16 @@ export default function Admin() {
   const set = (patch: Partial<Settings>) => setForm((f) => f && { ...f, ...patch });
 
   return (
-    <main className="mx-auto max-w-2xl px-5 pb-24 pt-8">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-2xl text-gold">Panel LUXE GARAGE</h1>
+    <main className="mx-auto w-full max-w-2xl overflow-x-clip px-4 sm:px-5"
+      style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)", paddingLeft: "max(env(safe-area-inset-left), 16px)", paddingRight: "max(env(safe-area-inset-right), 16px)" }}>
+      <header className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={`size-3 shrink-0 rounded-full shadow-[0_0_12px_currentColor] ${preview === "LIBRE" ? "bg-emerald-400 text-emerald-400" : preview === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-amber-300 text-amber-300"}`} aria-hidden />
+          <h1 className="font-display truncate text-xl font-semibold tracking-wide"><span className="text-gold-grad">LUXE</span> <span className="text-white/80">Panel</span></h1>
+        </div>
         <div className="flex shrink-0 gap-2 whitespace-nowrap text-sm">
-          <a href="/" target="_blank" className="rounded-lg border border-white/15 px-3 py-2 hover:border-gold">Ver sitio</a>
-          <button onClick={logout} className="rounded-lg border border-white/15 px-3 py-2 hover:border-gold">Salir</button>
+          <a href="/" target="_blank" className="grid min-h-11 place-items-center rounded-xl border border-white/15 px-3 active:border-gold">Ver sitio</a>
+          <button onClick={logout} className="min-h-11 rounded-xl border border-white/15 px-3 active:border-gold">Salir</button>
         </div>
       </header>
 
@@ -140,14 +154,14 @@ export default function Admin() {
         </p>
       )}
 
-      <nav className="sticky top-0 z-20 -mx-5 mt-6 grid grid-cols-3 gap-1 bg-ink/95 px-5 py-2 backdrop-blur" aria-label="Secciones del panel">
+      <nav className="sticky z-20 -mx-4 mt-4 grid grid-cols-3 gap-1.5 border-b border-white/5 bg-ink/90 px-4 py-2 backdrop-blur-xl sm:-mx-5 sm:px-5" style={{ top: "env(safe-area-inset-top)" }} aria-label="Secciones del panel">
         {([["agenda", "📅 Agenda"], ["garage", "🚦 Garage"], ["ajustes", "⚙️ Ajustes"]] as const).map(([k, t]) => (
           <button key={k} onClick={() => setTab(k)} aria-pressed={tab === k}
-            className={`rounded-xl py-3 text-base font-bold transition ${tab === k ? "bg-gold text-ink" : "bg-white/[.05] text-white/80"}`}>{t}</button>
+            className={`min-h-14 rounded-2xl text-base font-bold transition active:scale-[.97] ${tab === k ? "bg-gold text-ink shadow-[0_6px_20px_-8px_rgba(212,175,55,.8)]" : "bg-white/[.05] text-white/80"}`}>{t}</button>
         ))}
       </nav>
 
-      {tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} pub={g?.public ?? null} onFosa={(busyNow) => setGarage({ busy: busyNow })} /></div>}
+      {tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} pub={g?.public ?? null} busyUntil={g?.busyUntil ?? null} onFosa={(busyNow, minutes) => setGarage(busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false })} /></div>}
 
       {tab === "garage" && <section className="mt-8">
         <h2 className="text-sm tracking-[.3em] text-white/50">SEMÁFORO DEL GARAGE</h2>
@@ -162,6 +176,7 @@ export default function Admin() {
           <div>
             <p className="text-xs text-white/50">Así lo ve el cliente ahora:</p>
             <p className={`font-display mt-1 text-3xl font-semibold ${preview === "LIBRE" ? "text-emerald-400" : preview === "OCUPADO" ? "text-red-400" : "text-zinc-400"}`}>{preview}</p>
+            {preview === "OCUPADO" && g?.busyUntil && <p className="text-base text-white/85">Se desocupa aprox. <b>{fmt12(g.busyUntil)}</b></p>}
             <p className="mt-1 text-sm text-white/70">{why}</p>
           </div>
         </div>
@@ -178,8 +193,10 @@ export default function Admin() {
             ))}
           </div>
         </div>
-        <Switch label="Fosa" on={!(g?.busy ?? false)} onText="Libre" offText="Ocupado" onCls="bg-emerald-500" offCls="bg-red-500"
-          hint={preview === "CERRADO" ? "Abre el negocio para poder cambiar la fosa." : "Ocupado: el auto entra a la fosa y el semáforo se pone en rojo."} disabled={busy || preview === "CERRADO"} onChange={(v) => setGarage({ busy: !v })} />
+        <p className="mb-2 mt-6 text-xs tracking-[.25em] text-white/60">FOSA</p>
+        <FosaBar pub={preview} busyUntil={g?.busyUntil ?? null} disabled={busy}
+          onFosa={(busyNow, minutes) => setGarage(busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false })} />
+        <p className="text-sm text-white/55">Ocupado: el auto entra a la fosa, el semáforo se pone en rojo y la página muestra a qué hora se desocupa.</p>
       </section>}
 
       {tab === "ajustes" && form && (
@@ -208,18 +225,18 @@ export default function Admin() {
                 const setDay = (v: { open: number; close: number } | null) => set({ hours: form.hours.map((x, j) => (j === i ? v : x)) });
                 const opt = (h: number) => <option key={h} value={h} className="bg-ink">{h % 12 || 12} {h < 12 || h === 24 ? "am" : "pm"}</option>;
                 return (
-                  <div key={i} className={`flex items-center gap-3 px-4 py-3 ${d ? "bg-white/[.03]" : ""}`}>
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 ${d ? "bg-white/[.03]" : ""}`}>
                     <button type="button" onClick={() => setDay(d ? null : { open: 12, close: 19 })} aria-pressed={!!d}
-                      className={`w-28 shrink-0 rounded-lg px-2 py-2 text-left text-base font-bold ${d ? "text-white" : "text-white/40 line-through"}`}>
+                      className={`w-[6.5rem] shrink-0 rounded-lg px-1 py-3 text-left text-base font-bold ${d ? "text-white" : "text-white/40 line-through"}`}>
                       {["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][i]}
                     </button>
                     {d ? (
                       <div className="flex flex-1 items-center gap-2">
-                        <select className={`${input} py-2`} value={d.open} onChange={(e) => setDay({ ...d, open: Number(e.target.value) })} aria-label="Abre">
+                        <select className={`${input} min-w-0 py-3 text-base`} value={d.open} onChange={(e) => setDay({ ...d, open: Number(e.target.value) })} aria-label="Abre">
                           {Array.from({ length: 24 }, (_, h) => h).map(opt)}
                         </select>
                         <span className="text-white/60">a</span>
-                        <select className={`${input} py-2`} value={d.close} onChange={(e) => setDay({ ...d, close: Number(e.target.value) })} aria-label="Cierra">
+                        <select className={`${input} min-w-0 py-3 text-base`} value={d.close} onChange={(e) => setDay({ ...d, close: Number(e.target.value) })} aria-label="Cierra">
                           {Array.from({ length: 24 }, (_, h) => h + 1).map(opt)}
                         </select>
                       </div>
@@ -242,27 +259,8 @@ export default function Admin() {
         </form>
       )}
 
-      <p className="fixed inset-x-0 bottom-0 bg-ink/95 p-3 text-center text-sm text-white/80 empty:hidden" role="status">{msg}</p>
+      <p className="fixed inset-x-0 bottom-0 z-30 border-t border-gold/30 bg-ink/95 px-4 pt-3 text-center text-base font-semibold text-white/90 backdrop-blur empty:hidden" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }} role="status">{msg}</p>
     </main>
   );
 }
 
-function Switch({ label, on, onText, offText, onCls, offCls, hint, disabled, onChange }: {
-  label: string; on: boolean; onText: string; offText: string; onCls: string; offCls: string; hint: string; disabled?: boolean; onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="mt-4 rounded-2xl border border-white/10 bg-white/[.03] p-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs tracking-[.25em] text-white/50">{label.toUpperCase()}</p>
-          <p className="mt-0.5 text-2xl font-bold">{on ? onText : offText}</p>
-        </div>
-        <button role="switch" aria-checked={on} aria-label={`${label}: ${on ? onText : offText}`} disabled={disabled} onClick={() => onChange(!on)}
-          className={`relative h-14 w-28 shrink-0 rounded-full transition-colors disabled:opacity-40 ${on ? onCls : offCls}`}>
-          <span className={`absolute top-1.5 size-11 rounded-full bg-white shadow-lg transition-all ${on ? "left-[3.75rem]" : "left-1.5"}`} />
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-white/45">{hint}</p>
-    </div>
-  );
-}

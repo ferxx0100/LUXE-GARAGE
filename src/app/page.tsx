@@ -1,4 +1,6 @@
+import BookingFlow from "@/components/BookingFlow";
 import HelpButton from "@/components/HelpButton";
+import { localNow } from "@/lib/booking-core";
 import LiveGarage from "@/components/LiveGarage";
 import RealVideo from "@/components/RealVideo";
 import { BUSINESS, SITE_URL, mapsLink, telLink, whatsappLink } from "@/lib/config";
@@ -70,31 +72,19 @@ export default async function Home() {
               ].map(([n, t, d]) => (
                 <li key={n} className="rounded-2xl border border-black/10 bg-white/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,.06)] backdrop-blur">
                   <span className="font-display text-3xl font-semibold text-[#a8862a]">{n}</span>
-                  <h3 className="mt-2 text-lg font-bold">{t}</h3>
-                  <p className="mt-1.5 leading-relaxed text-black/65">{d}</p>
+                  <h3 className="mt-2 text-xl font-bold">{t}</h3>
+                  <p className="mt-1.5 text-[17px] leading-relaxed text-black/80">{d}</p>
                 </li>
               ))}
             </ol>
           </div>
         </section>
 
-        <section id="reservar" className="mx-auto max-w-5xl scroll-mt-4 px-5 py-20">
-          <Title kicker="RESERVA Y PAGO EN LÍNEA">Lavado normal</Title>
-          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5">
-            {([["Carro", s.prices.carro], ["Camioneta", s.prices.camioneta]] as const).map(([k, v]) => (
-              <div key={k} className="rounded-2xl border border-white/10 bg-white/[.03] p-5 text-center">
-                <p className="text-sm text-white/60">{k}</p>
-                <p className="font-display text-gold-grad mt-1 text-4xl font-semibold sm:text-5xl">${v}</p>
-              </div>
-            ))}
-          </div>
-          <ul className="mt-6 space-y-2 text-white/75">
-            <li><span className="text-gold">·</span> Exterior sin bajarte del auto, o interior dejándolo en el garage.</li>
-            <li><span className="text-gold">·</span> ¿Prefieres que vayamos a tu casa? <b className="text-white">+${s.prices.domicilio}</b> por cada ida.</li>
-          </ul>
-          <div className="mt-8 rounded-2xl border border-gold/30 bg-gold/[.06] p-5 text-center">
-            <p className="font-semibold text-gold">Elige día y hora y paga aquí mismo</p>
-            <p className="mt-1 text-sm text-white/60">Estamos activando el calendario y el pago con tarjeta y Apple Pay. Muy pronto.</p>
+        <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 py-20">
+          <Title kicker="RESERVA Y PAGO EN LÍNEA">Aparta tu hora</Title>
+          <p className="mt-4 text-center text-lg text-white/80">Elige, paga y listo. Te llega tu comprobante al instante.</p>
+          <div className="mt-10">
+            <BookingFlow prices={s.prices} openDays={s.hours.days} today={localNow().date} mpPublicKey={process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || null} />
           </div>
         </section>
 
@@ -104,34 +94,34 @@ export default async function Home() {
           <Title kicker="SUSCRIPCIÓN MENSUAL">{s.subscriptionWashes} lavadas al mes</Title>
           <div className="mx-auto mt-10 max-w-md rounded-3xl border border-gold/50 bg-gradient-to-b from-gold/[.12] to-transparent p-7 text-center">
             <p className="font-display text-gold-grad text-6xl font-semibold">${s.prices.suscripcion}</p>
-            <p className="mt-1 text-sm text-white/60">al mes</p>
-            <ul className="mt-6 space-y-3 text-left text-white/85">
+            <p className="mt-1 text-sm text-white/75">al mes</p>
+            <ul className="mt-6 space-y-3 text-left text-lg text-white/90">
               <li>✓ Eliges tus {s.subscriptionWashes} días del mes.</li>
               <li>✓ Sin cita: si el garage está libre, pasas.</li>
               <li>✓ Exterior sin bajarte. Interior: déjalo cuando esté libre.</li>
               <li>✓ A domicilio: +${s.prices.domicilio} por cada ida.</li>
             </ul>
-            <p className="mt-6 text-xs text-white/45">Suscripción en línea muy pronto.</p>
+            <p className="mt-6 text-xs text-white/60">Suscripción en línea muy pronto.</p>
           </div>
         </section>
 
         <section id="lugar" className="tile-bg px-5 py-20">
           <div className="mx-auto max-w-5xl">
             <Title kicker="EL LUGAR REAL" dark>Azulejo, acero y cuidado</Title>
-            <p className="mx-auto mt-4 max-w-md text-center text-black/60">Nuestra fosa de acero negro y el equipo que deja tu auto como nuevo. Sin filtros.</p>
+            <p className="mx-auto mt-4 max-w-md text-center text-black/75">Nuestra fosa de acero negro y el equipo que deja tu auto como nuevo. Sin filtros.</p>
             <div className="mt-10"><RealVideo /></div>
           </div>
         </section>
 
         <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">
           <Title kicker="VISÍTANOS">{BUSINESS.location.split(",")[0]}</Title>
-          <p className="mt-4 text-white/70">{BUSINESS.location}</p>
-          <p className="mt-1 text-white/70">Horario: {horario}</p>
+          <p className="mt-4 text-white/85">{BUSINESS.location}</p>
+          <p className="mt-1 text-white/85">Horario: {horario}</p>
           <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="btn-line mt-8">Abrir en Mapas</a>
         </section>
       </main>
 
-      <footer className="border-t border-white/10 px-5 pb-12 pt-10 text-center text-sm text-white/45">
+      <footer className="border-t border-white/10 px-5 pb-12 pt-10 text-center text-sm text-white/60">
         <p className="font-display tracking-[.2em] text-gold">LUXE GARAGE</p>
         <p className="mt-2">© {new Date().getFullYear()} {BUSINESS.name}. Todos los derechos reservados.</p>
       </footer>

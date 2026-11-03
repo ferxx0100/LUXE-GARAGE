@@ -8,7 +8,7 @@
 | Duración por servicio | 60 min por horario reservable |
 | Bloqueo mientras se paga | 15 min |
 | Lavado normal | Carro $180 · Camioneta $220 (mismo precio exterior/interior) |
-| Domicilio | +$50 por cada ida |
+| Domicilio | +$100 por cada ida |
 | Suscripción | $555/mes, 6 lavadas al mes; elige 6 días; sin reservar hora |
 | Apple Pay | Mercado Pago lo ofrece en MX (Checkout API, Safari). Requiere Apple Developer + dominio propio verificado |
 | Pago de reserva | Completo, en línea. Sin WhatsApp para reservar |
@@ -20,8 +20,9 @@
 - [x] **2. Hero en vivo**: garage animado (SVG) con LIBRE/OCUPADO/CERRADO, sondeo cada 5 s, panel `/admin` con botón.
 - [x] **2b. Control en Vercel**: Upstash Redis para estado y ajustes; `/admin` con login (cookie firmada, límite de intentos, verificación de origen); precios, horario, días y aviso editables; página pública estática que se regenera al guardar.
 - [x] **2c. Diseño celular**: escena del garage real (azulejo + fosa de acero), semáforo LED, Accord gris animado, cortina de cierre, tipografía Cinzel + Manrope, botón Ayuda (llamada/WhatsApp/quejas), video real con efectos de lavado, panel con dos interruptores.
-- [ ] **3. Reservas**: Supabase (estado + Realtime + reservas), calendario, bloqueo temporal, restricción única fecha+hora, rate limiting.
-- [ ] **4. Pagos**: Mercado Pago Checkout API (Card Payment Brick) + Apple Pay + webhook firmado e idempotente.
+- [x] **3. Reservas**: calendario 14 días, horarios por hora, apartado atómico de 15 min, límite de intentos, comprobante `/reserva/[id]` + `.ics`.
+- [x] **4. Pagos**: Mercado Pago Card Payment Brick + `/v1/payments` + webhook firmado e idempotente (falta: credenciales en Vercel y Apple Pay).
+- [x] **6a. Agenda en el panel**: citas por día, cobrado, domicilio, llamar/WhatsApp, completar/cancelar, clientes.
 - [ ] **5. Suscripción**: alta mensual, elección de 6 días, créditos, domicilio +$50.
 - [ ] **6. Panel admin real**: login + 2FA, horarios, bloqueos, reservas, suscriptores, auditoría.
 - [ ] **7. Endurecimiento**: aviso de privacidad (LFPDPPP), monitoreo, alertas de pago, pruebas de carga y doble reserva.

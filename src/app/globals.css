@@ -13,7 +13,8 @@
   --font-sans: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
 }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; font-size: 17px; }
+@media (min-width: 768px) { html { font-size: 18px; } }
 body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 .font-display { font-family: var(--font-display); }
 .text-gold-grad { background: linear-gradient(180deg, #fff1b8, #d4af37 55%, #8a6d1a); -webkit-background-clip: text; background-clip: text; color: transparent; }

@@ -4,14 +4,17 @@ import type { NextConfig } from "next";
 // En despliegues Preview se permite la barra de comentarios de Vercel (vercel.live).
 const preview = process.env.VERCEL_ENV === "preview";
 const live = preview ? " https://vercel.live" : "";
+// Mercado Pago: SDK, campos seguros de tarjeta (iframes) y antifraude.
+const mp = " https://*.mercadopago.com https://*.mercadolibre.com https://*.mlstatic.com https://*.mercadopago.com.mx https://*.mercadolibre.com.mx";
 const csp = [
   "default-src 'self'",
-  "img-src 'self' data: blob:" + (preview ? " https://vercel.live https://vercel.com" : ""),
+  "img-src 'self' data: blob:" + mp + (preview ? " https://vercel.live https://vercel.com" : ""),
   "media-src 'self'",
-  "style-src 'self' 'unsafe-inline'" + live,
-  "script-src 'self' 'unsafe-inline'" + live + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""),
-  "connect-src 'self'" + (preview ? " https://vercel.live wss://ws-us3.pusher.com" : ""),
-  "frame-src" + (preview ? " https://vercel.live" : " 'none'"),
+  "style-src 'self' 'unsafe-inline'" + mp + live,
+  "font-src 'self' data:" + mp,
+  "script-src 'self' 'unsafe-inline'" + mp + live + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""),
+  "connect-src 'self'" + mp + (preview ? " https://vercel.live wss://ws-us3.pusher.com" : ""),
+  "frame-src" + mp + (preview ? " https://vercel.live" : ""),
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

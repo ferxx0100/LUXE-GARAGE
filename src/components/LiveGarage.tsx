@@ -53,16 +53,16 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
       </div>
 
       <div className="px-5 pb-12 pt-2 md:p-0" aria-live="polite">
-        <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[.35em] text-white/55">
+        <p className="flex items-center gap-2 text-xs font-semibold tracking-[.3em] text-white/70">
           <span className={`live-dot ${status === "LIBRE" ? "bg-go" : status === "OCUPADO" ? "bg-stop" : "bg-zinc-500"}`} />
           EN VIVO · ¿ESTÁ LIBRE?
         </p>
         <h1 id="estado" className={`font-display mt-3 text-[3.4rem] leading-none font-semibold tracking-[.08em] sm:text-7xl ${c?.color ?? "text-white/40"}`}>
           {c?.word ?? "···"}
         </h1>
-        <p className="mt-4 text-lg leading-snug text-white/85">{c?.line ?? "Conectando con el garage…"}</p>
-        {status === "CERRADO" && <p className="mt-1 text-sm text-white/55">Horario: {hours}</p>}
-        <p className="mt-2 text-xs text-white/40">{stale ? "Reconectando… mostramos el último estado conocido" : ago(updatedAt)}</p>
+        <p className="mt-4 text-xl leading-snug text-white/90">{c?.line ?? "Conectando con el garage…"}</p>
+        {status === "CERRADO" && <p className="mt-1 text-base text-white/75">Horario: {hours}</p>}
+        <p className="mt-2 text-sm text-white/55">{stale ? "Reconectando… mostramos el último estado conocido" : ago(updatedAt)}</p>
         <div className="mt-7 grid grid-cols-2 gap-3 sm:flex">
           {status === "LIBRE" ? <>{go}{book}</> : <>{book}{go}</>}
         </div>

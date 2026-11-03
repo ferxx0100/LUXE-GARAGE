@@ -10,19 +10,22 @@
 - **Reserva pagada** = la única que aparta un horario del calendario. Horario lleno = no se puede reservar.
 - **Suscripción**: $555/mes, 6 lavadas al mes. Elige sus 6 días; no reserva hora: si está libre, pasa.
 - Exterior: sin bajarse del auto. Interior: deja el auto cuando esté libre, o domicilio.
-- Domicilio: +$50 por cada ida.
+- Domicilio: +$100 por cada ida (editable en /admin → Ajustes).
 - Solo existe **lavado normal**: carro $180, camioneta $220. No hay paquetes, VIP ni detailing.
 - Reserva = pago completo en línea (Mercado Pago, Apple Pay en Safari).
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind v4. Vercel.
-- Pagos aislados en `src/lib/payments/` (interfaz `PaymentProvider`): Mercado Pago Checkout API ahora, Stripe después.
+- Pagos aislados en `src/lib/payments/`: Mercado Pago ahora; Stripe sería otro archivo con las mismas funciones (`chargeCard`, `getPayment`).
 - Estado del garage + ajustes (precios, horario, aviso): Upstash Redis vía `src/lib/store.ts` (memoria si no hay variables KV_*). Editables en `/admin`.
-- Reservas: Supabase (Postgres) en la fase 3.
+- Reservas: también en Upstash (`src/lib/bookings.ts`). Un horario = una clave `lg:slot:fecha:hora` apartada con SET NX (15 min) y fijada al aprobarse el pago: imposible vender dos veces la misma hora.
+- Pagos: `src/lib/payments/mercadopago.ts` (Card Payment Brick + /v1/payments). Webhook en `/api/mp/webhook` (firma, consulta a la API, monto, idempotencia).
+- Comprobante del cliente: `/reserva/[id]` (enlace secreto) + archivo de calendario `.ics`. Agenda del equipo: `/admin` → Agenda.
+- Pruebas: `npm test` (lógica pura en `src/lib/booking-core.ts`).
 - Precios y reglas: `src/lib/settings.ts` (el servidor manda, nunca el navegador). Despliegue: `docs/VERCEL.md`.
 
 ## Comandos
-- `npm run dev` · `npm run build` · `npm run lint` (typecheck) · `npm audit`
+- `npm run dev` · `npm run build` · `npm run lint` (typecheck) · `npm test` · `npm audit`
 
 ---
 

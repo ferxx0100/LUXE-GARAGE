@@ -44,3 +44,15 @@ Deployments → último despliegue → **Redeploy** (las variables nuevas solo a
 - El estado en vivo pasa por la caché de Vercel 2 s: muchos visitantes ≈ 1 lectura cada 2 s.
 - Si el estado no se puede leer, el hero dice “Reconectando…” en vez de mostrar algo falso.
 - El login se bloquea 15 min tras 5 intentos por IP.
+
+## 7. Cobrar con Mercado Pago
+1. mercadopago.com.mx/developers → **Tus integraciones** → **Crear aplicación** (pagos en línea, Checkout API).
+2. En la aplicación → **Credenciales de prueba** (primero prueba, luego producción):
+   - **Public Key** → variable `NEXT_PUBLIC_MP_PUBLIC_KEY` (tipo *Config*: es pública).
+   - **Access Token** → variable `MP_ACCESS_TOKEN` (tipo *Secret*).
+3. En la aplicación → **Webhooks** → URL `https://luxegaragee.com/api/mp/webhook`, evento **Pagos** → guardar.
+   Copia la **clave secreta** → variable `MP_WEBHOOK_SECRET` (tipo *Secret*).
+4. **Redeploy** (la Public Key se incrusta al construir).
+5. Prueba con las tarjetas de prueba de Mercado Pago. Cuando todo funcione, cambia a las credenciales de **producción**.
+
+Mientras falten estas variables, la página muestra "Pagos en línea en activación" y no aparta horarios.

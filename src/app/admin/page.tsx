@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Semaforo } from "@/components/GarageScene";
+import AdminAgenda from "@/components/AdminAgenda";
 
 type Settings = {
   prices: { carro: number; camioneta: number; domicilio: number; suscripcion: number };
@@ -39,6 +40,7 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"garage" | "agenda" | "ajustes">("agenda");
 
   const load = useCallback(async () => {
     const r = await api("settings");
@@ -103,7 +105,7 @@ export default function Admin() {
   const set = (patch: Partial<Settings>) => setForm((f) => f && { ...f, ...patch });
 
   return (
-    <main className="mx-auto max-w-2xl p-5 pb-24 pt-10">
+    <main className="mx-auto max-w-2xl px-5 pb-24 pt-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-display text-2xl text-gold">Panel LUXE GARAGE</h1>
         <div className="flex shrink-0 gap-2 whitespace-nowrap text-sm">
@@ -119,7 +121,16 @@ export default function Admin() {
         </p>
       )}
 
-      <section className="mt-8">
+      <nav className="sticky top-0 z-20 -mx-5 mt-6 grid grid-cols-3 gap-1 bg-ink/95 px-5 py-2 backdrop-blur" aria-label="Secciones del panel">
+        {([["agenda", "📅 Agenda"], ["garage", "🚦 Garage"], ["ajustes", "⚙️ Ajustes"]] as const).map(([k, t]) => (
+          <button key={k} onClick={() => setTab(k)} aria-pressed={tab === k}
+            className={`rounded-xl py-3 text-base font-bold transition ${tab === k ? "bg-gold text-ink" : "bg-white/[.05] text-white/80"}`}>{t}</button>
+        ))}
+      </nav>
+
+      {tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} /></div>}
+
+      {tab === "garage" && <section className="mt-8">
         <h2 className="text-sm tracking-[.3em] text-white/50">SEMÁFORO DEL GARAGE</h2>
         <div className="mt-3 grid grid-cols-[auto_1fr] items-center gap-5 rounded-2xl border border-white/10 bg-white/[.03] p-4">
           <svg viewBox="0 0 48 128" className="h-36 w-auto" aria-label={`Así lo ve el cliente: ${preview}`}>
@@ -140,9 +151,9 @@ export default function Admin() {
           hint="Cerrado baja la cortina en la página." disabled={busy} onChange={(v) => setGarage({ open: v })} />
         <Switch label="Fosa" on={!(g?.busy ?? false)} onText="Libre" offText="Ocupado" onCls="bg-emerald-500" offCls="bg-red-500"
           hint="Ocupado: el auto entra a la fosa y el semáforo se pone en rojo." disabled={busy || !(g?.open ?? true)} onChange={(v) => setGarage({ busy: !v })} />
-      </section>
+      </section>}
 
-      {form && (
+      {tab === "ajustes" && form && (
         <form onSubmit={save} className="mt-10 space-y-8">
           <section>
             <h2 className="text-sm tracking-[.3em] text-white/50">PRECIOS (MXN)</h2>

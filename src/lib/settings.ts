@@ -19,7 +19,7 @@ export const Settings = z.object({
 export type Settings = z.infer<typeof Settings>;
 
 export const DEFAULT_SETTINGS: Settings = {
-  prices: { carro: 180, camioneta: 220, domicilio: 50, suscripcion: 555 },
+  prices: { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 },
   subscriptionWashes: 6,
   hours: { open: 9, close: 19, days: [1, 2, 3, 4, 5, 6] },
   notice: "",

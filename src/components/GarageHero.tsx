@@ -18,7 +18,7 @@ function ago(iso: string | null): string {
   return m < 60 ? `actualizado hace ${m} min` : `actualizado hace ${Math.round(m / 60)} h`;
 }
 
-export default function GarageHero() {
+export default function GarageHero({ notice, hours }: { notice: string; hours: string }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [intro, setIntro] = useState(true); // el carro llega y se estaciona al entrar
@@ -30,6 +30,7 @@ export default function GarageHero() {
   useEffect(() => {
     let alive = true;
     async function tick() {
+      if (document.hidden) return; // pestaña oculta: no gastar peticiones
       try {
         const r = await fetch("/api/garage", { cache: "no-store" });
         if (!r.ok) throw new Error();
@@ -69,6 +70,9 @@ export default function GarageHero() {
 
   return (
     <section className="relative isolate overflow-hidden" aria-labelledby="hero-title">
+      {notice && (
+        <div className="border-b border-gold/30 bg-gold/10 px-4 py-2.5 text-center text-sm text-gold-hi" role="note">{notice}</div>
+      )}
       <div className="mx-auto max-w-6xl px-4 pt-24 pb-6 text-center">
         <p className="rise-in text-xs tracking-[.5em] text-gold/80" style={{ animationDelay: ".2s" }}>
           AUTO DETAILING &amp; CAR CARE
@@ -190,6 +194,7 @@ export default function GarageHero() {
 
       <div className="mx-auto max-w-6xl px-4 pb-16 text-center">
         <p className="text-lg text-white/85" aria-live="polite">{status === null ? "Conectando con el garage…" : c.sub}</p>
+        {shown === "CERRADO" && <p className="mt-1 text-sm text-white/60">Horario: {hours}</p>}
         <p className="mt-1 text-xs text-white/40">
           {stale ? "Reconectando… mostrando el último estado conocido" : ago(updatedAt)}
         </p>

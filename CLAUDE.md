@@ -13,8 +13,9 @@
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind v4. Vercel.
 - Pagos aislados en `src/lib/payments/` (interfaz `PaymentProvider`): Mercado Pago Checkout API ahora, Stripe después.
-- Estado y reservas: Supabase (Postgres + Realtime) en la fase 3. Hoy: almacén en memoria (solo desarrollo).
-- Precios y reglas: `src/lib/config.ts` (el servidor manda, nunca el navegador).
+- Estado del garage + ajustes (precios, horario, aviso): Upstash Redis vía `src/lib/store.ts` (memoria si no hay variables KV_*). Editables en `/admin`.
+- Reservas: Supabase (Postgres) en la fase 3.
+- Precios y reglas: `src/lib/settings.ts` (el servidor manda, nunca el navegador). Despliegue: `docs/VERCEL.md`.
 
 ## Comandos
 - `npm run dev` · `npm run build` · `npm run lint` (typecheck) · `npm audit`

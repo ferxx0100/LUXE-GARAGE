@@ -1,6 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { BUSINESS } from "./config";
+import type { Settings } from "./settings";
+import { kvGet, kvSet } from "./store";
 
 // LIBRE: se puede llegar ya. OCUPADO: hay un auto adentro. BLOQUEADO: el admin lo cerró.
 // (CERRADO por horario se calcula, no se guarda.)
@@ -8,25 +9,21 @@ export const GarageMode = z.enum(["LIBRE", "OCUPADO", "BLOQUEADO"]);
 export type GarageMode = z.infer<typeof GarageMode>;
 export type GarageStatus = "LIBRE" | "OCUPADO" | "CERRADO";
 
-export interface GarageRecord { mode: GarageMode; updatedAt: string }
-export interface PublicGarage { status: GarageStatus; updatedAt: string }
+export interface GarageRecord { mode: GarageMode; updatedAt: string | null }
+export interface PublicGarage { status: GarageStatus; updatedAt: string | null }
 
-/** Interfaz de almacenamiento. Fase 3 la implementa con Supabase (Postgres + Realtime). */
-export interface GarageStore {
-  get(): Promise<GarageRecord>;
-  set(mode: GarageMode): Promise<GarageRecord>;
+const KEY = "lg:garage";
+
+/** Lanza error si el almacén falla: es preferible "reconectando" a mostrar un estado falso. */
+export async function getGarage(): Promise<GarageRecord> {
+  return (await kvGet<GarageRecord>(KEY)) ?? { mode: "LIBRE", updatedAt: null };
 }
 
-// Memoria de proceso: sirve para desarrollo. En Vercel NO se comparte entre instancias.
-const g = globalThis as unknown as { __garage?: GarageRecord };
-export const memoryStore: GarageStore = {
-  async get() {
-    return (g.__garage ??= { mode: "LIBRE", updatedAt: new Date().toISOString() });
-  },
-  async set(mode) {
-    return (g.__garage = { mode, updatedAt: new Date().toISOString() });
-  },
-};
+export async function setGarage(mode: GarageMode): Promise<GarageRecord> {
+  const rec = { mode, updatedAt: new Date().toISOString() };
+  await kvSet(KEY, rec);
+  return rec;
+}
 
 function localParts(d: Date) {
   const f = new Intl.DateTimeFormat("en-US", {
@@ -38,20 +35,13 @@ function localParts(d: Date) {
   return { day, hour };
 }
 
-export function isWithinHours(d = new Date()): boolean {
+export function isWithinHours(h: Settings["hours"], d = new Date()): boolean {
   const { day, hour } = localParts(d);
-  return (BUSINESS.hours.days as readonly number[]).includes(day) &&
-    hour >= BUSINESS.hours.open && hour < BUSINESS.hours.close;
+  return h.days.includes(day) && hour >= h.open && hour < h.close;
 }
 
-export function toPublic(rec: GarageRecord, now = new Date()): PublicGarage {
+export function toPublic(rec: GarageRecord, h: Settings["hours"], now = new Date()): PublicGarage {
   // BLOQUEADO y fuera de horario se muestran igual al público: CERRADO. Sin datos de personas.
-  const status: GarageStatus =
-    rec.mode === "BLOQUEADO" || !isWithinHours(now) ? "CERRADO" : rec.mode;
+  const status: GarageStatus = rec.mode === "BLOQUEADO" || !isWithinHours(h, now) ? "CERRADO" : rec.mode;
   return { status, updatedAt: rec.updatedAt };
-}
-
-export function safeEqual(a: string, b: string): boolean {
-  const x = Buffer.from(a), y = Buffer.from(b);
-  return x.length === y.length && timingSafeEqual(x, y);
 }

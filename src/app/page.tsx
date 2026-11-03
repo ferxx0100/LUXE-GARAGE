@@ -1,5 +1,9 @@
 import GarageHero from "@/components/GarageHero";
-import { BUSINESS, HOME_VISIT_FEE_MXN, SUBSCRIPTION, WASH_PRICE_MXN, whatsappLink } from "@/lib/config";
+import { BUSINESS, whatsappLink } from "@/lib/config";
+import { getSettings, hoursLabel } from "@/lib/settings";
+
+// Página estática regenerada al guardar en /admin (y cada 5 min por si acaso).
+export const revalidate = 300;
 
 const Section = ({ id, title, kicker, children }: { id: string; title: string; kicker: string; children: React.ReactNode }) => (
   <section id={id} className="mx-auto max-w-6xl scroll-mt-8 px-4 py-20">
@@ -13,10 +17,12 @@ const Card = ({ children, hot }: { children: React.ReactNode; hot?: boolean }) =
   <div className={`rounded-2xl border p-6 ${hot ? "border-gold bg-gold/5" : "border-white/10 bg-white/[.03]"}`}>{children}</div>
 );
 
-export default function Home() {
+export default async function Home() {
+  const s = await getSettings();
+  const horario = hoursLabel(s.hours);
   return (
     <main>
-      <GarageHero />
+      <GarageHero notice={s.notice} hours={horario} />
 
       <Section id="como" kicker="CÓMO FUNCIONA" title="Llegas cuando está libre">
         <div className="grid gap-4 sm:grid-cols-3">
@@ -28,24 +34,24 @@ export default function Home() {
 
       <Section id="reservar" kicker="RESERVA" title="Aparta tu horario">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card><p className="text-white/60">Lavado normal · Carro</p><p className="font-display mt-1 text-4xl text-gold">${WASH_PRICE_MXN.carro}</p></Card>
-          <Card><p className="text-white/60">Lavado normal · Camioneta</p><p className="font-display mt-1 text-4xl text-gold">${WASH_PRICE_MXN.camioneta}</p></Card>
+          <Card><p className="text-white/60">Lavado normal · Carro</p><p className="font-display mt-1 text-4xl text-gold">${s.prices.carro}</p></Card>
+          <Card><p className="text-white/60">Lavado normal · Camioneta</p><p className="font-display mt-1 text-4xl text-gold">${s.prices.camioneta}</p></Card>
         </div>
-        <p className="mt-4 text-white/60">A domicilio: +${HOME_VISIT_FEE_MXN} por cada ida.</p>
+        <p className="mt-4 text-white/60">A domicilio: +${s.prices.domicilio} por cada ida.</p>
         <p className="mt-6 rounded-xl border border-dashed border-gold/40 p-4 text-sm text-white/60">
           Calendario y pago en línea: en construcción (siguiente fase). Mientras tanto,{" "}
           <a className="text-gold underline" href={whatsappLink("Hola, quiero reservar un lavado en LUXE GARAGE")}>reserva por WhatsApp</a>.
         </p>
       </Section>
 
-      <Section id="suscripcion" kicker="SUSCRIPCIÓN MENSUAL" title={`${SUBSCRIPTION.washesPerMonth} lavadas al mes`}>
+      <Section id="suscripcion" kicker="SUSCRIPCIÓN MENSUAL" title={`${s.subscriptionWashes} lavadas al mes`}>
         <Card hot>
-          <p className="font-display text-gold-grad text-6xl font-bold">${SUBSCRIPTION.priceMXN}<span className="text-lg text-white/60"> /mes</span></p>
+          <p className="font-display text-gold-grad text-6xl font-bold">${s.prices.suscripcion}<span className="text-lg text-white/60"> /mes</span></p>
           <ul className="mt-6 space-y-2 text-white/80">
-            <li>• Eliges tus {SUBSCRIPTION.washesPerMonth} días del mes.</li>
+            <li>• Eliges tus {s.subscriptionWashes} días del mes.</li>
             <li>• No necesitas reservar hora: si el garage está libre, pasas.</li>
             <li>• Exterior sin bajarte del auto. Interior: déjalo cuando esté libre.</li>
-            <li>• ¿Prefieres domicilio? +${HOME_VISIT_FEE_MXN} por cada ida.</li>
+            <li>• ¿Prefieres domicilio? +${s.prices.domicilio} por cada ida.</li>
           </ul>
           <a className="mt-6 inline-block rounded-full bg-gold px-7 py-3 font-semibold text-black hover:bg-gold-hi"
             href={whatsappLink("Hola, quiero la suscripción mensual de LUXE GARAGE")}>Quiero suscribirme</a>
@@ -60,6 +66,7 @@ export default function Home() {
       <footer className="border-t border-white/10 px-4 py-10 text-center text-sm text-white/50">
         <p className="font-display text-gold">{BUSINESS.name}</p>
         <p className="mt-1">{BUSINESS.location}</p>
+        <p className="mt-1">Horario: {horario}</p>
         <p className="mt-1">© {new Date().getFullYear()} {BUSINESS.name}. Todos los derechos reservados.</p>
       </footer>
     </main>

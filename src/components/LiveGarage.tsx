@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import GarageScene, { type Status } from "./GarageScene";
-import { clockPhrase, hour12, inText, KIND, mxNow, type Kind } from "./fmt";
+import { hour12, inText, KIND, mxNow, type Kind } from "./fmt";
 
 const POLL_MS = 5000;
 
@@ -14,15 +14,21 @@ interface Garage {
   at: number; // cuándo lo recibimos (para descontar minutos sin volver a preguntar)
 }
 
-// Colores pensados para leerse sobre el azulejo claro.
-const COPY: Record<Status, { word: string; color: string; dot: string }> = {
-  LIBRE: { word: "LIBRE", color: "text-[#0b8a43]", dot: "bg-[#13b257]" },
-  OCUPADO: { word: "OCUPADO", color: "text-[#c8231a]", dot: "bg-[#e5372c]" },
-  CERRADO: { word: "CERRADO", color: "text-[#8a6d1a]", dot: "bg-gold" },
+// Una sola tipografía de título (la palabra del estado); todo lo demás en Manrope y en pocos tamaños.
+const COPY: Record<Status, { word: string; color: string; dot: string; line: string }> = {
+  LIBRE: { word: "LIBRE", color: "text-[#0b8a43]", dot: "bg-[#13b257]", line: "No hay fila. Puedes venir ahora mismo." },
+  OCUPADO: { word: "OCUPADO", color: "text-[#c8231a]", dot: "bg-[#e5372c]", line: "Estamos lavando un auto." },
+  CERRADO: { word: "CERRADO", color: "text-[#8a6d1a]", dot: "bg-gold", line: "Por ahora la cortina está abajo." },
 };
 
-
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Pequeña leyenda para entender la escena de un vistazo.
+const LEGEND = [
+  { dot: "bg-[#13b257]", t: "Verde", s: "Pasa sin cita" },
+  { dot: "bg-[#e5372c]", t: "Rojo", s: "Estamos lavando" },
+  { dot: "bg-[#8a6d1a]", t: "Cortina", s: "Cerrado" },
+];
 
 export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl: string }) {
   const [g, setG] = useState<Garage | null>(null);
@@ -58,7 +64,7 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
 
   // Cerrado: cuenta regresiva y letrero LED de la cortina.
   const opensLeft = less(g?.opens?.inMinutes);
-  const countdown = opensLeft === null ? "" : opensLeft < 60 ? `Faltan ${opensLeft} min` : opensLeft < 24 * 60 ? `Faltan ${Math.floor(opensLeft / 60)} h ${opensLeft % 60} min` : "";
+  const countdown = opensLeft === null ? "" : opensLeft < 60 ? `${opensLeft} min` : opensLeft < 24 * 60 ? `${Math.floor(opensLeft / 60)} h${opensLeft % 60 ? ` ${opensLeft % 60} min` : ""}` : "";
   const opensShort = g?.opens ? `ABRE ${g.opens.label.replace(/^el /, "").replace(/^mañana \S+/, "mañana").replace(/ a las? /, " ")}`.toUpperCase() : undefined;
 
   // Ocupado: cuándo se desocupa (estimado) y barra de avance.
@@ -70,7 +76,7 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
   const spot = g?.next?.[kind] ?? null;
   const spotIn = spot ? less(spot.inMinutes) ?? 0 : 0;
   const isToday = spot && now ? spot.date === now.date : false;
-  const spotSub = spot ? (isToday ? inText(spotIn) || cap(spot.label) : cap(spot.label)) : "";
+  const spotSub = spot ? (isToday ? cap(inText(spotIn) || "hoy") : cap(spot.label.replace(/\s\d{1,2}(:\d{2})?\s[ap]m$/, ""))) : "";
 
   function take() {
     if (!spot) return;
@@ -78,88 +84,106 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
     document.getElementById("reservar")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const clock = now ? clockPhrase(now.h, now.m) : null;
+  const clock = now ? `${now.h % 12 || 12}:${String(now.m).padStart(2, "0")} ${now.h < 12 ? "am" : "pm"}` : "";
 
   return (
-    <section aria-labelledby="estado" className="tile-hero text-[#151413]">
+    <section aria-labelledby="estado" className="bg-[#f2f0eb] text-[#151413]">
       <div className="mx-auto max-w-5xl md:grid md:grid-cols-[minmax(0,440px)_1fr] md:items-start md:gap-12 md:px-6 md:py-12">
-        <div className="relative overflow-hidden shadow-[0_24px_60px_rgba(40,30,10,.25)] md:rounded-2xl md:border md:border-black/10">
+        <div className="relative overflow-hidden md:rounded-2xl md:border md:border-black/10 md:shadow-[0_18px_40px_rgba(40,30,10,.18)]">
           <GarageScene status={status} opensShort={opensShort} busyShort={busyShort} />
         </div>
 
-        <div className="px-5 pb-14 pt-6 md:p-0" aria-live="polite">
-          <p className="flex items-center gap-2 text-xs font-bold tracking-[.3em] text-black/60">
-            <span className={`live-dot ${c?.dot ?? "bg-black/30"}`} />
-            EN VIVO · ¿ESTÁ LIBRE?
-          </p>
-          <p className="mt-3 text-2xl font-semibold text-black/80" suppressHydrationWarning>
-            {clock ? <>{clock.lead} <b className="tabular-nums text-black">{clock.time}</b> {clock.ap}</> : <span className="opacity-0">Son las 0:00 pm</span>}
-          </p>
-          <h1 id="estado" className={`font-display mt-1 text-[3.6rem] leading-none font-bold tracking-[.06em] sm:text-7xl ${c?.color ?? "text-black/25"}`}>
-            {c?.word ?? "···"}
-          </h1>
+        <div className="relative z-10 -mt-24 space-y-5 px-5 pb-16 md:mt-0 md:p-0" aria-live="polite">
+          {/* Estado actual */}
+          <div className="rounded-3xl bg-white p-5 shadow-[0_12px_32px_-14px_rgba(40,30,10,.3)] ring-1 ring-black/5">
+            <div className="flex items-center justify-between text-sm font-semibold text-black/55">
+              <span className="flex items-center gap-2"><span className={`live-dot ${c?.dot ?? "bg-black/30"}`} />En vivo</span>
+              <span className="tabular-nums" suppressHydrationWarning>{clock}</span>
+            </div>
+            <h1 id="estado" className={`font-display mt-2 text-[2.6rem] leading-none font-bold tracking-[.05em] ${c?.color ?? "text-black/25"}`}>
+              {c?.word ?? "···"}
+            </h1>
+            <p className="mt-2 text-lg text-black/75">{c ? c.line : stale ? "Sin conexión. Reintentando…" : "Conectando con el garage…"}</p>
 
-          {status === "LIBRE" && <p className="mt-4 text-2xl font-bold leading-snug">Ven ahora: no hay fila.</p>}
-          {status === "OCUPADO" && (
-            // Rojo = tiempo que falta (ocupado). Verde = hora en que queda libre.
-            <div className="mt-4 overflow-hidden rounded-3xl shadow-[0_14px_40px_-18px_rgba(0,0,0,.5)]" role="group" aria-label="Tiempo para que se desocupe">
-              <div className="grid grid-cols-2">
-                <div className="bg-[#c8231a] px-4 py-4 text-white">
-                  <p className="text-xs font-extrabold tracking-[.22em]">OCUPADO</p>
-                  <p className="mt-1 text-base font-semibold opacity-90">{freeIn ? "faltan" : "terminando"}</p>
-                  <p className="font-display text-[2.6rem] font-semibold leading-none tabular-nums">{freeIn ? freeIn : "ya"}</p>
-                  <p className="text-base font-semibold opacity-90">{freeIn ? "minutos" : "casi listo"}</p>
+            {status === "LIBRE" && (
+              <p className="mt-4 rounded-2xl bg-[#0b8a43] px-4 py-3 text-center text-lg font-bold text-white">Pasa directo, sin cita</p>
+            )}
+
+            {status === "OCUPADO" && (
+              // Rojo = cuánto falta. Verde = hora en que queda libre.
+              <div className="mt-4" role="group" aria-label="Tiempo para que se desocupe">
+                <div className="grid grid-cols-2 gap-2 text-white">
+                  <div className="rounded-2xl bg-[#c8231a] px-4 py-3">
+                    <p className="text-sm font-semibold opacity-90">{freeIn ? "Faltan" : "Ya casi"}</p>
+                    <p className="text-2xl font-extrabold tabular-nums">{freeIn ? `${freeIn} min` : "terminamos"}</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#0b8a43] px-4 py-3">
+                    <p className="text-sm font-semibold opacity-90">Libre a las</p>
+                    <p className="text-2xl font-extrabold tabular-nums">{g?.busyUntil ? hour12(g.busyUntil) : "—"}</p>
+                  </div>
                 </div>
-                <div className="bg-[#0b8a43] px-4 py-4 text-white">
-                  <p className="text-xs font-extrabold tracking-[.22em]">LIBRE</p>
-                  <p className="mt-1 text-base font-semibold opacity-90">a las</p>
-                  <p className="font-display text-[2.6rem] font-semibold leading-none tabular-nums">{g?.busyUntil ? hour12(g.busyUntil).split(" ")[0] : "—"}</p>
-                  <p className="text-base font-semibold opacity-90">{g?.busyUntil ? hour12(g.busyUntil).split(" ")[1] : ""}</p>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#c8231a] to-[#0b8a43] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
                 </div>
               </div>
-              <div className="h-2.5 bg-[#0b8a43]/25" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
-                <div className="h-full bg-gradient-to-r from-[#c8231a] to-[#0b8a43] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          )}
-          {status === "CERRADO" && (
-            <div className="mt-4 rounded-2xl border border-[#8a6d1a]/25 bg-white/70 px-5 py-4">
-              {g?.opens ? <p className="text-2xl font-bold">Abrimos {g.opens.label}</p> : <p className="text-2xl font-bold">Ahora estamos cerrados.</p>}
-              {countdown && <p className="mt-1 text-lg font-semibold tabular-nums text-[#8a6d1a]">{countdown}</p>}
-              <p className="mt-2 text-base text-black/65">Horario: {hours}</p>
-            </div>
-          )}
-          {!status && <p className="mt-4 text-xl text-black/70">{stale ? "Sin conexión. Reintentando…" : "Conectando con el garage…"}</p>}
+            )}
 
-          {/* PRÓXIMO LUGAR */}
+            {status === "CERRADO" && (
+              <div className="mt-4 rounded-2xl bg-[#f2f0eb] px-4 py-3">
+                <p className="text-sm font-semibold text-black/60">Abrimos</p>
+                <p className="text-xl font-extrabold leading-snug">{g?.opens ? cap(g.opens.label) : "Pronto"}</p>
+                {countdown && <p className="text-base font-semibold tabular-nums text-[#8a6d1a]">Faltan {countdown}</p>}
+              </div>
+            )}
+
+            {stale && status && <p className="mt-3 text-sm text-black/50">Reconectando… mostramos el último estado.</p>}
+            <p className="mt-4 border-t border-black/5 pt-3 text-sm text-black/55">Horario: {hours}</p>
+          </div>
+
+          {/* Qué significa la escena */}
+          <div>
+            <p className="text-center text-base text-black/70">Arriba ves nuestro garage <b className="text-black/85">en vivo</b>. El semáforo te dice si puedes pasar:</p>
+            <ul className="mt-3 grid grid-cols-3 gap-2">
+              {LEGEND.map((l) => (
+                <li key={l.t} className="rounded-2xl bg-white px-2 py-2.5 text-center shadow-[0_1px_0_rgba(0,0,0,.04)] ring-1 ring-black/5">
+                  <span className={`mx-auto block size-3 rounded-full ${l.dot}`} aria-hidden />
+                  <span className="mt-1.5 block text-sm font-bold leading-tight">{l.t}</span>
+                  <span className="block text-[13px] leading-tight text-black/60">{l.s}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Próximo lugar para apartar */}
           {g?.next && (
-            <div className="mt-6 rounded-[26px] border border-black/10 bg-[#0f0f10] p-5 text-white shadow-[0_24px_50px_rgba(20,15,5,.35)]">
-              <p className="text-xs font-bold tracking-[.3em] text-gold">PRÓXIMO LUGAR PARA APARTAR</p>
-              <div className="mt-3 grid grid-cols-2 gap-1.5 rounded-2xl bg-white/[.07] p-1.5" role="radiogroup" aria-label="Tipo de lavado">
+            <div className="rounded-3xl bg-[#0f0f10] p-5 text-white shadow-[0_18px_40px_-16px_rgba(20,15,5,.55)]">
+              <p className="text-base font-bold">¿Prefieres asegurar tu hora?</p>
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-white/[.07] p-1" role="radiogroup" aria-label="Tipo de lavado">
                 {(["completo", "exterior"] as const).map((k) => (
                   <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
-                    className={`min-h-14 rounded-xl px-2 py-2 text-center leading-tight transition ${kind === k ? "bg-gold text-ink" : "text-white/80"}`}>
-                    <span className="block text-base font-bold">{KIND[k].title}</span>
-                    <span className="block text-sm font-semibold opacity-75">{KIND[k].min} min</span>
+                    className={`min-h-12 rounded-xl px-2 text-center text-sm font-bold leading-tight transition ${kind === k ? "bg-gold text-ink" : "text-white/75"}`}>
+                    {KIND[k].title}<span className="block text-xs font-semibold opacity-75">{KIND[k].min} min</span>
                   </button>
                 ))}
               </div>
               {spot ? (
-                <>
-                  <p className="font-display mt-4 text-[3rem] leading-none font-semibold tabular-nums text-gold-grad">{hour12(spot.time)}</p>
-                  <p className="mt-2 text-xl font-semibold text-white/90">{spotSub}</p>
-                  <button type="button" onClick={take} className="btn-gold mt-5 min-h-14 w-full text-xl">Apartar este lugar</button>
-                </>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-white/60">Próximo lugar</p>
+                    <p className="text-[1.75rem] font-extrabold leading-tight tabular-nums text-gold">{hour12(spot.time)}</p>
+                    <p className="text-sm text-white/75">{spotSub}</p>
+                  </div>
+                  <button type="button" onClick={take} className="btn-gold min-h-12 shrink-0 px-6 text-base">Apartar</button>
+                </div>
               ) : (
-                <p className="mt-4 text-lg text-white/80">Por ahora no hay lugares en línea. Toca Ayuda y te atendemos.</p>
+                <p className="mt-4 text-base text-white/75">Por ahora no hay lugares en línea. Toca Ayuda y te atendemos.</p>
               )}
             </div>
           )}
 
-          {stale && status && <p className="mt-4 text-sm text-black/55">Reconectando… mostramos el último estado conocido</p>}
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:flex">
-            <a href="#reservar" className="btn-line-dark min-h-14">Ver horas</a>
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="btn-line-dark min-h-14">Cómo llegar</a>
+          <div className="flex items-center justify-center gap-6 text-base font-semibold text-black/70">
+            <a href="#reservar" className="underline decoration-black/25 underline-offset-4">Ver todas las horas</a>
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="underline decoration-black/25 underline-offset-4">Cómo llegar</a>
           </div>
         </div>
       </div>

@@ -13,7 +13,7 @@ export const revalidate = 300;
 const Title = ({ kicker, children, dark }: { kicker: string; children: React.ReactNode; dark?: boolean }) => (
   <header className="text-center">
     <p className={`text-[11px] font-semibold tracking-[.4em] ${dark ? "text-[#8a6d1a]" : "text-gold/80"}`}>{kicker}</p>
-    <h2 className="font-display mt-3 text-[2rem] leading-tight font-semibold sm:text-5xl">{children}</h2>
+    <h2 className="font-display mt-2 text-[1.9rem] leading-tight font-semibold sm:text-5xl">{children}</h2>
   </header>
 );
 
@@ -31,13 +31,6 @@ const Bubbles = () => (
     <div className="lg-foam-band" />
   </div>
 );
-const Drop = () => (
-  <svg viewBox="0 0 20 24" className="mt-1 size-5 shrink-0" aria-hidden>
-    <path d="M10 1C10 1 2 10.5 2 15.5a8 8 0 0 0 16 0C18 10.5 10 1 10 1Z" fill="#d4af37" />
-    <path d="M6.5 15.5a3.5 3.5 0 0 0 3.5 3.5" stroke="#ffffff" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-  </svg>
-);
-
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
@@ -85,58 +78,68 @@ export default async function Home() {
       <main>
         <LiveGarage hours={horario} mapsUrl={mapsLink} />
 
-        <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 py-20">
-          <Title kicker="RESERVA EN LÍNEA">Aparta tu lugar</Title>
-          <p className="mt-4 text-center text-xl text-white/85">Elige qué lavamos y la hora, paga y listo.</p>
+        <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 pb-24 pt-20">
+          <Title kicker="RESERVA EN LÍNEA">Aparta tu hora</Title>
+          <p className="mt-3 text-center text-lg text-white/75">Tres pasos: qué lavamos, a qué hora y tus datos.</p>
           <div className="mt-10">
             <BookingFlow prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
           </div>
         </section>
 
-        {/* Membresía: tema agua, con burbujas */}
-        <section id="membresia" className="water-bg relative scroll-mt-14 overflow-hidden px-5 py-24 text-white">
-          <Bubbles />
-          <svg className="lg-wave top-0 text-[#09090a]" style={{ "--d": "18s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
-            <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
-          </svg>
-          <div className="relative mx-auto max-w-md text-center">
-            <p className="text-[11px] font-bold tracking-[.4em] text-[#a9c4ff]">MEMBRESÍA</p>
-            <h2 className="font-display mt-3 text-[2.1rem] leading-tight font-semibold sm:text-5xl">{s.subscriptionWashes} lavadas en 30 días</h2>
-            <div className="mt-8 rounded-[30px] border border-white/20 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(10,10,40,.45)] backdrop-blur-sm">
-              <p className="font-display text-water-grad text-7xl font-semibold leading-none">${s.prices.suscripcion}</p>
-              <p className="mt-2 text-lg font-semibold text-white/85">al mes · pago único</p>
-              <p className="mt-7 text-left text-lg font-bold text-[#a9c4ff]">Así de fácil:</p>
-              <ol className="mt-3 space-y-4 text-left text-xl leading-snug">
-                {[
-                  `Pagas $${s.prices.suscripcion} una sola vez.`,
-                  `Eliges tus ${s.subscriptionWashes} días y la hora de cada uno (dentro de 30 días).`,
-                  "Llegas a tu hora y pasas directo. Tu lugar ya es tuyo.",
-                ].map((t, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#8e2348] text-lg font-extrabold text-white shadow-[0_0_0_3px_rgba(169,196,255,.25)]">{i + 1}</span>
-                    <span className="pt-1">{t}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-5 text-left text-base text-white/75">Exterior e interior, o solo exterior sin bajarte.</p>
-              <MembershipFlow price={s.prices.suscripcion} washes={s.subscriptionWashes} prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
-            </div>
-          </div>
-          <svg className="lg-wave bottom-0 text-[#f2f0eb]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
-            <path fill="currentColor" d="M0 70h1200V42c-50 0-100-22-150-22s-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22S50 42 0 42Z" />
-          </svg>
-        </section>
-
         {/* El lugar real: video sobre mosaico */}
         <section id="video" className="tile-mosaic px-5 pb-28 pt-20">
           <header className="mx-auto max-w-xl text-center">
-            <p className="text-xs font-bold tracking-[.4em] text-[#7a5f12]">EL LUGAR REAL</p>
-            <h2 className="font-display mt-2 text-[2.1rem] font-semibold leading-tight text-[#141414] md:text-5xl">Si está libre,<br />está libre</h2>
-            <p className="mt-3 text-xl text-black/75">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
+            <p className="text-[11px] font-semibold tracking-[.4em] text-[#8a6d1a]">EL LUGAR REAL</p>
+            <h2 className="font-display mt-2 text-[1.9rem] font-semibold leading-tight text-[#141414] md:text-5xl">Así se ve por dentro</h2>
+            <p className="mt-3 text-lg text-black/70">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
           </header>
           <div className="mx-auto mt-10 max-w-[21rem]">
             <RealVideo />
           </div>
+        </section>
+
+        {/* Membresía: azul marino y vino, con burbujas */}
+        <section id="membresia" className="water-bg relative scroll-mt-14 overflow-hidden px-5 py-28 text-white">
+          <Bubbles />
+          <svg className="lg-wave top-0 text-[#f2f0eb]" style={{ "--d": "18s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
+            <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
+          </svg>
+          <div className="relative mx-auto max-w-md">
+            <header className="text-center">
+              <p className="text-[11px] font-semibold tracking-[.4em] text-[#a9c4ff]">MEMBRESÍA</p>
+              <h2 className="font-display mt-2 text-[1.9rem] leading-tight font-semibold sm:text-5xl">Para los que lavan seguido</h2>
+              <p className="mt-3 text-lg text-white/80">Pagas una vez y tienes {s.subscriptionWashes} lavadas en 30 días, con tus días y horas ya apartados.</p>
+            </header>
+            <div className="mt-8 rounded-3xl border border-white/15 bg-white/[.07] p-6 shadow-[0_30px_80px_rgba(10,10,40,.45)] backdrop-blur-sm">
+              <div className="flex items-end justify-between gap-4 border-b border-white/10 pb-5">
+                <div>
+                  <p className="text-sm text-white/65">Precio</p>
+                  <p className="text-5xl font-extrabold leading-none tabular-nums">${s.prices.suscripcion}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-extrabold leading-none">{s.subscriptionWashes} lavadas</p>
+                  <p className="mt-1 text-sm text-white/65">≈ ${Math.round(s.prices.suscripcion / s.subscriptionWashes)} cada una{s.prices.carro > s.prices.suscripcion / s.subscriptionWashes ? ` (normal $${s.prices.carro})` : ""}</p>
+                </div>
+              </div>
+              <ol className="mt-5 space-y-4">
+                {[
+                  ["Paga una sola vez", `$${s.prices.suscripcion} con tarjeta, aquí mismo.`],
+                  [`Elige tus ${s.subscriptionWashes} días`, "Y la hora de cada uno, dentro de 30 días."],
+                  ["Llega y pasa", "Tu lugar ya es tuyo: sin fila, sin cita extra."],
+                ].map(([t, d], i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#8e2348] text-base font-extrabold ring-2 ring-[#a9c4ff]/30">{i + 1}</span>
+                    <span><b className="block text-lg leading-snug">{t}</b><span className="block text-base text-white/70">{d}</span></span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-5 rounded-2xl bg-white/[.06] px-4 py-3 text-sm text-white/75">Sirve para <b className="text-white">exterior e interior</b> o <b className="text-white">solo exterior</b>.</p>
+              <MembershipFlow price={s.prices.suscripcion} washes={s.subscriptionWashes} prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
+            </div>
+          </div>
+          <svg className="lg-wave bottom-0 text-[#09090a]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
+            <path fill="currentColor" d="M0 70h1200V42c-50 0-100-22-150-22s-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22S50 42 0 42Z" />
+          </svg>
         </section>
 
         <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">

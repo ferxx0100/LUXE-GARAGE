@@ -137,7 +137,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
 
   return (
     <>
-      <button type="button" onClick={() => { setOpen(true); setError(""); }} className="btn-water mt-8 min-h-16 w-full text-xl">Adquirir membresía</button>
+      <button type="button" onClick={() => { setOpen(true); setError(""); }} className="btn-water mt-6 min-h-14 w-full text-lg">Elegir mis días</button>
 
       {/* Portal a <body>: el desenfoque de la tarjeta de vidrio rompía "fixed" en iPhone */}
       {open && createPortal(

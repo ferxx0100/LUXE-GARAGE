@@ -65,22 +65,6 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .sheet-in { animation: sheetIn .28s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes sheetIn { from { transform: translateY(24px); opacity: 0; } }
 
-/* ——— Hero claro: azulejo crema ——— */
-.tile-hero {
-  background-color: #f2f0eb; /* mismo crema en todo el sitio */
-  background-image:
-    radial-gradient(120% 70% at 20% 0%, rgba(255,255,255,.75), rgba(255,255,255,0) 60%),
-    linear-gradient(#d3cec4 1px, transparent 1px),
-    linear-gradient(90deg, #d3cec4 1px, transparent 1px);
-  background-size: 100% 100%, 44px 44px, 44px 44px;
-}
-.btn-line-dark {
-  display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; border-radius: 999px;
-  border: 2px solid rgba(20,20,20,.75); color: #141414; font-weight: 800; font-size: 1.1rem; background: rgba(255,255,255,.55);
-  transition: transform .15s, background .2s;
-}
-.btn-line-dark:active { transform: scale(.97); }
-
 /* ——— Sección del video: mosaico gris/crema plano ——— */
 .tile-mosaic {
   background-color: #f2f0eb;

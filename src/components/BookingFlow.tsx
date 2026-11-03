@@ -15,9 +15,9 @@ export type Prefill = { date: string; time: string; kind: Kind };
 
 export function Card({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[.06] to-white/[.02] p-5 shadow-[0_20px_60px_rgba(0,0,0,.35)]">
-      <h3 className="flex items-center gap-3 text-[1.45rem] font-bold">
-        <span className="grid size-10 place-items-center rounded-full bg-gold text-lg font-extrabold text-ink">{n}</span>{title}
+    <section className="rounded-3xl border border-white/10 bg-white/[.04] p-5 shadow-[0_20px_50px_rgba(0,0,0,.3)]">
+      <h3 className="flex items-center gap-3 text-xl font-bold">
+        <span className="grid size-9 place-items-center rounded-full bg-gold text-base font-extrabold text-ink">{n}</span>{title}
       </h3>
       <div className="mt-5">{children}</div>
     </section>
@@ -27,20 +27,20 @@ export function Card({ n, title, children }: { n: number; title: string; childre
 function Choice({ on, onClick, title, sub, right }: { on: boolean; onClick: () => void; title: string; sub?: string; right?: string }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on}
-      className={`flex min-h-16 w-full items-center gap-4 rounded-2xl border-2 px-4 py-4 text-left transition active:scale-[.99] ${on ? "border-gold bg-gold/[.13]" : "border-white/12 bg-white/[.03]"}`}>
+      className={`flex min-h-16 w-full items-center gap-3.5 rounded-2xl border-2 px-4 py-3.5 text-left transition active:scale-[.99] ${on ? "border-gold bg-gold/[.13]" : "border-white/12 bg-white/[.03]"}`}>
       <span className={`grid size-7 shrink-0 place-items-center rounded-full border-2 ${on ? "border-gold bg-gold" : "border-white/35"}`}>
         {on && <span className="size-2.5 rounded-full bg-ink" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xl font-bold leading-tight">{title}</span>
-        {sub && <span className="mt-0.5 block text-base text-white/75">{sub}</span>}
+        <span className="block text-lg font-bold leading-tight">{title}</span>
+        {sub && <span className="mt-0.5 block text-sm text-white/65">{sub}</span>}
       </span>
-      {right && <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-base font-bold text-gold">{right}</span>}
+      {right && <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-sm font-bold text-gold">{right}</span>}
     </button>
   );
 }
 
-const input = "w-full min-h-14 rounded-2xl border-2 border-white/15 bg-black/30 px-5 py-4 text-xl outline-none placeholder:text-white/45 focus:border-gold";
+const input = "w-full min-h-14 rounded-2xl border-2 border-white/15 bg-black/30 px-4 py-3.5 text-lg outline-none placeholder:text-white/45 focus:border-gold";
 const digits = (s: string) => s.replace(/\D/g, "").length;
 
 export default function BookingFlow({ prices, hours, today: serverToday, mpPublicKey }: Props) {
@@ -178,24 +178,25 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
 
   /* ───────── Reserva en 3 pasos ───────── */
   return (
-    <div ref={formRef} className="grid gap-5 pb-32">
+    <div ref={formRef} className="grid gap-8 pb-32">
       <Card n={1} title="¿Qué lavamos?">
         <div className="grid gap-3">
           {(["completo", "exterior"] as const).map((k) => (
-            <Choice key={k} on={kind === k} onClick={() => setKind(k)} title={KIND[k].title} sub={KIND[k].sub} right={`${KIND[k].min} min`} />
+            <Choice key={k} on={kind === k} onClick={() => setKind(k)} title={KIND[k].title} sub={`${KIND[k].min} min · ${KIND[k].sub}`} />
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-1.5" role="radiogroup" aria-label="Tipo de vehículo">
+        <p className="mt-6 text-sm font-semibold text-white/60">Tu vehículo</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-1.5" role="radiogroup" aria-label="Tipo de vehículo">
           {(["carro", "camioneta"] as const).map((v) => (
             <button type="button" role="radio" aria-checked={vehicle === v} key={v} onClick={() => setVehicle(v)}
-              className={`min-h-16 rounded-xl py-3 text-center transition ${vehicle === v ? "bg-white text-ink" : "text-white/80"}`}>
-              <span className="block text-xl font-bold">{v === "carro" ? "Carro" : "Camioneta"}</span>
-              <span className="block text-base font-semibold opacity-75">${prices[v]}</span>
+              className={`min-h-14 rounded-xl py-2.5 text-center transition ${vehicle === v ? "bg-white text-ink" : "text-white/80"}`}>
+              <span className="block text-lg font-bold">{v === "carro" ? "Carro" : "Camioneta"}</span>
+              <span className="block text-sm font-semibold opacity-75">${prices[v]}</span>
             </button>
           ))}
         </div>
-        <label className="mt-4 flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-white/12 px-4 py-4">
-          <span><span className="block text-xl font-bold">¿Vamos a tu casa?</span><span className="block text-base text-white/75">+${prices.domicilio} por la visita</span></span>
+        <label className="mt-6 flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-white/12 px-4 py-3.5">
+          <span><span className="block text-lg font-bold">¿Vamos a tu casa?</span><span className="block text-sm text-white/65">+${prices.domicilio} por la visita</span></span>
           <input type="checkbox" checked={home} onChange={(e) => setHome(e.target.checked)} className="sr-only" />
           <span aria-hidden className={`relative h-9 w-16 shrink-0 rounded-full transition ${home ? "bg-gold" : "bg-white/20"}`}>
             <span className={`absolute top-1 size-7 rounded-full bg-white shadow transition-all ${home ? "left-8" : "left-1"}`} />
@@ -208,13 +209,13 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
         <div className="grid grid-cols-2 gap-3">
           <button type="button" onClick={() => { setOtherDay(false); setDate(today); }} aria-pressed={!otherDay}
             className={`min-h-16 rounded-2xl border-2 px-3 py-4 text-center transition ${!otherDay ? "border-gold bg-gold text-ink" : "border-white/15 bg-white/[.03]"}`}>
-            <span className="block text-2xl font-extrabold">Hoy</span>
-            <span className="block text-base font-semibold opacity-80">{DAY[wd(today)]} {Number(today.slice(8))}</span>
+            <span className="block text-xl font-extrabold">Hoy</span>
+            <span className="block text-sm font-semibold opacity-80">{DAY[wd(today)]} {Number(today.slice(8))}</span>
           </button>
           <button type="button" onClick={() => setOtherDay(true)} aria-pressed={otherDay}
             className={`min-h-16 rounded-2xl border-2 px-3 py-4 text-center transition ${otherDay ? "border-gold bg-gold text-ink" : "border-white/15 bg-white/[.03]"}`}>
-            <span className="block text-2xl font-extrabold">Otro día</span>
-            <span className="block text-base font-semibold opacity-80">{otherDay && date !== today ? `${DAY[wd(date)]} ${Number(date.slice(8))}` : "Elegir"}</span>
+            <span className="block text-xl font-extrabold">Otro día</span>
+            <span className="block text-sm font-semibold opacity-80">{otherDay && date !== today ? `${DAY[wd(date)]} ${Number(date.slice(8))}` : "Elegir"}</span>
           </button>
         </div>
 
@@ -224,7 +225,7 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
               const open = !!hours[wd(d)], on = d === date;
               return (
                 <button type="button" role="option" aria-selected={on} key={d} disabled={!open} onClick={() => setDate(d)}
-                  className={`flex min-h-14 items-center justify-between rounded-xl px-4 py-3 text-left text-xl transition disabled:opacity-40 ${on ? "bg-gold font-bold text-ink" : "bg-white/[.04]"}`}>
+                  className={`flex min-h-14 items-center justify-between rounded-xl px-4 py-3 text-left text-lg transition disabled:opacity-40 ${on ? "bg-gold font-bold text-ink" : "bg-white/[.04]"}`}>
                   <span>{d === addDays(today, 1) ? `Mañana, ${longDay(d).toLowerCase()}` : longDay(d)}</span>
                   <span className="text-base font-semibold">{open ? (on ? "✓" : "") : "Cerrado"}</span>
                 </button>
@@ -233,19 +234,19 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
           </div>
         )}
 
-        <p className="mt-5 text-lg font-semibold text-white/85">{date === today ? "Horas libres de hoy" : `Horas libres del ${longDay(date).toLowerCase()}`}</p>
+        <p className="mt-6 text-sm font-semibold text-white/60">{date === today ? "Horas libres de hoy" : `Horas libres del ${longDay(date).toLowerCase()}`}</p>
         {avail === null ? (
-          <p className="mt-3 text-xl text-white/70">Buscando horas…</p>
+          <p className="mt-3 text-lg text-white/70">Buscando horas…</p>
         ) : !hours[wd(date)] ? (
-          <p className="mt-3 rounded-2xl border border-white/10 p-4 text-xl text-white/85">Ese día está cerrado. Elige otro día.</p>
+          <p className="mt-3 rounded-2xl border border-white/10 p-4 text-lg text-white/85">Ese día está cerrado. Elige otro día.</p>
         ) : avail.starts.length === 0 ? (
-          <p className="mt-3 rounded-2xl border border-white/10 p-4 text-xl text-white/85">Ya no quedan horas este día. Toca <b>Otro día</b>.</p>
+          <p className="mt-3 rounded-2xl border border-white/10 p-4 text-lg text-white/85">Ya no quedan horas este día. Toca <b>Otro día</b>.</p>
         ) : (
           <>
             <div className="mt-3"><TimeGrid starts={avail.starts} value={time} onPick={setTime} next={first} /></div>
             {first && !time && <p className="mt-2 text-sm text-white/65">● El punto marca el lugar más próximo.</p>}
             {time && (
-              <p className="mt-4 rounded-2xl border border-gold/40 bg-gold/[.08] px-4 py-3 text-xl">
+              <p className="mt-4 rounded-2xl border border-gold/40 bg-gold/[.08] px-4 py-3 text-lg">
                 Tu lavado: <b className="tabular-nums text-gold">{range12(time, dur)}</b>
               </p>
             )}
@@ -258,10 +259,10 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
           <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
           <input className={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Teléfono" />
         </div>
-        <p className="mt-4 text-base text-white/65">Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>. Usamos tus datos solo para tu lavado.</p>
+        <p className="mt-4 text-sm text-white/60">Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>. Usamos tus datos solo para tu lavado.</p>
       </Card>
 
-      {error && <p role="alert" className="rounded-2xl bg-stop/15 p-4 text-xl font-semibold text-red-200">{error}</p>}
+      {error && <p role="alert" className="rounded-2xl bg-stop/15 p-4 text-lg font-semibold text-red-200">{error}</p>}
 
       {/* Barra con el total, siempre a la mano en el celular */}
       <div className={`fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-ink/95 px-4 pt-3 backdrop-blur-md transition-transform duration-300 ${inView ? "translate-y-0" : "translate-y-full"}`}

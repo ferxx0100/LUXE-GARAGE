@@ -7,7 +7,8 @@
 - La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y fosa de rejillas de acero negro. Nada de imágenes generadas por IA.
 - Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en el botón "Ayuda" (urgente, mensaje, quejas).
 - Tipografía: Cinzel (romana, títulos) + Manrope (texto), servidas desde el propio sitio (@fontsource).
-- Paleta (3 tonos máx.): negro #0b0b0c · crema/azulejo #f2f0eb · oro #d4af37 (y sus brillos). Únicas excepciones: verde y rojo del semáforo (señal LIBRE/OCUPADO). Nada de cian, ámbar ni azul.
+- Paleta (3 tonos máx.): negro #0b0b0c · crema/azulejo #f2f0eb · oro #d4af37 (y sus brillos). Excepciones: verde y rojo del semáforo y del bloque de tiempo (rojo = cuánto falta, verde = hora en que queda libre), y la membresía en azul marino #0f1f3d + vino #8e2348. Nada de cian ni ámbar.
+- Ocupado se libera solo si pasan 20 min después de la hora estimada (BUSY_GRACE).
 - **Reserva pagada** = la única que aparta un horario del calendario. Horario lleno = no se puede reservar.
 - **Suscripción**: $555/mes, 6 lavadas al mes. Elige sus 6 días; no reserva hora: si está libre, pasa.
 - Servicios (solo 2): **Exterior e interior** (deja el auto) y **Solo exterior** (sin bajarse). Mismo precio por vehículo.

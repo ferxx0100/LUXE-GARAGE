@@ -21,13 +21,6 @@ const COPY: Record<Status, { word: string; color: string; dot: string }> = {
   CERRADO: { word: "CERRADO", color: "text-[#8a6d1a]", dot: "bg-gold" },
 };
 
-function ago(iso: string | null): string {
-  if (!iso) return "";
-  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
-  if (s < 60) return "Actualizado hace segundos";
-  const m = Math.round(s / 60);
-  return m < 60 ? `Actualizado hace ${m} min` : `Actualizado hace ${Math.round(m / 60)} h`;
-}
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -108,15 +101,25 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
 
           {status === "LIBRE" && <p className="mt-4 text-2xl font-bold leading-snug">Ven ahora: no hay fila.</p>}
           {status === "OCUPADO" && (
-            <div className="mt-4 rounded-2xl border border-[#c8231a]/25 bg-white/70 px-5 py-4">
-              <p className="text-xl font-bold leading-snug">
-                {g?.busyUntil ? <>Se desocupa aprox. a las <span className="tabular-nums">{hour12(g.busyUntil)}</span>{freeIn !== null && <> ({inText(freeIn) || "pronto"})</>}</> : "Estamos lavando un auto."}
-              </p>
-              {freeIn !== null && (
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#e5372c] to-[#13b257] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
+            // Rojo = tiempo que falta (ocupado). Verde = hora en que queda libre.
+            <div className="mt-4 overflow-hidden rounded-3xl shadow-[0_14px_40px_-18px_rgba(0,0,0,.5)]" role="group" aria-label="Tiempo para que se desocupe">
+              <div className="grid grid-cols-2">
+                <div className="bg-[#c8231a] px-4 py-4 text-white">
+                  <p className="text-xs font-extrabold tracking-[.22em]">OCUPADO</p>
+                  <p className="mt-1 text-base font-semibold opacity-90">{freeIn ? "faltan" : "terminando"}</p>
+                  <p className="font-display text-[2.6rem] font-semibold leading-none tabular-nums">{freeIn ? freeIn : "ya"}</p>
+                  <p className="text-base font-semibold opacity-90">{freeIn ? "minutos" : "casi listo"}</p>
                 </div>
-              )}
+                <div className="bg-[#0b8a43] px-4 py-4 text-white">
+                  <p className="text-xs font-extrabold tracking-[.22em]">LIBRE</p>
+                  <p className="mt-1 text-base font-semibold opacity-90">a las</p>
+                  <p className="font-display text-[2.6rem] font-semibold leading-none tabular-nums">{g?.busyUntil ? hour12(g.busyUntil).split(" ")[0] : "—"}</p>
+                  <p className="text-base font-semibold opacity-90">{g?.busyUntil ? hour12(g.busyUntil).split(" ")[1] : ""}</p>
+                </div>
+              </div>
+              <div className="h-2.5 bg-[#0b8a43]/25" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
+                <div className="h-full bg-gradient-to-r from-[#c8231a] to-[#0b8a43] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
+              </div>
             </div>
           )}
           {status === "CERRADO" && (
@@ -131,7 +134,7 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
           {/* PRÓXIMO LUGAR */}
           {g?.next && (
             <div className="mt-6 rounded-[26px] border border-black/10 bg-[#0f0f10] p-5 text-white shadow-[0_24px_50px_rgba(20,15,5,.35)]">
-              <p className="text-xs font-bold tracking-[.3em] text-gold">PRÓXIMO LUGAR</p>
+              <p className="text-xs font-bold tracking-[.3em] text-gold">PRÓXIMO LUGAR PARA APARTAR</p>
               <div className="mt-3 grid grid-cols-2 gap-1.5 rounded-2xl bg-white/[.07] p-1.5" role="radiogroup" aria-label="Tipo de lavado">
                 {(["completo", "exterior"] as const).map((k) => (
                   <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
@@ -153,7 +156,7 @@ export default function LiveGarage({ hours, mapsUrl }: { hours: string; mapsUrl:
             </div>
           )}
 
-          <p className="mt-4 text-sm text-black/55">{stale && status ? "Reconectando… mostramos el último estado conocido" : ago(g?.updatedAt ?? null)}</p>
+          {stale && status && <p className="mt-4 text-sm text-black/55">Reconectando… mostramos el último estado conocido</p>}
           <div className="mt-4 grid grid-cols-2 gap-3 sm:flex">
             <a href="#reservar" className="btn-line-dark min-h-14">Ver horas</a>
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="btn-line-dark min-h-14">Cómo llegar</a>

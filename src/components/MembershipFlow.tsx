@@ -16,14 +16,14 @@ interface Props {
 }
 type Wash = { date: string; time: string };
 
-const field = "w-full min-h-14 rounded-2xl border-2 border-gold-hi/25 bg-[#070707]/70 px-5 py-4 text-xl text-white outline-none placeholder:text-white/45 focus:border-[#f1d77a]";
+const field = "w-full min-h-14 rounded-2xl border-2 border-[#a9c4ff]/25 bg-[#0b1630]/70 px-5 py-4 text-xl text-white outline-none placeholder:text-white/45 focus:border-[#d36a8b]";
 const digits = (s: string) => s.replace(/\D/g, "").length;
 
 function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[26px] border border-gold-hi/15 bg-white/[.05] p-5">
+    <section className="rounded-[26px] border border-[#a9c4ff]/15 bg-white/[.05] p-5">
       <h3 className="flex items-center gap-3 text-[1.35rem] font-bold">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d4af37] text-lg font-extrabold text-[#0b0b0c]">{n}</span>{title}
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#8e2348] text-lg font-extrabold text-[#ffffff]">{n}</span>{title}
       </h3>
       <div className="mt-4">{children}</div>
     </section>
@@ -142,24 +142,24 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
       {/* Portal a <body>: el desenfoque de la tarjeta de vidrio rompía "fixed" en iPhone */}
       {open && createPortal(
         <div className="mb-fade fixed inset-0 z-50 bg-[#010b14]/75 md:grid md:place-items-center md:p-6" style={{ height: "100dvh" }} role="dialog" aria-modal="true" aria-label="Adquirir membresía">
-          <div id="mb-sheet" className="water-bg relative h-full w-full overflow-y-auto overscroll-contain text-white [-webkit-overflow-scrolling:touch] md:h-auto md:max-h-[92dvh] md:max-w-xl md:rounded-[32px] md:border md:border-gold-hi/20">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gold-hi/15 bg-[#0b0b0c]/90 px-5 py-3 backdrop-blur-md">
+          <div id="mb-sheet" className="water-bg relative h-full w-full overflow-y-auto overscroll-contain text-white [-webkit-overflow-scrolling:touch] md:h-auto md:max-h-[92dvh] md:max-w-xl md:rounded-[32px] md:border md:border-[#a9c4ff]/20">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#a9c4ff]/15 bg-[#0f1f3d]/90 px-5 py-3 backdrop-blur-md">
               <div>
-                <p className="text-xs font-bold tracking-[.3em] text-[#f1d77a]">MEMBRESÍA</p>
+                <p className="text-xs font-bold tracking-[.3em] text-[#a9c4ff]">MEMBRESÍA</p>
                 <p className="font-display text-xl font-semibold">{need} lavadas · ${price}</p>
               </div>
-              <button type="button" onClick={() => !busy && setOpen(false)} className="min-h-14 rounded-full border border-gold-hi/30 px-5 text-lg font-bold">Cerrar</button>
+              <button type="button" onClick={() => !busy && setOpen(false)} className="min-h-14 rounded-full border border-[#a9c4ff]/30 px-5 text-lg font-bold">Cerrar</button>
             </div>
 
             <div className="grid gap-4 p-4 pb-40">
               {hold ? (
                 <>
-                  <div className="rounded-[26px] border border-[#f1d77a]/40 bg-gradient-to-b from-[#d4af37]/15 to-transparent p-5">
-                    <p className="text-sm font-bold tracking-[.25em] text-[#f1d77a]">TUS {hold.washes.length} LAVADAS ESTÁN APARTADAS</p>
+                  <div className="rounded-[26px] border border-[#d36a8b]/40 bg-gradient-to-b from-[#8e2348]/15 to-transparent p-5">
+                    <p className="text-sm font-bold tracking-[.25em] text-[#a9c4ff]">TUS {hold.washes.length} LAVADAS ESTÁN APARTADAS</p>
                     <ul className="mt-3 space-y-1.5 text-lg">
                       {hold.washes.map((w) => <li key={w.date}>✓ {longDay(w.date)} · <b className="tabular-nums">{hour12(w.time)}</b></li>)}
                     </ul>
-                    <p className="mt-3 text-lg text-white/80">Código <b className="text-[#f1d77a]">{hold.code}</b></p>
+                    <p className="mt-3 text-lg text-white/80">Código <b className="text-[#a9c4ff]">{hold.code}</b></p>
                     <div className="mt-4 flex items-end justify-between">
                       <p className="font-display text-5xl font-semibold">${hold.amount}</p>
                       <div className="text-right">
@@ -171,7 +171,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                   {left === 0 || !mpPublicKey ? (
                     <button type="button" onClick={() => setHold(null)} className="btn-water min-h-14 w-full text-xl">Elegir otra vez</button>
                   ) : (
-                    <PayBrick id="mp-brick-mb" publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/membership/${hold.id}/pay`} doneUrl={`/membresia/${hold.id}`} onError={setError} accent="#d4af37" />
+                    <PayBrick id="mp-brick-mb" publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/membership/${hold.id}/pay`} doneUrl={`/membresia/${hold.id}`} onError={setError} accent="#8e2348" />
                   )}
                   {error && <p role="alert" className="rounded-2xl bg-red-500/20 p-4 text-xl font-semibold text-red-100">{error}</p>}
                   <p className="text-center text-base text-white/70">Pago seguro con Mercado Pago. Te llega el recibo a tu correo.</p>
@@ -182,16 +182,16 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                     <div className="grid gap-2.5">
                       {(["completo", "exterior"] as const).map((k) => (
                         <button key={k} type="button" aria-pressed={kind === k} onClick={() => chooseKind(k)}
-                          className={`flex min-h-16 items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 text-left transition ${kind === k ? "border-[#f1d77a] bg-[#d4af37]/15" : "border-gold-hi/15 bg-white/[.03]"}`}>
+                          className={`flex min-h-16 items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 text-left transition ${kind === k ? "border-[#d36a8b] bg-[#8e2348]/15" : "border-[#a9c4ff]/15 bg-white/[.03]"}`}>
                           <span><span className="block text-xl font-bold">{KIND[k].title}</span><span className="block text-base text-white/75">{KIND[k].sub}</span></span>
-                          <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 font-bold text-[#f1d77a]">{KIND[k].min} min</span>
+                          <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 font-bold text-[#a9c4ff]">{KIND[k].min} min</span>
                         </button>
                       ))}
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-black/25 p-1.5" role="radiogroup" aria-label="Tipo de vehículo">
                       {(["carro", "camioneta"] as const).map((v) => (
                         <button type="button" role="radio" aria-checked={vehicle === v} key={v} onClick={() => setVehicle(v)}
-                          className={`min-h-14 rounded-xl text-xl font-bold transition ${vehicle === v ? "bg-white text-[#0b0b0c]" : "text-white/80"}`}>
+                          className={`min-h-14 rounded-xl text-xl font-bold transition ${vehicle === v ? "bg-white text-[#ffffff]" : "text-white/80"}`}>
                           {v === "carro" ? "Carro" : "Camioneta"}
                         </button>
                       ))}
@@ -202,7 +202,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                   <Step n="2" title={`Elige tus ${need} días`}>
                     <div className="flex items-center justify-between">
                       <p className="text-lg text-white/85">Toca un día y luego la hora.</p>
-                      <p className="shrink-0 whitespace-nowrap rounded-full bg-[#d4af37] px-3 py-1 text-lg font-extrabold tabular-nums text-[#0b0b0c]" aria-live="polite">{picks.length} de {need}</p>
+                      <p className="shrink-0 whitespace-nowrap rounded-full bg-[#8e2348] px-3 py-1 text-lg font-extrabold tabular-nums text-[#ffffff]" aria-live="polite">{picks.length} de {need}</p>
                     </div>
                     {(() => {
                       const cur = cal[Math.min(mi, cal.length - 1)];
@@ -212,7 +212,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                         <div className="mt-4">
                           <div className="flex items-center justify-between">
                             <button type="button" onClick={() => setMi((v) => Math.max(0, v - 1))} disabled={mi === 0} aria-label="Mes anterior" className="grid size-12 place-items-center rounded-full bg-white/10 text-2xl font-bold disabled:opacity-25">‹</button>
-                            <p className="font-display text-xl font-semibold capitalize text-[#f1d77a]">{MONTH[m - 1]} {y}</p>
+                            <p className="font-display text-xl font-semibold capitalize text-[#a9c4ff]">{MONTH[m - 1]} {y}</p>
                             <button type="button" onClick={() => setMi((v) => Math.min(cal.length - 1, v + 1))} disabled={mi >= cal.length - 1} aria-label="Mes siguiente" className="grid size-12 place-items-center rounded-full bg-white/10 text-2xl font-bold disabled:opacity-25">›</button>
                           </div>
                           <div className="mt-3 grid grid-cols-7 gap-1 text-center text-sm font-bold text-white/60">
@@ -226,7 +226,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                               return (
                                 <button key={d} type="button" disabled={closed || out} onClick={() => tapDay(d)}
                                   aria-label={`${longDay(d)}${closed ? ", cerrado" : ""}${pick ? `, elegido a las ${hour12(pick.time)}` : ""}`}
-                                  className={`flex h-12 flex-col items-center justify-center rounded-xl text-lg font-bold transition disabled:opacity-20 ${pick ? "bg-[#d4af37] text-[#0b0b0c] shadow-[0_0_14px_rgba(212,175,55,.5)]" : "bg-white/[.08] active:bg-white/20"} ${d === today && !pick ? "ring-2 ring-[#f1d77a]/60" : ""}`}>
+                                  className={`flex h-12 flex-col items-center justify-center rounded-xl text-lg font-bold transition disabled:opacity-20 ${pick ? "bg-[#8e2348] text-[#ffffff] shadow-[0_0_14px_rgba(142,35,72,.5)]" : "bg-white/[.08] active:bg-white/20"} ${d === today && !pick ? "ring-2 ring-[#d36a8b]/60" : ""}`}>
                                   <span className="leading-none">{Number(d.slice(8))}</span>
                                   {pick && <span className="mt-0.5 text-[10px] font-extrabold leading-none">{hour12(pick.time).replace(" ", "")}</span>}
                                 </button>
@@ -243,12 +243,12 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                         <ul className="mt-2 grid gap-2">
                           {sorted.map((w, i) => (
                             <li key={w.date} className="flex items-center gap-3 rounded-2xl bg-white/[.06] px-3 py-2.5">
-                              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#d4af37]/20 font-bold text-[#f1d77a]">{i + 1}</span>
+                              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#8e2348]/20 font-bold text-[#a9c4ff]">{i + 1}</span>
                               <span className="min-w-0 flex-1 leading-tight">
                                 <span className="block text-lg font-bold">{DAY[wd(w.date)]} {Number(w.date.slice(8))} de {MONTH[Number(w.date.slice(5, 7)) - 1]}</span>
                                 <span className="block text-base tabular-nums text-white/80">{range12(w.time, dur)}</span>
                               </span>
-                              <button type="button" onClick={() => tapDay(w.date)} className="min-h-12 rounded-xl px-3 text-base font-bold text-[#f1d77a]">Cambiar</button>
+                              <button type="button" onClick={() => tapDay(w.date)} className="min-h-12 rounded-xl px-3 text-base font-bold text-[#a9c4ff]">Cambiar</button>
                               <button type="button" onClick={() => remove(w.date)} aria-label="Quitar" className="min-h-12 rounded-xl px-3 text-base font-bold text-red-200">Quitar</button>
                             </li>
                           ))}
@@ -262,7 +262,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                       <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
                       <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Teléfono" />
                     </div>
-                    <p className="mt-3 text-base text-white/70">Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-[#f1d77a] underline">aviso de privacidad</a>. Usamos tus datos solo para tus lavadas.</p>
+                    <p className="mt-3 text-base text-white/70">Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-[#a9c4ff] underline">aviso de privacidad</a>. Usamos tus datos solo para tus lavadas.</p>
                   </Step>
 
                   {error && <p role="alert" className="rounded-2xl bg-red-500/20 p-4 text-xl font-semibold text-red-100">{error}</p>}
@@ -271,7 +271,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
             </div>
 
             {!hold && (
-              <div className="sticky bottom-0 z-10 border-t border-gold-hi/15 bg-[#0b0b0c]/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: "max(.8rem, env(safe-area-inset-bottom))" }}>
+              <div className="sticky bottom-0 z-10 border-t border-[#a9c4ff]/15 bg-[#0f1f3d]/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: "max(.8rem, env(safe-area-inset-bottom))" }}>
                 <div className="flex items-center gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-base text-white/80">{picks.length} de {need} lavadas</p>
@@ -289,7 +289,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
 
           {day && !hold && (
             <div className="fixed inset-0 z-[60] flex items-end bg-black/50" onClick={() => setDay(null)}>
-              <div className="mb-up max-h-[78dvh] w-full overflow-y-auto overscroll-contain rounded-t-[28px] border-t border-gold-hi/25 bg-[#0b0b0c] p-5 text-white md:mx-auto md:max-w-xl md:rounded-[28px]"
+              <div className="mb-up max-h-[78dvh] w-full overflow-y-auto overscroll-contain rounded-t-[28px] border-t border-[#a9c4ff]/25 bg-[#0f1f3d] p-5 text-white md:mx-auto md:max-w-xl md:rounded-[28px]"
                 style={{ paddingBottom: "max(1.2rem, env(safe-area-inset-bottom))" }} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Hora para el ${longDay(day)}`}>
                 <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/25" />
                 <p className="text-2xl font-bold">{longDay(day)}</p>
@@ -301,7 +301,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                 </div>
                 <div className="mt-4 flex gap-2">
                   {picks.some((p) => p.date === day) && <button type="button" onClick={() => remove(day)} className="min-h-14 flex-1 rounded-xl border border-red-300/40 text-lg font-bold text-red-200">Quitar este día</button>}
-                  <button type="button" onClick={() => setDay(null)} className="min-h-14 flex-1 rounded-xl border border-gold-hi/30 text-lg font-bold">Cerrar</button>
+                  <button type="button" onClick={() => setDay(null)} className="min-h-14 flex-1 rounded-xl border border-[#a9c4ff]/30 text-lg font-bold">Cerrar</button>
                 </div>
               </div>
             </div>

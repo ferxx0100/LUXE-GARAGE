@@ -76,9 +76,10 @@ export const closedToday = (rec: GarageRecord, h: Settings["hours"], now = new D
 /** Lo que ve el público: estado, hora y próximo lugar. Nunca quién está. `next` lo calcula bookings.ts. */
 export function toPublic(rec: GarageRecord, h: Settings["hours"], now = new Date(), next: PublicGarage["next"] = { completo: null, exterior: null }): PublicGarage {
   const st = openState(rec, h, now);
-  const status: GarageStatus = !st.open ? "CERRADO" : rec.busy ? "OCUPADO" : "LIBRE";
   const ln = localNow(now);
-  const until = status === "OCUPADO" ? busyUntilMin(rec, now) : null;
+  const until = st.open && rec.busy ? busyUntilMin(rec, now) : null;
+  // Ocupado solo mientras la estimación siga vigente; si ya pasó la tolerancia, el semáforo vuelve a LIBRE solo.
+  const status: GarageStatus = !st.open ? "CERRADO" : until !== null ? "OCUPADO" : "LIBRE";
   // Cerrado: decimos cuándo abrimos (si lo cerraron a mano hoy, saltamos al siguiente día).
   const opens = status === "CERRADO" ? nextOpening(h, ln, st.reason === "manual-closed") : undefined;
   return {

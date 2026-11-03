@@ -100,17 +100,25 @@ export default async function Home() {
             <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
           </svg>
           <div className="relative mx-auto max-w-md text-center">
-            <p className="text-[11px] font-bold tracking-[.4em] text-[#f1d77a]">MEMBRESÍA</p>
+            <p className="text-[11px] font-bold tracking-[.4em] text-[#a9c4ff]">MEMBRESÍA</p>
             <h2 className="font-display mt-3 text-[2.1rem] leading-tight font-semibold sm:text-5xl">{s.subscriptionWashes} lavadas en 30 días</h2>
-            <div className="mt-8 rounded-[30px] border border-gold-hi/25 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(0,20,40,.45)] backdrop-blur-sm">
+            <div className="mt-8 rounded-[30px] border border-white/20 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(10,10,40,.45)] backdrop-blur-sm">
               <p className="font-display text-water-grad text-7xl font-semibold leading-none">${s.prices.suscripcion}</p>
               <p className="mt-2 text-lg font-semibold text-white/85">al mes · pago único</p>
-              <ul className="mt-7 space-y-3.5 text-left text-xl leading-snug">
-                <li className="flex gap-3"><Drop />{s.subscriptionWashes} lavadas dentro de 30 días.</li>
-                <li className="flex gap-3"><Drop />Eliges tus días y horas al comprar.</li>
-                <li className="flex gap-3"><Drop />Tu lugar queda asegurado: llegas y pasas.</li>
-                <li className="flex gap-3"><Drop />Exterior e interior, o solo exterior sin bajarte.</li>
-              </ul>
+              <p className="mt-7 text-left text-lg font-bold text-[#a9c4ff]">Así de fácil:</p>
+              <ol className="mt-3 space-y-4 text-left text-xl leading-snug">
+                {[
+                  `Pagas $${s.prices.suscripcion} una sola vez.`,
+                  `Eliges tus ${s.subscriptionWashes} días y la hora de cada uno (dentro de 30 días).`,
+                  "Llegas a tu hora y pasas directo. Tu lugar ya es tuyo.",
+                ].map((t, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#8e2348] text-lg font-extrabold text-white shadow-[0_0_0_3px_rgba(169,196,255,.25)]">{i + 1}</span>
+                    <span className="pt-1">{t}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-5 text-left text-base text-white/75">Exterior e interior, o solo exterior sin bajarte.</p>
               <MembershipFlow price={s.prices.suscripcion} washes={s.subscriptionWashes} prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
             </div>
           </div>

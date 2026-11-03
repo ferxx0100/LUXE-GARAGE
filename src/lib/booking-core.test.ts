@@ -108,8 +108,9 @@ test("abierto ahora, próxima apertura, textos y etiquetas", () => {
 test("fosa ocupada: hora estimada en que se desocupa", () => {
   const now = { date: MON, minutes: hm("15:10") };
   assert.equal(estimateFreeAt({ date: MON, minutes: hm("15:00") }, 30, now), hm("15:30"));
-  assert.equal(estimateFreeAt({ date: MON, minutes: hm("14:00") }, 30, now), hm("15:15")); // ya pasó: ahora + 5
-  assert.equal(estimateFreeAt({ date: "2026-10-31", minutes: hm("18:00") }, 30, now), hm("15:15"));
+  assert.equal(estimateFreeAt({ date: MON, minutes: hm("14:30") }, 30, now), hm("15:10")); // pasó hace 10 min: "terminando"
+  assert.equal(estimateFreeAt({ date: MON, minutes: hm("14:00") }, 30, now), null); // pasó hace >20 min: se libera solo
+  assert.equal(estimateFreeAt({ date: "2026-10-31", minutes: hm("18:00") }, 30, now), null); // otro día
   assert.equal(estimateFreeAt(null, 30, now), hm("15:15"));
 });
 

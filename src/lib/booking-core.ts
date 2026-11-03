@@ -237,9 +237,18 @@ export function checkWashes(o: {
  * ¿A qué hora (minutos del día) se desocupa la fosa? `since` = cuándo se marcó OCUPADO, `minutes` = duración marcada.
  * Si ya pasó la hora estimada (o se marcó otro día) y sigue ocupado, estimamos ahora + 5 min.
  */
-export function estimateFreeAt(since: Now | null, minutes: number, now: Now): number {
-  const end = since && since.date === now.date ? since.minutes + minutes : -1;
-  return end > now.minutes ? end : now.minutes + 5;
+export const BUSY_GRACE = 20; // min de tolerancia después de la hora estimada
+/**
+ * Fin estimado del lavado en curso (minutos del día).
+ * - Si ya pasó la hora estimada pero dentro de la tolerancia: "terminando" (= ahora).
+ * - Si pasaron más de 20 min o fue otro día: null → se asume que olvidaron poner Libre y se muestra LIBRE.
+ */
+export function estimateFreeAt(since: Now | null, minutes: number, now: Now): number | null {
+  if (!since) return now.minutes + 5;
+  if (since.date !== now.date) return null;
+  const end = since.minutes + minutes;
+  if (now.minutes > end + BUSY_GRACE) return null;
+  return Math.max(end, now.minutes);
 }
 
 /* ───────── Sello vivo del comprobante ───────── */

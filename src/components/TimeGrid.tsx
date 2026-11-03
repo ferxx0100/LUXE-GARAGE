@@ -8,8 +8,8 @@ export default function TimeGrid({ starts, value, onPick, next, tone = "gold" }:
 }) {
   const rows = new Map<number, string[]>();
   for (const t of starts) { const h = Number(t.slice(0, 2)); rows.set(h, [...(rows.get(h) ?? []), t]); }
-  const on = tone === "gold" ? "border-gold bg-gold text-ink" : "border-[#f1d77a] bg-[#d4af37] text-[#0b0b0c]";
-  const hint = tone === "gold" ? "border-gold/70 text-gold" : "border-[#f1d77a]/70 text-[#f6e2a0]";
+  const on = tone === "gold" ? "border-gold bg-gold text-ink" : "border-[#d36a8b] bg-[#8e2348] text-white";
+  const hint = tone === "gold" ? "border-gold/70 text-gold" : "border-[#a9c4ff]/70 text-[#d6e2ff]";
   return (
     <div className="grid gap-1.5" role="listbox" aria-label="Horas disponibles">
       {[...rows.entries()].map(([h, list]) => (

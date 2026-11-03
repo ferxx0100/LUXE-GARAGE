@@ -92,22 +92,22 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
   color: #141414;
 }
 
-/* ——— Membresía: negro y oro con burbujas ——— */
-.water-bg {
+/* ——— Membresía: azul marino y vino con burbujas ——— */
+.water-bg { /* membresía: azul marino que se funde en vino */
   background:
-    radial-gradient(90% 50% at 50% 0%, rgba(212,175,55,.22), transparent 70%),
-    linear-gradient(180deg, #0b0b0c 0%, #1a1712 100%);
+    radial-gradient(80% 45% at 50% 0%, rgba(169,196,255,.18), transparent 70%),
+    linear-gradient(165deg, #0f1f3d 0%, #1b2150 40%, #4a1636 78%, #6d1a36 100%);
 }
 .btn-water {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; border-radius: 999px;
-  font-weight: 800; color: #0b0b0c; letter-spacing: .02em;
-  background: linear-gradient(180deg, #f6e2a0, #d4af37 60%, #b8922a);
-  box-shadow: 0 10px 30px rgba(212,175,55,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  font-weight: 800; color: #fff; letter-spacing: .02em;
+  background: linear-gradient(180deg, #b23a63, #8e2348 55%, #6d1a36);
+  box-shadow: 0 10px 30px rgba(142,35,72,.5), inset 0 1px 0 rgba(255,255,255,.35);
   transition: transform .15s, filter .2s;
 }
-.btn-water:hover { filter: brightness(1.06); }
+.btn-water:hover { filter: brightness(1.08); }
 .btn-water:active { transform: scale(.97); }
-.text-water-grad { background: linear-gradient(180deg, #ffffff, #f6e2a0 50%, #d4af37); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.text-water-grad { background: linear-gradient(180deg, #ffffff, #d6e2ff 45%, #e79ab2); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 .lg-bubbles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 /* Burbuja de jabón: casi transparente, borde con reflejos de color y brillo; sube (externo) y se bambolea (interno). */

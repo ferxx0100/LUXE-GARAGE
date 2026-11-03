@@ -1,7 +1,7 @@
 import HelpButton from "@/components/HelpButton";
 import LiveGarage from "@/components/LiveGarage";
 import RealVideo from "@/components/RealVideo";
-import { BUSINESS, mapsLink, telLink, whatsappLink } from "@/lib/config";
+import { BUSINESS, SITE_URL, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import { getSettings, hoursLabel } from "@/lib/settings";
 
 // Página estática regenerada al guardar en /admin (y cada 5 min por si acaso).
@@ -19,8 +19,29 @@ export default async function Home() {
   const horario = hoursLabel(s.hours);
   const help = { tel: telLink, whatsapp: whatsappLink("Hola, necesito ayuda con LUXE GARAGE"), phoneDisplay: BUSINESS.phoneDisplay };
 
+  // Datos para Google: negocio local con logo, teléfono, horario y precios.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AutoWash",
+    name: BUSINESS.name,
+    url: SITE_URL,
+    logo: `${SITE_URL}/brand/google/emblem-1024.png`,
+    image: `${SITE_URL}/brand/google/logo-1024.png`,
+    telephone: `+${BUSINESS.phone}`,
+    address: { "@type": "PostalAddress", streetAddress: "Las Palomas", addressLocality: "Zamora", addressRegion: "Michoacán", addressCountry: "MX" },
+    openingHoursSpecification: [{
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: s.hours.days.map((d) => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d]),
+      opens: `${String(s.hours.open).padStart(2, "0")}:00`,
+      closes: `${String(s.hours.close % 24).padStart(2, "0")}:00`,
+    }],
+    priceRange: `$${s.prices.carro}–$${s.prices.camioneta}`,
+  };
+
   return (
     <>
+      {/* JSON generado por nosotros (sin texto de usuarios); "<" escapado por seguridad */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {s.notice && <div className="bg-gold px-4 py-2.5 text-center text-sm font-semibold text-ink" role="note">{s.notice}</div>}
 
       {/* Barra fija: la marca y la ayuda siempre a la vista, sin tapar contenido */}
@@ -28,7 +49,7 @@ export default async function Home() {
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <a href="#" className="flex items-center gap-2.5" aria-label="LUXE GARAGE, inicio">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/emblem.svg" alt="" width="24" height="31" />
+            <img src="/brand/emblem-128.png" alt="" width="34" height="34" />
             <span className="font-display text-[15px] font-semibold tracking-[.22em] text-gold">LUXE GARAGE</span>
           </a>
           <HelpButton {...help} />

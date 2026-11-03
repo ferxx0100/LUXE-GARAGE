@@ -14,5 +14,7 @@ export function whatsappLink(text: string): string {
   return `https://wa.me/${BUSINESS.phone}?text=${encodeURIComponent(text)}`;
 }
 
+export const SITE_URL = "https://luxegaragee.com";
+
 export const telLink = `tel:+${BUSINESS.phone}`;
 export const mapsLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("LUXE GARAGE Las Palomas Zamora Michoacán");

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -90 140 180" role="img" aria-label="LUXE GARAGE">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1d77a"/><stop offset="1" stop-color="#a8821f"/></linearGradient></defs>
-  <path d="M-52-62 L0-78 L52-62 V8 Q52 46 0 74 Q-52 46 -52 8Z" fill="none" stroke="url(#g)" stroke-width="4"/>
-  <g fill="url(#g)" transform="skewX(-10)">
-    <path d="M-26-38h14l-8 52h26l-2 11h-38z"/>
-    <path d="M6-38h34l-2 10H16l-5 30h14l1-8h-8l1-9h22l-5 30H4z"/>
-  </g>
-  <path d="M-62 40 Q-30 22 0 24 Q36 22 62 40" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round"/>
-</svg>

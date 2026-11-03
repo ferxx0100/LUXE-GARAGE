@@ -15,7 +15,8 @@
 - Horario: lunes a jueves 12 pm–7 pm; viernes y sábado 1 pm–6 pm; domingo cerrado (editable por día en /admin → Ajustes).
 - Datos que pide la reserva: SOLO nombre y teléfono (y dirección si es a domicilio). El correo lo pide Mercado Pago al pagar.
 - Agenda en celdas de 10 min: completo 30 min, solo exterior 20 min; "próximo lugar" en vivo; el panel marca Ocupado 30/20 min.
-- Membresía: 6 lavadas en 30 días, días y horas elegidos al comprar (`src/lib/memberships.ts`, `/membresia/[id]`).
+- Membresía: 6 lavadas en 30 días, **solo jueves a sábado** (`MEMBERSHIP_DAYS` en `src/lib/booking-core.ts`, validado en el servidor), días y horas elegidos al comprar en 3 pasos (`src/lib/memberships.ts`, `/membresia/[id]`).
+- Al cliente se le dice "lugar", no "fosa". Marcador del hero: franja de color que corre ("OCUPADO HASTA LAS 8:20 AM", "LIBRE · PASA Y TE ATENDEMOS", "APARTA TU LUGAR").
 - Recibo anti-falsificación: sello de 3 dígitos que cambia cada 30 s (HMAC) + reloj con segundos; verificar en panel con el código.
 - Domicilio: +$100 por cada ida (editable en /admin → Ajustes).
 - Solo existe **lavado normal**: carro $180, camioneta $220. No hay paquetes, VIP ni detailing.

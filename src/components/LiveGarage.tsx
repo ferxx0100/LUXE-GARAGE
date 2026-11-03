@@ -70,11 +70,11 @@ export default function LiveGarage({ hours, mapsUrl, street }: { hours: string; 
   // Ocupado: cuándo se desocupa (estimado) y barra de avance.
   const freeIn = status === "OCUPADO" ? less(g?.freeInMin) : null;
   const freeAt = status === "OCUPADO" && g?.busyUntil ? hour12(g.busyUntil) : null;
-  const busyShort = freeAt ? `LIBRE ${freeAt.toUpperCase()}` : undefined;
+  const busyShort = freeAt ? `HASTA ${/^1[: ]/.test(freeAt) ? "LA" : "LAS"} ${freeAt.toUpperCase()}` : undefined;
   const pct = freeIn === null ? 0 : Math.round(100 * (1 - Math.min(freeIn, 30) / 30));
 
   // Qué significa lo que ves, en una frase según el estado.
-  const meaning = status === "LIBRE" ? "No hay nadie en la fosa: puedes venir ahora sin cita. Si quieres asegurar tu hora, apártala aquí abajo."
+  const meaning = status === "LIBRE" ? "No hay nadie en el lugar: pasa y te atendemos, sin cita. Si quieres asegurar tu hora, apártala aquí abajo."
     : status === "OCUPADO" ? `Estamos lavando un auto${freeAt ? ` y queda libre a las ${freeAt}` : ""}. Para no esperar, aparta tu lugar aquí abajo.`
     : status === "CERRADO" ? "La cortina está abajo. Puedes apartar desde ahora tu lugar para cuando abramos."
     : "";
@@ -98,8 +98,6 @@ export default function LiveGarage({ hours, mapsUrl, street }: { hours: string; 
     setFlash(true); setTimeout(() => setFlash(false), 1600);
   }
 
-  const clock = now ? `${now.h % 12 || 12}:${String(now.m).padStart(2, "0")} ${now.h < 12 ? "am" : "pm"}` : "";
-
   return (
     <section aria-labelledby="estado" className="bg-[#f2f0eb] text-[#151413]">
       <div className="mx-auto max-w-5xl md:grid md:grid-cols-[minmax(0,440px)_1fr] md:items-start md:gap-12 md:px-6 md:py-12">
@@ -109,45 +107,41 @@ export default function LiveGarage({ hours, mapsUrl, street }: { hours: string; 
         </button>
 
         <div className="relative z-10 -mt-24 space-y-8 px-5 pb-16 md:mt-0 md:p-0" aria-live="polite">
-          {/* 1 · Cómo está ahorita */}
-          <div className="rounded-3xl bg-white p-5 shadow-[0_12px_32px_-14px_rgba(40,30,10,.3)] ring-1 ring-black/5">
-            <div className="flex items-center justify-between text-sm font-semibold text-black/55">
-              <span className="flex items-center gap-2"><span className={`live-dot ${c?.dot ?? "bg-black/30"}`} />En vivo</span>
-              <span className="tabular-nums" suppressHydrationWarning>{clock}</span>
-            </div>
-            <h1 id="estado" className={`font-display mt-2 text-[2.6rem] leading-none font-bold tracking-[.05em] ${c?.color ?? "text-black/25"}`}>
+          {/* 1 · Cómo está ahorita: todo centrado, la palabra a lo ancho de la tarjeta */}
+          <div className="rounded-3xl bg-white px-5 pb-6 pt-4 text-center shadow-[0_12px_32px_-14px_rgba(40,30,10,.3)] ring-1 ring-black/5">
+            <p className="flex items-center justify-center gap-2 text-sm font-semibold text-black/55">
+              <span className={`live-dot ${c?.dot ?? "bg-black/30"}`} />En vivo · información en tiempo real
+            </p>
+            <h1 id="estado" className={`font-display mt-3 text-[clamp(2.4rem,calc((100vw_-_80px)/5.9),3.4rem)] leading-none font-bold tracking-[.04em] ${c?.color ?? "text-black/25"}`}>
               {c?.word ?? "···"}
             </h1>
 
             {!status && <p className="mt-3 text-base text-black/60">{stale ? "Sin conexión. Reintentando…" : "Conectando con el garage…"}</p>}
 
-            {status === "LIBRE" && (
-              <p className="mt-4 rounded-2xl bg-[#0b8a43] px-4 py-3 text-center text-lg font-bold text-white">Pasa ahora, sin cita</p>
-            )}
+            {status === "LIBRE" && <p className="mt-3 text-xl font-bold text-[#0b8a43]">Pasa y te atendemos</p>}
 
             {status === "OCUPADO" && (
-              // Rojo = cuánto falta. Verde = hora en que queda libre.
+              // Rojo = cuánto falta. Verde = hora en que queda libre. Texto, no botones.
               <div className="mt-4" role="group" aria-label="Tiempo para que se desocupe">
-                <div className="grid grid-cols-2 gap-2 text-white">
-                  <div className="rounded-2xl bg-[#c8231a] px-4 py-3">
-                    <p className="text-sm font-semibold opacity-90">{freeIn ? "Faltan" : "Ya casi"}</p>
-                    <p className="text-2xl font-extrabold tabular-nums">{freeIn ? `${freeIn} min` : "terminamos"}</p>
+                <div className="grid grid-cols-2 divide-x divide-black/10">
+                  <div>
+                    <p className="text-sm text-black/55">{freeIn ? "Faltan" : "Ya casi"}</p>
+                    <p className="text-2xl font-extrabold tabular-nums text-[#c8231a]">{freeIn ? `${freeIn} min` : "terminamos"}</p>
                   </div>
-                  <div className="rounded-2xl bg-[#0b8a43] px-4 py-3">
-                    <p className="text-sm font-semibold opacity-90">Libre a las</p>
-                    <p className="text-2xl font-extrabold tabular-nums">{freeAt ?? "—"}</p>
+                  <div>
+                    <p className="text-sm text-black/55">Libre a las</p>
+                    <p className="text-2xl font-extrabold tabular-nums text-[#0b8a43]">{freeAt ?? "—"}</p>
                   </div>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
+                <div className="mx-auto mt-4 h-1.5 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Avance del lavado">
                   <div className="h-full rounded-full bg-gradient-to-r from-[#c8231a] to-[#0b8a43] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             )}
 
             {status === "CERRADO" && (
-              <div className="mt-4 rounded-2xl bg-[#f2f0eb] px-4 py-3">
-                <p className="text-sm font-semibold text-black/60">Abrimos</p>
-                <p className="text-xl font-extrabold leading-snug">{g?.opens ? cap(g.opens.label) : "Pronto"}</p>
+              <div className="mt-3">
+                <p className="text-lg font-bold leading-snug">Abrimos {g?.opens ? g.opens.label : "pronto"}</p>
                 {countdown && <p className="text-base font-semibold tabular-nums text-[#8a6d1a]">Faltan {countdown}</p>}
               </div>
             )}

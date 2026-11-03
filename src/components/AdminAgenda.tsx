@@ -238,7 +238,7 @@ export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
           ✓ Ya está libre
         </button>
       )}
-      {pub === "CERRADO" && <p className="mt-2 text-sm text-white/60">Cerrado. Para cambiar la fosa abre el negocio en la pestaña Garage.</p>}
+      {pub === "CERRADO" && <p className="mt-2 text-sm text-white/60">Cerrado. Para cambiar el lugar abre el negocio en la pestaña Garage.</p>}
     </div>
   );
 }

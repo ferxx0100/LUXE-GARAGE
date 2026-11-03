@@ -216,15 +216,19 @@ export function blocksFromCells(cells: { start: number; owner: string | null }[]
  * Valida las lavadas que elige un miembro al comprar su membresía (todas en el servidor).
  * Devuelve el error para el cliente o null si todo cabe.
  */
+/** Días de la membresía: solo jueves, viernes y sábado (0 = domingo). */
+export const MEMBERSHIP_DAYS = [4, 5, 6];
+
 export function checkWashes(o: {
   hours: Hours; washes: { date: string; time: string }[]; dur: number; count: number; now: Now;
-  blocksByDate: Record<string, Block[]>; busyUntilMin?: number | null; closedToday?: boolean; maxDays?: number;
+  blocksByDate: Record<string, Block[]>; busyUntilMin?: number | null; closedToday?: boolean; maxDays?: number; days?: number[];
 }): string | null {
   if (o.washes.length !== o.count) return `Elige tus ${o.count} lavadas.`;
   if (new Set(o.washes.map((w) => w.date)).size !== o.washes.length) return "Elige un día distinto para cada lavada.";
   for (const w of o.washes) {
     if (!isDateStr(w.date) || !isTimeStr(w.time)) return "Revisa las fechas de tus lavadas.";
     if (!inRange(w.date, o.now.date, o.maxDays ?? MAX_DAYS)) return "Todas tus lavadas deben quedar dentro de tu mes de membresía.";
+    if (!(o.days ?? MEMBERSHIP_DAYS).includes(weekday(w.date))) return "La membresía es solo de jueves a sábado.";
     const taken = o.closedToday && w.date === o.now.date;
     if (taken || !fits(o.hours, w.date, toMin(w.time), o.dur, o.blocksByDate[w.date] ?? [], o.now, o.busyUntilMin)) {
       return `La lavada del ${fmtDay(w.date)} ${atTime(w.time)} ya no está disponible. Elige otra hora.`;

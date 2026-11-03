@@ -84,7 +84,6 @@ const SEM_CX = X(-2.1, 0), SEM_BOTTOM = SEM.y + 124 * SEM_K;
 const LAMP_Y = { OCUPADO: SEM.y + 34 * SEM_K, LIBRE: SEM.y + 90 * SEM_K };
 const SIGN = face(-1.75, 2.7, 1.75, 3.38, -0.12); // letrero LUXE GARAGE sobre la entrada
 const HOUSING = face(-1.74, 2.5, 1.74, 2.64, -0.16); // caja de la cortina
-const LED = face(-1.2, 2.07, 1.2, 2.47, -0.05); // display de matriz de puntos bajo el dintel
 const RAIL_L = face(-W - 0.08, 0, -W, H, -0.02), RAIL_R = face(W, 0, W + 0.08, H, -0.02);
 
 /* ───────── Semáforo LED de matriz de puntos (7×7) ───────── */
@@ -211,7 +210,7 @@ const SANS = { fontFamily: "var(--font-sans)" };
 const DISPLAY = { fontFamily: "var(--font-display)" };
 
 /* ───────── Marcador colgante de neón (dígitos de 7 segmentos) ───────── */
-const SB = face(-0.95, 2.72, 0.95, 3.3, -3); // caja del marcador, colgada del techo del pasillo
+const SB = face(-1.1, 2.72, 1.1, 3.42, -3); // caja del marcador, colgada del techo del pasillo
 const SB_CEIL = Y(CH, -3);
 const SEGS: Record<string, string> = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", " ": "" };
 function Digit({ x, y, w, h, ch, on }: { x: number; y: number; w: number; h: number; ch: string; on: string }) {
@@ -244,19 +243,71 @@ function useMxClock() {
   }, []);
   return c;
 }
+function useReducedMotion() {
+  const [r, setR] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const f = () => setR(m.matches); f();
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return r;
+}
+
+// Franja de color con letras que corren (como el marcador de un estadio): una sola idea por color.
+const TICK: Record<Status | "NONE", { bg: string; fg: string }> = {
+  LIBRE: { bg: "#0b8a43", fg: "#ffffff" },
+  OCUPADO: { bg: "#c8231a", fg: "#ffffff" },
+  CERRADO: { bg: "#2a2410", fg: "#f6d36b" },
+  NONE: { bg: "#1a1a1c", fg: "#f6e2a0" },
+};
+
+function Ticker({ x, y, w, h, msgs, bg, fg, still }: { x: number; y: number; w: number; h: number; msgs: string[]; bg: string; fg: string; still: boolean }) {
+  const fs = h * 0.6, cw = fs * 0.66, base = y + h * 0.72;
+  const NB = "\u00a0";
+  const unit = msgs.join(`${NB}${NB}•${NB}${NB}`) + `${NB}${NB}•${NB}${NB}`;
+  const L = unit.length * cw;
+  const copies = Math.ceil(w / L) + 1;
+  const first = msgs[0];
+  return (
+    <g>
+      <defs><clipPath id="lg-tick"><rect x={x} y={y} width={w} height={h} rx={h * 0.22} /></clipPath></defs>
+      <rect x={x} y={y} width={w} height={h} rx={h * 0.22} fill={bg} />
+      <g clipPath="url(#lg-tick)">
+        {still ? (
+          <text x={x + w / 2} y={base} textAnchor="middle" fontSize={fs} fontWeight="800" letterSpacing=".4" fill={fg} style={SANS}
+            {...(first.length * cw > w - 8 ? { textLength: w - 8, lengthAdjust: "spacingAndGlyphs" as const } : {})}>{first}</text>
+        ) : (
+          <g key={unit}>
+            <animateTransform attributeName="transform" type="translate" from="0 0" to={`${-L} 0`} dur={`${(L / 26).toFixed(1)}s`} repeatCount="indefinite" />
+            {Array.from({ length: copies }, (_, i) => (
+              <text key={i} x={x + 6 + i * L} y={base} fontSize={fs} fontWeight="800" fill={fg} style={SANS} textLength={L} lengthAdjust="spacingAndGlyphs">{unit}</text>
+            ))}
+          </g>
+        )}
+      </g>
+    </g>
+  );
+}
+
 function Scoreboard({ status, busy, opens }: { status: Status | null; busy: string | null; opens?: string }) {
   const c = useMxClock();
+  const still = useReducedMotion();
   const neon = "#f6d36b"; // neón oro (paleta: negro · crema · oro)
   const h12 = c ? String(c.h % 12 || 12).padStart(2, " ") : "  ";
   const mm = c ? String(c.m).padStart(2, "0") : "  ";
   const ap = c ? (c.h < 12 ? "AM" : "PM") : "";
-  const alt = c ? Math.floor(c.s / 3) % 2 === 1 : false; // cambia cada 3 s
-  const row = status === "LIBRE" ? (alt ? { t: "APARTA TU LUGAR", c: "#f6d36b" } : { t: "LIBRE · PASA", c: "#3dff8f" }) : status === "OCUPADO" ? { t: busy ? `OCUPADO · ${busy}` : "OCUPADO", c: "#ff4b3e" }
-    : status === "CERRADO" ? { t: opens ?? "CERRADO", c: "#e8c25a" } : { t: "EN VIVO", c: "#f6e2a0" };
-  const pad = SB.w * 0.07, dh = SB.h * 0.5, dw = dh * 0.56, gap = dw * 0.28;
-  const x0 = SB.x + pad, y0 = SB.y + SB.h * 0.12;
+  // Mensajes claros: "OCUPADO HASTA LAS 8:20 AM", nunca "ocupado · libre".
+  const msgs = status === "LIBRE" ? ["LIBRE · PASA Y TE ATENDEMOS", "APARTA TU LUGAR"]
+    : status === "OCUPADO" ? [busy ? `OCUPADO ${busy}` : "OCUPADO", "APARTA TU LUGAR"]
+    : status === "CERRADO" ? [opens ? `CERRADO · ${opens}` : "CERRADO", "APARTA TU LUGAR"]
+    : ["EN VIVO"];
+  const col = TICK[status ?? "NONE"];
+  const pad = SB.w * 0.07, dh = SB.h * 0.44, dw = dh * 0.56, gap = dw * 0.28;
+  const x0 = SB.x + pad, y0 = SB.y + SB.h * 0.1;
   const xs = [x0, x0 + dw + gap, x0 + 2 * dw + gap * 3.2, x0 + 3 * dw + gap * 4.2];
   const colon = x0 + 2 * dw + gap * 1.6;
+  const tb = { x: SB.x + 5, y: SB.y + SB.h * 0.62, w: SB.w - 10, h: SB.h * 0.29 };
   return (
     <g aria-hidden>
       {/* cables al techo */}
@@ -273,11 +324,10 @@ function Scoreboard({ status, busy, opens }: { status: Status | null; busy: stri
         </g>
         <Digit x={xs[2]} y={y0} w={dw} h={dh} ch={mm[0]} on={neon} />
         <Digit x={xs[3]} y={y0} w={dw} h={dh} ch={mm[1]} on={neon} />
-        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.42} textAnchor="end" fontSize={dh * 0.3} fontWeight="800" fill={neon} style={SANS}>{ap}</text>
-        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.92} textAnchor="end" fontSize={dh * 0.2} fontWeight="700" letterSpacing=".6" fill="#c9a54a" style={SANS}>ZAMORA</text>
-        <text x={SB.x + SB.w / 2} y={SB.y + SB.h * 0.9} textAnchor="middle" fontSize={SB.h * 0.17} fontWeight="800" letterSpacing="1" fill={row.c} style={SANS}
-          {...(row.t.length * SB.h * 0.12 > SB.w - 10 ? { textLength: SB.w - 10, lengthAdjust: "spacingAndGlyphs" as const } : {})}>{row.t}</text>
+        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.42} textAnchor="end" fontSize={dh * 0.32} fontWeight="800" fill={neon} style={SANS}>{ap}</text>
+        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.92} textAnchor="end" fontSize={dh * 0.22} fontWeight="700" letterSpacing=".6" fill="#c9a54a" style={SANS}>ZAMORA</text>
       </g>
+      <Ticker {...tb} msgs={msgs} bg={col.bg} fg={col.fg} still={still} />
     </g>
   );
 }
@@ -340,9 +390,6 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
   const sig = status === "LIBRE" || status === "OCUPADO" ? SIG[status] : null;
   const closed = status === "CERRADO";
   const busy = status === "OCUPADO" && busyShort ? busyShort.toUpperCase() : null;
-  const [busyA, ...busyB] = busy ? busy.split(" ") : [];
-  const busyMax = LED.w - 12;
-  const busyFit = busy && busy.length * 8.6 > busyMax ? { textLength: busyMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
   const opensFit = opensShort && opensShort.length * 7.4 > 150 ? { textLength: 150, lengthAdjust: "spacingAndGlyphs" as const } : {};
   const shutterY = closed ? 0 : -DH - 4;
   const label = !status
@@ -350,7 +397,7 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
     : status === "LIBRE"
       ? "Garage en vivo: libre, puedes pasar"
       : status === "OCUPADO"
-        ? `Garage en vivo: ocupado${busyShort ? `, ${busyShort.toLowerCase()}` : ""}`
+        ? `Garage en vivo: ocupado${busyShort ? ` ${busyShort.toLowerCase()}` : ""}`
         : `Garage en vivo: cerrado${opensShort ? `, ${opensShort.toLowerCase()}` : ""}`;
 
   return (

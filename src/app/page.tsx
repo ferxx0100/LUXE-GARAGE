@@ -17,20 +17,6 @@ const Title = ({ kicker, children, dark }: { kicker: string; children: React.Rea
   </header>
 );
 
-// Burbujas de la membresía: posiciones fijas (mismo HTML en servidor y navegador).
-const BUBBLES = Array.from({ length: 40 }, (_, i) => {
-  const r = (n: number) => { const v = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453; return v - Math.floor(v); };
-  return { x: `${Math.round(r(1) * 100)}%`, s: `${Math.round(10 + r(2) * 46)}px`, d: `${(8 + r(3) * 10).toFixed(1)}s`, sw: `${(1.8 + r(7) * 2).toFixed(1)}s`, w: `${(-r(4) * 14).toFixed(1)}s`, sway: `${Math.round((r(5) - 0.5) * 60)}px`, y: `${Math.round(10 + r(6) * 80)}%` };
-});
-const Bubbles = () => (
-  <div className="lg-bubbles" aria-hidden>
-    <div className="lg-caustic" />
-    {BUBBLES.map((b, i) => (
-      <span key={i} className="lg-bubble" style={{ "--x": b.x, "--s": b.s, "--d": b.d, "--w": b.w, "--sway": b.sway, "--y": b.y, "--sw": b.sw } as React.CSSProperties}><i /></span>
-    ))}
-    <div className="lg-foam-band" />
-  </div>
-);
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
@@ -92,26 +78,22 @@ export default async function Home() {
           <header className="mx-auto max-w-xl text-center">
             <p className="text-[11px] font-semibold tracking-[.4em] text-[#8a6d1a]">EL LUGAR REAL</p>
             <h2 className="font-display mt-2 text-[1.9rem] font-semibold leading-tight text-[#141414] md:text-5xl">Así se ve por dentro</h2>
-            <p className="mt-3 text-lg text-black/70">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
+            <p className="mt-3 text-lg text-black/70">Azulejo blanco, rejillas de acero y un equipo que deja tu auto como nuevo.</p>
           </header>
           <div className="mx-auto mt-10 max-w-[21rem]">
             <RealVideo />
           </div>
         </section>
 
-        {/* Membresía: azul marino y vino, con burbujas */}
-        <section id="membresia" className="water-bg relative scroll-mt-14 overflow-hidden px-5 py-28 text-white">
-          <Bubbles />
-          <svg className="lg-wave top-0 text-[#f2f0eb]" style={{ "--d": "18s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
-            <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
-          </svg>
+        {/* Membresía: azul marino y vino, sin adornos que distraigan */}
+        <section id="membresia" className="water-bg relative scroll-mt-14 px-5 py-24 text-white">
           <div className="relative mx-auto max-w-md">
             <header className="text-center">
               <p className="text-[11px] font-semibold tracking-[.4em] text-[#a9c4ff]">MEMBRESÍA</p>
               <h2 className="font-display mt-2 text-[1.9rem] leading-tight font-semibold sm:text-5xl">Para los que lavan seguido</h2>
-              <p className="mt-3 text-lg text-white/80">Pagas una vez y tienes {s.subscriptionWashes} lavadas en 30 días, con tus días y horas ya apartados.</p>
+              <p className="mt-3 text-lg text-white/80">Pagas una vez y tienes {s.subscriptionWashes} lavadas en 30 días, <b className="text-white">de jueves a sábado</b>, con tus días y horas ya apartados.</p>
             </header>
-            <div className="mt-8 rounded-3xl border border-white/15 bg-white/[.07] p-6 shadow-[0_30px_80px_rgba(10,10,40,.45)] backdrop-blur-sm">
+            <div className="mt-8 rounded-3xl border border-white/12 bg-white/[.06] p-6 shadow-[0_30px_80px_rgba(5,10,30,.4)]">
               <div className="flex items-end justify-between gap-4 border-b border-white/10 pb-5">
                 <div>
                   <p className="text-sm text-white/65">Precio</p>
@@ -125,7 +107,7 @@ export default async function Home() {
               <ol className="mt-5 space-y-4">
                 {[
                   ["Paga una sola vez", `$${s.prices.suscripcion} con tarjeta, aquí mismo.`],
-                  [`Elige tus ${s.subscriptionWashes} días`, "Y la hora de cada uno, dentro de 30 días."],
+                  [`Elige tus ${s.subscriptionWashes} días`, "Jueves, viernes o sábado, y la hora de cada uno."],
                   ["Llega y pasa", "Tu lugar ya es tuyo: sin fila, sin cita extra."],
                 ].map(([t, d], i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -138,9 +120,6 @@ export default async function Home() {
               <MembershipFlow price={s.prices.suscripcion} washes={s.subscriptionWashes} prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
             </div>
           </div>
-          <svg className="lg-wave bottom-0 text-[#09090a]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
-            <path fill="currentColor" d="M0 70h1200V42c-50 0-100-22-150-22s-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22S50 42 0 42Z" />
-          </svg>
         </section>
 
         <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">

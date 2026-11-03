@@ -196,7 +196,7 @@ export default function Admin() {
         <p className="mb-2 mt-6 text-xs tracking-[.25em] text-white/60">FOSA</p>
         <FosaBar pub={preview} busyUntil={g?.busyUntil ?? null} disabled={busy}
           onFosa={(busyNow, minutes) => setGarage(busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false })} />
-        <p className="text-sm text-white/55">Ocupado: el auto entra a la fosa, el semáforo se pone en rojo y la página muestra a qué hora se desocupa.</p>
+        <p className="text-sm text-white/55">Ocupado: el auto entra al lugar, el semáforo se pone en rojo y la página muestra a qué hora se desocupa.</p>
       </section>}
 
       {tab === "ajustes" && form && (

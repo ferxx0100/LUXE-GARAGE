@@ -77,16 +77,18 @@ test("celdas de 10 min y bloques", () => {
   assert.deepEqual(blocksFromCells(cells), [{ start: 720, end: 740 }, { start: 740, end: 760 }]);
 });
 
-test("membresía: 6 días distintos dentro del mes y que quepan", () => {
+test("membresía: 6 días distintos, solo jueves a sábado, dentro del mes y que quepan", () => {
   const now = { date: MON, minutes: hm("15:00") };
-  const ok = ["2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-09"].map((date) => ({ date, time: "13:00" }));
+  // jue 5, vie 6, sáb 7, jue 12, vie 13, sáb 14 de noviembre
+  const ok = ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-12", "2026-11-13", "2026-11-14"].map((date) => ({ date, time: "13:00" }));
   const base = { hours, dur: 30, count: 6, now, blocksByDate: {} };
   assert.equal(checkWashes({ ...base, washes: ok }), null);
   assert.match(checkWashes({ ...base, washes: ok.slice(0, 5) })!, /6 lavadas/);
-  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: "2026-11-03", time: "15:00" }] })!, /distinto/);
+  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: "2026-11-05", time: "15:00" }] })!, /distinto/);
+  assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: "2026-11-04", time: "13:00" }] })!, /jueves a sábado/); // miércoles
   assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: SUN, time: "13:00" }] })!, /mes/);
   assert.match(checkWashes({ ...base, washes: [...ok.slice(0, 5), { date: addDays(MON, 31), time: "13:00" }] })!, /mes/);
-  assert.match(checkWashes({ ...base, washes: ok, blocksByDate: { "2026-11-04": [{ start: hm("13:00"), end: hm("13:30") }] } })!, /miércoles 4/);
+  assert.match(checkWashes({ ...base, washes: ok, blocksByDate: { "2026-11-06": [{ start: hm("13:00"), end: hm("13:30") }] } })!, /viernes 6/);
 });
 
 test("abierto ahora, próxima apertura, textos y etiquetas", () => {

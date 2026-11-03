@@ -39,8 +39,8 @@ export default function Admin() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  useEffect(() => { if (!msg || msg === "…") return; const t = setTimeout(() => setMsg(""), 4000); return () => clearTimeout(t); }, [msg]);
   const [msg, setMsg] = useState("");
+  useEffect(() => { if (!msg || msg === "…") return; const t = setTimeout(() => setMsg(""), 4000); return () => clearTimeout(t); }, [msg]);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"garage" | "agenda" | "ajustes">("agenda");
 

@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const [rec, s] = await Promise.all([getGarage(), getSettings()]);
     return Response.json(toPublic(rec, s.hours), {
-      headers: { "Cache-Control": "public, max-age=0, s-maxage=2, stale-while-revalidate=10" },
+      headers: { "Cache-Control": "public, max-age=0, s-maxage=1, stale-while-revalidate=3" },
     });
   } catch {
     return Response.json({ error: "No disponible" }, { status: 503, headers: { "Cache-Control": "no-store" } });

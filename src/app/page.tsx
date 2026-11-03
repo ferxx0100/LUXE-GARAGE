@@ -19,7 +19,7 @@ const Title = ({ kicker, children, dark }: { kicker: string; children: React.Rea
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
-  const help = { tel: telLink, whatsapp: whatsappLink("Hola, necesito ayuda con LUXE GARAGE"), phoneDisplay: BUSINESS.phoneDisplay };
+  const help = { tel: telLink, whatsapp: whatsappLink("Hola, necesito ayuda con LUXE GARAGE"), phoneDisplay: BUSINESS.phoneDisplay, hours: horario };
 
   // Datos para Google: negocio local con logo, teléfono, horario y precios.
   const jsonLd = {

@@ -27,12 +27,13 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
   const [today, setToday] = useState(mxToday);
   const [day, setDay] = useState(today);
   const [list, setList] = useState<Booking[] | null>(null);
+  const [q, setQ] = useState("");
   const days = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(today, i)), [today]);
 
   const load = useCallback(async () => {
     const t = mxToday();
     setToday(t);
-    const r = await fetch(`/api/admin/bookings?from=${t}&days=14`, { cache: "no-store" });
+    const r = await fetch(`/api/admin/bookings?from=${addDays(t, -7)}&days=21`, { cache: "no-store" });
     if (r.status === 401) return onUnauthorized();
     if (r.ok) setList((await r.json()).bookings);
   }, [onUnauthorized]);
@@ -48,7 +49,11 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
   }
 
   const all = list ?? [];
-  const ofDay = all.filter((b) => b.date === day).sort((a, b) => a.time.localeCompare(b.time));
+  const needle = q.trim().toLowerCase().replace(/\s+/g, "");
+  const found = needle.length >= 3
+    ? all.filter((b) => [b.code, b.name, b.phone, b.plate].some((v) => v.toLowerCase().replace(/\s+/g, "").includes(needle))).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
+    : null;
+  const ofDay = found ?? all.filter((b) => b.date === day).sort((a, b) => a.time.localeCompare(b.time));
   const active = (b: Booking) => ["confirmed", "done", "pending", "conflict"].includes(b.status);
   const countFor = (d: string) => all.filter((b) => b.date === d && active(b)).length;
   const dayActive = ofDay.filter(active);
@@ -64,7 +69,11 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
         </p>
       )}
 
-      <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 pb-2 [scrollbar-width:none]">
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔎 Buscar por código, nombre, teléfono o placas"
+        className="mb-4 w-full rounded-xl border-2 border-white/12 bg-white/[.04] px-4 py-3.5 text-lg outline-none placeholder:text-white/45 focus:border-gold" aria-label="Buscar cita" />
+      {found && <p className="mb-3 text-base text-white/75">{found.length} resultado(s) para “{q}” (últimos 7 días y próximas 2 semanas)</p>}
+
+      <div className={`-mx-5 flex gap-2.5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] ${found ? "hidden" : ""}`}>
         {days.map((d, i) => {
           const n = countFor(d), on = d === day;
           return (
@@ -79,7 +88,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
         })}
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-3">
+      <div className={`mt-5 grid grid-cols-3 gap-3 ${found ? "hidden" : ""}`}>
         {[["Citas", String(dayActive.length)], ["Cobrado", `$${cobrado}`], ["Domicilio", String(domicilio)]].map(([k, v]) => (
           <div key={k} className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[.06] to-transparent p-4">
             <p className="text-sm text-white/65">{k}</p>
@@ -100,6 +109,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
             <article key={b.id} className={`overflow-hidden rounded-3xl border bg-white/[.03] ${b.status === "cancelled" ? "border-white/5 opacity-60" : "border-white/12"}`}>
               <div className="flex items-stretch">
                 <div className={`flex w-24 shrink-0 flex-col items-center justify-center gap-1 ${b.place === "domicilio" ? "bg-sky-500/15" : "bg-gold/10"}`}>
+                  {found && <span className="text-xs font-bold">{DAY[wd(b.date)]} {Number(b.date.slice(8))} {MONTH[Number(b.date.slice(5, 7)) - 1]}</span>}
                   <span className="font-display text-3xl font-semibold">{b.time}</span>
                   <span className="text-xs font-bold tracking-wider text-white/70">{b.place === "domicilio" ? "DOMICILIO" : "GARAGE"}</span>
                 </div>
@@ -135,7 +145,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg }: { onUnauthorized:
         })}
       </div>
 
-      {all.length > 0 && <Clients list={all.filter(active)} />}
+      {all.length > 0 && !found && <Clients list={all.filter((b) => active(b) && b.date >= today)} />}
     </div>
   );
 }

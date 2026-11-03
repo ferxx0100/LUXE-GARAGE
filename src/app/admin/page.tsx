@@ -9,7 +9,8 @@ type Settings = {
   hours: { open: number; close: number; days: number[] };
   notice: string;
 };
-type Garage = { open: boolean; busy: boolean; updatedAt: string | null };
+type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
+type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; updatedAt: string | null; public: Pub; reason: "manual-open" | "manual-closed" | "schedule-open" | "schedule-closed" };
 type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "memory" };
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -62,7 +63,7 @@ export default function Admin() {
     if (r.ok) { setMsg(""); load(); } else setMsg(r.data.error ?? "Error");
   }
 
-  async function setGarage(patch: Partial<Pick<Garage, "open" | "busy">>) {
+  async function setGarage(patch: Partial<Pick<Garage, "mode" | "busy">>) {
     setBusy(true);
     const r = await api("garage", "POST", patch);
     setBusy(false);
@@ -113,7 +114,13 @@ export default function Admin() {
     );
 
   const g = data?.garage;
-  const preview: "LIBRE" | "OCUPADO" | "CERRADO" = !g || !g.open ? "CERRADO" : g.busy ? "OCUPADO" : "LIBRE";
+  const preview: Pub = g?.public ?? "CERRADO";
+  const why = {
+    "manual-open": "Abierto a mano: hoy manda tu decisión sobre el horario.",
+    "manual-closed": "Cerrado a mano por hoy. Mañana vuelve al horario.",
+    "schedule-open": "Abierto según el horario.",
+    "schedule-closed": "Cerrado porque está fuera del horario. Para abrir ahora toca \"Abierto hoy\".",
+  }[g?.reason ?? "schedule-closed"];
   const set = (patch: Partial<Settings>) => setForm((f) => f && { ...f, ...patch });
 
   return (
@@ -155,14 +162,24 @@ export default function Admin() {
           <div>
             <p className="text-xs text-white/50">Así lo ve el cliente ahora:</p>
             <p className={`font-display mt-1 text-3xl font-semibold ${preview === "LIBRE" ? "text-emerald-400" : preview === "OCUPADO" ? "text-red-400" : "text-zinc-400"}`}>{preview}</p>
-            <p className="mt-1 text-xs text-white/40">Fuera del horario siempre se ve CERRADO.</p>
+            <p className="mt-1 text-sm text-white/70">{why}</p>
           </div>
         </div>
 
-        <Switch label="Negocio" on={g?.open ?? true} onText="Abierto" offText="Cerrado" onCls="bg-emerald-500" offCls="bg-zinc-600"
-          hint="Cerrado baja la cortina en la página." disabled={busy} onChange={(v) => setGarage({ open: v })} />
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[.03] p-4">
+          <p className="text-xs tracking-[.25em] text-white/60">NEGOCIO</p>
+          <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Negocio">
+            {([["auto", "Automático", "Sigue el horario", "border-gold bg-gold/15 text-gold"], ["open", "Abierto hoy", "Aunque sea fuera de horario", "border-emerald-400 bg-emerald-500/20 text-emerald-200"], ["closed", "Cerrado hoy", "Baja la cortina", "border-zinc-300 bg-zinc-500/25 text-zinc-100"]] as const).map(([m, t, h, on]) => (
+              <button key={m} role="radio" aria-checked={g?.mode === m} disabled={busy} onClick={() => setGarage({ mode: m })}
+                className={`rounded-xl border-2 px-2 py-3 text-center transition active:scale-[.98] disabled:opacity-50 ${g?.mode === m ? on : "border-white/10 text-white/75"}`}>
+                <span className="block text-base font-bold leading-tight">{t}</span>
+                <span className="mt-1 block text-[11px] leading-tight opacity-80">{h}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <Switch label="Fosa" on={!(g?.busy ?? false)} onText="Libre" offText="Ocupado" onCls="bg-emerald-500" offCls="bg-red-500"
-          hint="Ocupado: el auto entra a la fosa y el semáforo se pone en rojo." disabled={busy || !(g?.open ?? true)} onChange={(v) => setGarage({ busy: !v })} />
+          hint={preview === "CERRADO" ? "Abre el negocio para poder cambiar la fosa." : "Ocupado: el auto entra a la fosa y el semáforo se pone en rojo."} disabled={busy || preview === "CERRADO"} onChange={(v) => setGarage({ busy: !v })} />
       </section>}
 
       {tab === "ajustes" && form && (

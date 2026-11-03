@@ -1,5 +1,5 @@
 import { getBooking } from "@/lib/bookings";
-import { BUSINESS, mapsLink, telLink } from "@/lib/config";
+import { BUSINESS, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -56,6 +56,9 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
       <div className="mt-6 grid gap-3">
         {["confirmed", "pending"].includes(b.status) && <a href={`/api/booking/${b.id}/ics`} className="btn-gold text-lg">Agregar a mi calendario</a>}
         {b.place === "garage" && <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="btn-line text-lg">Cómo llegar</a>}
+        {["confirmed", "pending", "conflict"].includes(b.status) && (
+          <a href={whatsappLink(`Hola, quiero cambiar o cancelar mi reserva ${b.code} (${b.date} ${b.time}).`)} target="_blank" rel="noopener noreferrer" className="btn-line text-lg">Cambiar o cancelar</a>
+        )}
         <a href={telLink} className="btn-line text-lg">¿Dudas? Llámanos</a>
       </div>
       <p className="mt-6 text-center text-sm text-white/55">Te llegó el recibo de Mercado Pago a {b.email.replace(/^(.).*(@.*)$/, "$1***$2")}. Muestra este código al llegar.</p>

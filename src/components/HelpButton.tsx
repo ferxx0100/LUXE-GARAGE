@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 // Único canal humano: ayuda, urgencias y quejas. Las reservas y pagos son 100 % en la web.
-export default function HelpButton({ tel, whatsapp, phoneDisplay }: { tel: string; whatsapp: string; phoneDisplay: string }) {
+export default function HelpButton({ tel, whatsapp, phoneDisplay, hours }: { tel: string; whatsapp: string; phoneDisplay: string; hours?: string }) {
   const [open, setOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -51,7 +51,8 @@ export default function HelpButton({ tel, whatsapp, phoneDisplay }: { tel: strin
               <Item href={whatsapp} title="Mensaje por WhatsApp" sub="Dudas sobre tu reserva o servicio" icon={chat} />
               <Item href={tel} title="Quejas" sub="Llamada directa con el encargado" icon={phone} />
             </div>
-            <p className="mt-4 text-center text-xs text-white/40">Las reservas y pagos se hacen aquí en la página.</p>
+            <p className="mt-4 text-center text-sm text-white/65">{hours ? `Atendemos ${hours}. Fuera de horario déjanos WhatsApp y te respondemos al abrir.` : ""}</p>
+            <p className="mt-1 text-center text-xs text-white/45">Para cambiar o cancelar una reserva, ten a la mano tu código LG-…</p>
           </div>
         </div>,
         document.body,

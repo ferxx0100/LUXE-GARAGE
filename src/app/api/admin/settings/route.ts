@@ -1,5 +1,5 @@
 import { deny, guard } from "@/lib/auth";
-import { getGarage } from "@/lib/garage-state";
+import { getGarage, openState, toPublic } from "@/lib/garage-state";
 import { getSettings, saveSettings, Settings } from "@/lib/settings";
 import { storeKind } from "@/lib/store";
 import { revalidatePath } from "next/cache";
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   if (blocked) return blocked;
   try {
     const [settings, garage] = await Promise.all([getSettings(), getGarage()]);
-    return Response.json({ settings, garage, storage: storeKind }, { headers: noStore });
+    return Response.json({ settings, garage: { ...garage, public: toPublic(garage, settings.hours).status, reason: openState(garage, settings.hours).reason }, storage: storeKind }, { headers: noStore });
   } catch {
     return deny.down();
   }

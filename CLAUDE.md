@@ -3,7 +3,7 @@
 ## Concepto de operación (léelo primero)
 - Un solo espacio de lavado. Se opera "cuando no hay gente": la pregunta central del cliente es **¿está libre ahorita?**
 - Estados públicos: `LIBRE` (semáforo verde, flecha "pasa"), `OCUPADO` (rojo ✕, el Accord gris en la fosa) y `CERRADO` (cortina abajo).
-- En `/admin` hay dos interruptores: **Negocio** (Abierto/Cerrado) y **Fosa** (Libre/Ocupado). Fuera de horario siempre es CERRADO. En el futuro las cámaras moverán el de Fosa.
+- En `/admin` → Garage: **Negocio** (Automático = sigue el horario / Abierto hoy / Cerrado hoy; lo manual dura solo ese día) y **Fosa** (Libre/Ocupado). En el futuro las cámaras moverán el de Fosa.
 - La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y fosa de rejillas de acero negro. Nada de imágenes generadas por IA.
 - Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en el botón "Ayuda" (urgente, mensaje, quejas).
 - Tipografía: Cinzel (romana, títulos) + Manrope (texto), servidas desde el propio sitio (@fontsource).

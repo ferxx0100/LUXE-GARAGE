@@ -18,16 +18,17 @@ const Title = ({ kicker, children, dark }: { kicker: string; children: React.Rea
 );
 
 // Burbujas de la membresía: posiciones fijas (mismo HTML en servidor y navegador).
-const BUBBLES = Array.from({ length: 34 }, (_, i) => {
+const BUBBLES = Array.from({ length: 40 }, (_, i) => {
   const r = (n: number) => { const v = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453; return v - Math.floor(v); };
-  return { x: `${Math.round(r(1) * 100)}%`, s: `${Math.round(6 + r(2) * 30)}px`, d: `${(7 + r(3) * 9).toFixed(1)}s`, w: `${(-r(4) * 14).toFixed(1)}s`, sway: `${Math.round((r(5) - 0.5) * 60)}px`, y: `${Math.round(10 + r(6) * 80)}%` };
+  return { x: `${Math.round(r(1) * 100)}%`, s: `${Math.round(10 + r(2) * 46)}px`, d: `${(8 + r(3) * 10).toFixed(1)}s`, sw: `${(1.8 + r(7) * 2).toFixed(1)}s`, w: `${(-r(4) * 14).toFixed(1)}s`, sway: `${Math.round((r(5) - 0.5) * 60)}px`, y: `${Math.round(10 + r(6) * 80)}%` };
 });
 const Bubbles = () => (
   <div className="lg-bubbles" aria-hidden>
     <div className="lg-caustic" />
     {BUBBLES.map((b, i) => (
-      <span key={i} className="lg-bubble" style={{ "--x": b.x, "--s": b.s, "--d": b.d, "--w": b.w, "--sway": b.sway, "--y": b.y } as React.CSSProperties} />
+      <span key={i} className="lg-bubble" style={{ "--x": b.x, "--s": b.s, "--d": b.d, "--w": b.w, "--sway": b.sway, "--y": b.y, "--sw": b.sw } as React.CSSProperties}><i /></span>
     ))}
+    <div className="lg-foam-band" />
   </div>
 );
 const Drop = () => (

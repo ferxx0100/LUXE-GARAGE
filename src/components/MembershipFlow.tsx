@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import PayBrick from "./PayBrick";
+import TimeGrid from "./TimeGrid";
 import { addDays, DAY, hour12, KIND, longDay, MONTH, mxNow, range12, wd, type DayHours, type Kind, type Vehicle } from "./fmt";
 
 interface Props {
@@ -59,6 +61,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
   const [busy, setBusy] = useState(false);
   const [hold, setHold] = useState<{ id: string; code: string; amount: number; washes: Wash[]; until: number } | null>(null);
   const [left, setLeft] = useState(0);
+  const [mi, setMi] = useState(0); // mes visible del calendario
 
   useEffect(() => { setToday(mxNow().date); }, [open]);
   const last = addDays(today, validDays);
@@ -69,12 +72,13 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
   // Pantalla completa: sin desplazar la página de atrás.
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) setOpen(false); };
+    const y = window.scrollY, b = document.body.style;
+    const prev = { position: b.position, top: b.top, left: b.left, right: b.right, width: b.width };
+    Object.assign(b, { position: "fixed", top: `-${y}px`, left: "0", right: "0", width: "100%" });
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) { if (day) setDay(null); else setOpen(false); } };
     window.addEventListener("keydown", esc);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", esc); };
-  }, [open, busy]);
+    return () => { Object.assign(b, prev); window.scrollTo(0, y); window.removeEventListener("keydown", esc); };
+  }, [open, busy, day]);
 
   // Horas libres del día tocado.
   useEffect(() => {
@@ -105,7 +109,6 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
     setError("");
     if (!picks.some((p) => p.date === d) && picks.length >= need) { setError(`Ya elegiste tus ${need} lavadas. Quita una para cambiarla.`); return; }
     setDay(d);
-    setTimeout(() => document.getElementById("mb-hours")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
   }
   function pickTime(t: string) {
     if (!day) return;
@@ -136,9 +139,10 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
     <>
       <button type="button" onClick={() => { setOpen(true); setError(""); }} className="btn-water mt-8 min-h-16 w-full text-xl">Adquirir membresía</button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 bg-[#010b14]/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label="Adquirir membresía">
-          <div id="mb-sheet" className="sheet-in water-bg relative h-full w-full overflow-y-auto text-white md:h-auto md:max-h-[92vh] md:max-w-xl md:rounded-[32px] md:border md:border-cyan-200/20">
+      {/* Portal a <body>: el desenfoque de la tarjeta de vidrio rompía "fixed" en iPhone */}
+      {open && createPortal(
+        <div className="mb-fade fixed inset-0 z-50 bg-[#010b14]/75 md:grid md:place-items-center md:p-6" style={{ height: "100dvh" }} role="dialog" aria-modal="true" aria-label="Adquirir membresía">
+          <div id="mb-sheet" className="water-bg relative h-full w-full overflow-y-auto overscroll-contain text-white [-webkit-overflow-scrolling:touch] md:h-auto md:max-h-[92dvh] md:max-w-xl md:rounded-[32px] md:border md:border-cyan-200/20">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-cyan-200/15 bg-[#031b2e]/90 px-5 py-3 backdrop-blur-md">
               <div>
                 <p className="text-xs font-bold tracking-[.3em] text-[#67e8f9]">MEMBRESÍA</p>
@@ -198,53 +202,40 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
                   <Step n="2" title={`Elige tus ${need} días`}>
                     <div className="flex items-center justify-between">
                       <p className="text-lg text-white/85">Toca un día y luego la hora.</p>
-                      <p className="rounded-full bg-[#22d3ee] px-3 py-1 text-lg font-extrabold tabular-nums text-[#031b2e]" aria-live="polite">{picks.length} de {need}</p>
+                      <p className="shrink-0 whitespace-nowrap rounded-full bg-[#22d3ee] px-3 py-1 text-lg font-extrabold tabular-nums text-[#031b2e]" aria-live="polite">{picks.length} de {need}</p>
                     </div>
-                    {cal.map(({ y, m, cells }) => (
-                      <div key={`${y}-${m}`} className="mt-4">
-                        <p className="font-display text-xl font-semibold capitalize text-[#67e8f9]">{MONTH[m - 1]} {y}</p>
-                        <div className="mt-2 grid grid-cols-7 gap-1 text-center text-sm font-bold text-white/60">
-                          {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => <span key={i}>{d}</span>)}
+                    {(() => {
+                      const cur = cal[Math.min(mi, cal.length - 1)];
+                      if (!cur) return null;
+                      const { y, m, cells } = cur;
+                      return (
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between">
+                            <button type="button" onClick={() => setMi((v) => Math.max(0, v - 1))} disabled={mi === 0} aria-label="Mes anterior" className="grid size-12 place-items-center rounded-full bg-white/10 text-2xl font-bold disabled:opacity-25">‹</button>
+                            <p className="font-display text-xl font-semibold capitalize text-[#67e8f9]">{MONTH[m - 1]} {y}</p>
+                            <button type="button" onClick={() => setMi((v) => Math.min(cal.length - 1, v + 1))} disabled={mi >= cal.length - 1} aria-label="Mes siguiente" className="grid size-12 place-items-center rounded-full bg-white/10 text-2xl font-bold disabled:opacity-25">›</button>
+                          </div>
+                          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-sm font-bold text-white/60">
+                            {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => <span key={i}>{d}</span>)}
+                          </div>
+                          <div className="mt-1 grid grid-cols-7 gap-1">
+                            {cells.map((d, i) => {
+                              if (!d) return <span key={`e${i}`} className="h-12" />;
+                              const closed = !hours[wd(d)], out = d < today || d > last;
+                              const pick = picks.find((p) => p.date === d);
+                              return (
+                                <button key={d} type="button" disabled={closed || out} onClick={() => tapDay(d)}
+                                  aria-label={`${longDay(d)}${closed ? ", cerrado" : ""}${pick ? `, elegido a las ${hour12(pick.time)}` : ""}`}
+                                  className={`flex h-12 flex-col items-center justify-center rounded-xl text-lg font-bold transition disabled:opacity-20 ${pick ? "bg-[#22d3ee] text-[#031b2e] shadow-[0_0_14px_rgba(34,211,238,.5)]" : "bg-white/[.08] active:bg-white/20"} ${d === today && !pick ? "ring-2 ring-[#67e8f9]/60" : ""}`}>
+                                  <span className="leading-none">{Number(d.slice(8))}</span>
+                                  {pick && <span className="mt-0.5 text-[10px] font-extrabold leading-none">{hour12(pick.time).replace(" ", "")}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="mt-1 grid grid-cols-7 gap-1">
-                          {cells.map((d, i) => {
-                            if (!d) return <span key={`e${i}`} />;
-                            const closed = !hours[wd(d)], out = d < today || d > last;
-                            const pick = picks.find((p) => p.date === d), on = day === d;
-                            return (
-                              <button key={d} type="button" disabled={closed || out} onClick={() => tapDay(d)}
-                                aria-label={`${longDay(d)}${closed ? ", cerrado" : ""}${pick ? `, elegido a las ${hour12(pick.time)}` : ""}`}
-                                className={`flex aspect-square min-h-11 flex-col items-center justify-center rounded-xl text-lg font-bold transition disabled:opacity-25 ${pick ? "bg-[#22d3ee] text-[#031b2e] shadow-[0_0_18px_rgba(34,211,238,.55)]" : on ? "bg-white text-[#031b2e]" : "bg-white/[.07]"} ${d === today && !pick ? "ring-2 ring-[#67e8f9]/60" : ""}`}>
-                                <span className="leading-none">{Number(d.slice(8))}</span>
-                                {pick && <span className="mt-0.5 text-[10px] leading-none">{hour12(pick.time).replace(" ", "")}</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-
-                    {day && (
-                      <div id="mb-hours" className="mt-5 rounded-2xl border border-[#67e8f9]/40 bg-[#021424]/80 p-4">
-                        <p className="text-xl font-bold">{longDay(day)}</p>
-                        <p className="text-base text-white/70">¿A qué hora? ({dur} min)</p>
-                        {starts === null ? <p className="mt-3 text-lg text-white/70">Buscando horas…</p>
-                          : starts.length === 0 ? <p className="mt-3 text-lg">Ese día ya no hay horas. Elige otro día.</p>
-                          : (
-                            <div className="mt-3 grid grid-cols-3 gap-2">
-                              {starts.map((t) => {
-                                const on = picks.some((p) => p.date === day && p.time === t);
-                                return <button key={t} type="button" onClick={() => pickTime(t)} aria-pressed={on}
-                                  className={`min-h-14 rounded-xl border-2 text-lg font-extrabold transition ${on ? "border-[#67e8f9] bg-[#22d3ee] text-[#031b2e]" : "border-cyan-200/20 bg-white/[.05]"}`}>{hour12(t)}</button>;
-                              })}
-                            </div>
-                          )}
-                        <div className="mt-3 flex gap-2">
-                          {picks.some((p) => p.date === day) && <button type="button" onClick={() => remove(day)} className="min-h-14 flex-1 rounded-xl border border-red-300/40 text-lg font-bold text-red-200">Quitar este día</button>}
-                          <button type="button" onClick={() => setDay(null)} className="min-h-14 flex-1 rounded-xl border border-cyan-200/30 text-lg font-bold">Listo</button>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="mt-5">
                       <p className="text-lg font-bold">Tus {need} lavadas</p>
@@ -295,7 +286,28 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, pr
               </div>
             )}
           </div>
-        </div>
+
+          {day && !hold && (
+            <div className="fixed inset-0 z-[60] flex items-end bg-black/50" onClick={() => setDay(null)}>
+              <div className="mb-up max-h-[78dvh] w-full overflow-y-auto overscroll-contain rounded-t-[28px] border-t border-cyan-200/25 bg-[#031b2e] p-5 text-white md:mx-auto md:max-w-xl md:rounded-[28px]"
+                style={{ paddingBottom: "max(1.2rem, env(safe-area-inset-bottom))" }} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Hora para el ${longDay(day)}`}>
+                <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/25" />
+                <p className="text-2xl font-bold">{longDay(day)}</p>
+                <p className="text-base text-white/70">¿A qué hora? · lavado de {dur} min</p>
+                <div className="mt-4">
+                  {starts === null ? <p className="text-lg text-white/70">Buscando horas…</p>
+                    : starts.length === 0 ? <p className="text-lg">Ese día ya no hay horas. Elige otro día.</p>
+                    : <TimeGrid tone="water" starts={starts} value={picks.find((p) => p.date === day)?.time} onPick={pickTime} />}
+                </div>
+                <div className="mt-4 flex gap-2">
+                  {picks.some((p) => p.date === day) && <button type="button" onClick={() => remove(day)} className="min-h-14 flex-1 rounded-xl border border-red-300/40 text-lg font-bold text-red-200">Quitar este día</button>}
+                  <button type="button" onClick={() => setDay(null)} className="min-h-14 flex-1 rounded-xl border border-cyan-200/30 text-lg font-bold">Cerrar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>,
+        document.body,
       )}
     </>
   );

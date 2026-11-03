@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import PayBrick from "./PayBrick";
+import TimeGrid from "./TimeGrid";
 import { addDays, DAY, hour12, KIND, longDay, mxNow, range12, wd, type DayHours, type Kind, type Vehicle } from "./fmt";
 
 interface Props {
@@ -241,18 +242,8 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
           <p className="mt-3 rounded-2xl border border-white/10 p-4 text-xl text-white/85">Ya no quedan horas este día. Toca <b>Otro día</b>.</p>
         ) : (
           <>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {avail.starts.map((t) => {
-                const on = time === t, nx = t === first;
-                return (
-                  <button type="button" key={t} onClick={() => setTime(t)} aria-pressed={on}
-                    className={`relative min-h-16 rounded-2xl border-2 py-3 text-center transition ${on ? "border-gold bg-gold text-ink" : nx ? "border-gold/70 bg-gold/[.08]" : "border-white/15 bg-white/[.04]"}`}>
-                    {nx && <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[11px] font-extrabold tracking-[.15em] ${on ? "bg-ink text-gold" : "bg-gold text-ink"}`}>PRÓXIMO</span>}
-                    <span className="block text-2xl font-extrabold">{hour12(t)}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <div className="mt-3"><TimeGrid starts={avail.starts} value={time} onPick={setTime} next={first} /></div>
+            {first && !time && <p className="mt-2 text-sm text-white/65">● El punto marca el lugar más próximo.</p>}
             {time && (
               <p className="mt-4 rounded-2xl border border-gold/40 bg-gold/[.08] px-4 py-3 text-xl">
                 Tu lavado: <b className="tabular-nums text-gold">{range12(time, dur)}</b>

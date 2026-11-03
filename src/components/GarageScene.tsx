@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type Status = "LIBRE" | "OCUPADO" | "CERRADO";
 
@@ -210,6 +210,77 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const SANS = { fontFamily: "var(--font-sans)" };
 const DISPLAY = { fontFamily: "var(--font-display)" };
 
+/* ───────── Marcador colgante de neón (dígitos de 7 segmentos) ───────── */
+const SB = face(-0.95, 2.72, 0.95, 3.3, -3); // caja del marcador, colgada del techo del pasillo
+const SB_CEIL = Y(CH, -3);
+const SEGS: Record<string, string> = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", " ": "" };
+function Digit({ x, y, w, h, ch, on }: { x: number; y: number; w: number; h: number; ch: string; on: string }) {
+  const t = w * 0.2, hh = h / 2;
+  const r: Record<string, [number, number, number, number]> = {
+    a: [x + t, y, w - 2 * t, t], b: [x + w - t, y + t, t, hh - 1.5 * t], c: [x + w - t, y + hh + 0.5 * t, t, hh - 1.5 * t],
+    d: [x + t, y + h - t, w - 2 * t, t], e: [x, y + hh + 0.5 * t, t, hh - 1.5 * t], f: [x, y + t, t, hh - 1.5 * t], g: [x + t, y + hh - t / 2, w - 2 * t, t],
+  };
+  const lit = SEGS[ch] ?? "";
+  return (
+    <g>
+      {Object.entries(r).map(([k, [rx, ry, rw, rh]]) => (
+        <rect key={k} x={rx} y={ry} width={rw} height={rh} rx={t / 2} fill={lit.includes(k) ? on : "#2a1210"} opacity={lit.includes(k) ? 1 : 0.85} />
+      ))}
+    </g>
+  );
+}
+function useMxClock() {
+  const [c, setC] = useState<{ h: number; m: number; s: number } | null>(null);
+  useEffect(() => {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: false });
+    const tick = () => {
+      const p = f.formatToParts(new Date());
+      const g = (t: string) => Number(p.find((x) => x.type === t)?.value ?? 0);
+      setC({ h: g("hour") % 24, m: g("minute"), s: g("second") });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return c;
+}
+function Scoreboard({ status, busy, opens }: { status: Status | null; busy: string | null; opens?: string }) {
+  const c = useMxClock();
+  const neon = "#ff5a36";
+  const h12 = c ? String(c.h % 12 || 12).padStart(2, " ") : "  ";
+  const mm = c ? String(c.m).padStart(2, "0") : "  ";
+  const ap = c ? (c.h < 12 ? "AM" : "PM") : "";
+  const row = status === "LIBRE" ? { t: "LIBRE · PASA", c: "#3dff8f" } : status === "OCUPADO" ? { t: busy ? `OCUPADO · ${busy}` : "OCUPADO", c: "#ff4b3e" }
+    : status === "CERRADO" ? { t: opens ?? "CERRADO", c: "#ffb547" } : { t: "EN VIVO", c: "#ffd79a" };
+  const pad = SB.w * 0.07, dh = SB.h * 0.5, dw = dh * 0.56, gap = dw * 0.28;
+  const x0 = SB.x + pad, y0 = SB.y + SB.h * 0.12;
+  const xs = [x0, x0 + dw + gap, x0 + 2 * dw + gap * 3.2, x0 + 3 * dw + gap * 4.2];
+  const colon = x0 + 2 * dw + gap * 1.6;
+  return (
+    <g aria-hidden>
+      {/* cables al techo */}
+      <path d={`M${SB.x + SB.w * 0.18} ${SB_CEIL} V${SB.y} M${SB.x + SB.w * 0.82} ${SB_CEIL} V${SB.y}`} stroke="#3a3a3d" strokeWidth="1.1" />
+      <rect x={SB.x + 3} y={SB.y + 6} width={SB.w} height={SB.h} rx="5" fill="#000" opacity=".25" filter="url(#lg-soft)" />
+      <rect x={SB.x} y={SB.y} width={SB.w} height={SB.h} rx="5" fill="#0b0b0c" stroke="#2c2c2f" strokeWidth="1.5" />
+      <rect x={SB.x + 2.5} y={SB.y + 2.5} width={SB.w - 5} height={SB.h - 5} rx="3.5" fill="none" stroke="#c9a54a" strokeOpacity=".45" strokeWidth=".7" />
+      <g filter="url(#lg-glow-sm)">
+        <Digit x={xs[0]} y={y0} w={dw} h={dh} ch={h12[0]} on={neon} />
+        <Digit x={xs[1]} y={y0} w={dw} h={dh} ch={h12[1]} on={neon} />
+        <g className="lg-colon">
+          <circle cx={colon} cy={y0 + dh * 0.3} r={dw * 0.11} fill={neon} />
+          <circle cx={colon} cy={y0 + dh * 0.72} r={dw * 0.11} fill={neon} />
+        </g>
+        <Digit x={xs[2]} y={y0} w={dw} h={dh} ch={mm[0]} on={neon} />
+        <Digit x={xs[3]} y={y0} w={dw} h={dh} ch={mm[1]} on={neon} />
+        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.42} textAnchor="end" fontSize={dh * 0.3} fontWeight="800" fill={neon} style={SANS}>{ap}</text>
+        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.92} textAnchor="end" fontSize={dh * 0.2} fontWeight="700" letterSpacing=".6" fill="#c9a54a" style={SANS}>ZAMORA</text>
+        <text x={SB.x + SB.w / 2} y={SB.y + SB.h * 0.9} textAnchor="middle" fontSize={SB.h * 0.17} fontWeight="800" letterSpacing="1" fill={row.c} style={SANS}
+          {...(row.t.length * SB.h * 0.12 > SB.w - 10 ? { textLength: SB.w - 10, lengthAdjust: "spacingAndGlyphs" as const } : {})}>{row.t}</text>
+      </g>
+    </g>
+  );
+}
+
 export default function GarageScene({ status, opensShort, busyShort }: { status: Status | null; opensShort?: string; busyShort?: string }) {
   const carRef = useRef<SVGGElement>(null);
   const brakeRef = useRef<SVGGElement>(null);
@@ -288,7 +359,9 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
         @keyframes lgHalo{0%,100%{opacity:.6}50%{opacity:.95}}
         .lg-dm{animation:lgDm 3.4s ease-in-out infinite}
         @keyframes lgDm{0%,100%{opacity:1}50%{opacity:.8}}
-        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-dm{animation:none}}
+        .lg-colon{animation:lgColon 1s steps(1) infinite}
+        @keyframes lgColon{50%{opacity:.15}}
+        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-dm,.lg-colon{animation:none}}
       `}</style>
       <defs>
         <filter id="lg-blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="4" /></filter>
@@ -442,19 +515,8 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
       <rect x={SEM.x + 3} y={SEM.y + 4} width={44 * SEM_K} height={124 * SEM_K} rx="8" fill="#2a2620" opacity=".28" filter="url(#lg-soft)" />
       <g className="lg-power" transform={`translate(${SEM.x.toFixed(1)} ${SEM.y.toFixed(1)}) scale(${SEM_K})`}><Semaforo status={status} /></g>
 
-      {/* display de matriz de puntos: a qué hora se desocupa */}
-      {busy && (
-        <g className="lg-dm">
-          <rect x={LED.x} y={LED.y} width={LED.w} height={LED.h} rx="2.5" fill="#0a0a0b" stroke="#2c2c2f" />
-          <g filter="url(#lg-glow-sm)">
-            <text x={CX} y={LED.y + LED.h / 2 + 4.1} textAnchor="middle" fontSize="11.5" fontWeight="800" letterSpacing="1.1" style={SANS} {...busyFit}>
-              <tspan fill="#fff4dc">{busyA}</tspan>
-              {busyB.length > 0 && <tspan fill="#ffb547">{` ${busyB.join(" ")}`}</tspan>}
-            </text>
-          </g>
-          <rect x={LED.x + 1} y={LED.y + 1} width={LED.w - 2} height={LED.h - 2} rx="2" fill="url(#lg-led)" />
-        </g>
-      )}
+      {/* marcador de neón tipo hockey colgando del techo: la hora y el estado */}
+      <Scoreboard status={status} busy={busy} opens={opensShort} />
 
       {/* sombra del letrero sobre el azulejo */}
       <rect x={SIGN.x + 2} y={SIGN.y + 4} width={SIGN.w} height={SIGN.h} rx="3" fill="#2a2620" opacity=".3" filter="url(#lg-soft)" />

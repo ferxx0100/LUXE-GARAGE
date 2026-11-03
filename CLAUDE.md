@@ -2,13 +2,17 @@
 
 ## Concepto de operación (léelo primero)
 - Un solo espacio de lavado. Se opera "cuando no hay gente": la pregunta central del cliente es **¿está libre ahorita?**
-- Estados: `LIBRE` (llega ya), `OCUPADO` (hay un auto), `BLOQUEADO` (admin) y `CERRADO` (fuera de horario, se calcula). Al público BLOQUEADO se muestra como CERRADO.
-- Hoy el estado se cambia con un botón en `/admin`; en el futuro lo marcarán cámaras.
+- Estados públicos: `LIBRE` (semáforo verde, flecha "pasa"), `OCUPADO` (rojo ✕, el Accord gris en la fosa) y `CERRADO` (cortina abajo).
+- En `/admin` hay dos interruptores: **Negocio** (Abierto/Cerrado) y **Fosa** (Libre/Ocupado). Fuera de horario siempre es CERRADO. En el futuro las cámaras moverán el de Fosa.
+- La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y fosa de rejillas de acero negro. Nada de imágenes generadas por IA.
+- Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en el botón "Ayuda" (urgente, mensaje, quejas).
+- Tipografía: Cinzel (romana, títulos) + Manrope (texto), servidas desde el propio sitio (@fontsource).
 - **Reserva pagada** = la única que aparta un horario del calendario. Horario lleno = no se puede reservar.
 - **Suscripción**: $555/mes, 6 lavadas al mes. Elige sus 6 días; no reserva hora: si está libre, pasa.
 - Exterior: sin bajarse del auto. Interior: deja el auto cuando esté libre, o domicilio.
 - Domicilio: +$50 por cada ida.
 - Solo existe **lavado normal**: carro $180, camioneta $220. No hay paquetes, VIP ni detailing.
+- Reserva = pago completo en línea (Mercado Pago, Apple Pay en Safari).
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind v4. Vercel.

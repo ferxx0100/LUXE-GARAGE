@@ -28,7 +28,9 @@ Deployments → último despliegue → **Redeploy** (las variables nuevas solo a
 ## 5. Usarlo
 - Sitio: `https://<tu-dominio>/`
 - Panel: `https://<tu-dominio>/admin`
-  - Botones **Libre / Ocupado / Bloqueado**: la web se actualiza en ~2–5 s.
+  - Interruptor **Negocio: Abierto / Cerrado** → cerrado baja la cortina de acero en la página.
+  - Interruptor **Fosa: Libre / Ocupado** → cambia el semáforo (flecha verde / ✕ roja) y mete o saca el auto. La web se actualiza en ~2–5 s.
+  - Arriba ves el semáforo tal como lo ve el cliente.
   - **Precios, lavadas por mes, horario, días y aviso**: al guardar, la página pública se regenera al instante.
   - Si ves la franja amarilla “Almacenamiento temporal”, falta el paso 2.
 

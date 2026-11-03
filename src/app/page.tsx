@@ -1,74 +1,120 @@
-import GarageHero from "@/components/GarageHero";
-import { BUSINESS, whatsappLink } from "@/lib/config";
+import HelpButton from "@/components/HelpButton";
+import LiveGarage from "@/components/LiveGarage";
+import RealVideo from "@/components/RealVideo";
+import { BUSINESS, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import { getSettings, hoursLabel } from "@/lib/settings";
 
 // Página estática regenerada al guardar en /admin (y cada 5 min por si acaso).
 export const revalidate = 300;
 
-const Section = ({ id, title, kicker, children }: { id: string; title: string; kicker: string; children: React.ReactNode }) => (
-  <section id={id} className="mx-auto max-w-6xl scroll-mt-8 px-4 py-20">
-    <p className="text-xs tracking-[.4em] text-gold/80">{kicker}</p>
-    <h2 className="font-display mt-2 text-3xl font-bold sm:text-4xl">{title}</h2>
-    <div className="mt-8">{children}</div>
-  </section>
-);
-
-const Card = ({ children, hot }: { children: React.ReactNode; hot?: boolean }) => (
-  <div className={`rounded-2xl border p-6 ${hot ? "border-gold bg-gold/5" : "border-white/10 bg-white/[.03]"}`}>{children}</div>
+const Title = ({ kicker, children, dark }: { kicker: string; children: React.ReactNode; dark?: boolean }) => (
+  <header className="text-center">
+    <p className={`text-[11px] font-semibold tracking-[.4em] ${dark ? "text-[#8a6d1a]" : "text-gold/80"}`}>{kicker}</p>
+    <h2 className="font-display mt-3 text-[2rem] leading-tight font-semibold sm:text-5xl">{children}</h2>
+  </header>
 );
 
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
+  const help = { tel: telLink, whatsapp: whatsappLink("Hola, necesito ayuda con LUXE GARAGE"), phoneDisplay: BUSINESS.phoneDisplay };
+
   return (
-    <main>
-      <GarageHero notice={s.notice} hours={horario} />
+    <>
+      {s.notice && <div className="bg-gold px-4 py-2.5 text-center text-sm font-semibold text-ink" role="note">{s.notice}</div>}
 
-      <Section id="como" kicker="CÓMO FUNCIONA" title="Llegas cuando está libre">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card><h3 className="font-semibold text-gold">1. Mira el garage</h3><p className="mt-2 text-white/70">Verde: libre, ven ya. Rojo: hay un auto adentro. Se actualiza en vivo.</p></Card>
-          <Card><h3 className="font-semibold text-gold">2. Elige cómo</h3><p className="mt-2 text-white/70">Llévalo tú o vamos por él a domicilio. Exterior: no necesitas bajarte del auto. Interior: déjalo cuando el garage esté libre.</p></Card>
-          <Card><h3 className="font-semibold text-gold">3. Sin sorpresas</h3><p className="mt-2 text-white/70">Si está libre, está libre. Solo las reservas pagadas apartan un horario.</p></Card>
+      {/* Barra fija: la marca y la ayuda siempre a la vista, sin tapar contenido */}
+      <nav className="sticky top-0 z-40 border-b border-white/5 bg-ink/80 backdrop-blur-md" aria-label="Principal">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+          <a href="#" className="flex items-center gap-2.5" aria-label="LUXE GARAGE, inicio">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/emblem.svg" alt="" width="24" height="31" />
+            <span className="font-display text-[15px] font-semibold tracking-[.22em] text-gold">LUXE GARAGE</span>
+          </a>
+          <HelpButton {...help} />
         </div>
-      </Section>
+      </nav>
 
-      <Section id="reservar" kicker="RESERVA" title="Aparta tu horario">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card><p className="text-white/60">Lavado normal · Carro</p><p className="font-display mt-1 text-4xl text-gold">${s.prices.carro}</p></Card>
-          <Card><p className="text-white/60">Lavado normal · Camioneta</p><p className="font-display mt-1 text-4xl text-gold">${s.prices.camioneta}</p></Card>
-        </div>
-        <p className="mt-4 text-white/60">A domicilio: +${s.prices.domicilio} por cada ida.</p>
-        <p className="mt-6 rounded-xl border border-dashed border-gold/40 p-4 text-sm text-white/60">
-          Calendario y pago en línea: en construcción (siguiente fase). Mientras tanto,{" "}
-          <a className="text-gold underline" href={whatsappLink("Hola, quiero reservar un lavado en LUXE GARAGE")}>reserva por WhatsApp</a>.
-        </p>
-      </Section>
+      <main>
+        <LiveGarage hours={horario} mapsUrl={mapsLink} />
 
-      <Section id="suscripcion" kicker="SUSCRIPCIÓN MENSUAL" title={`${s.subscriptionWashes} lavadas al mes`}>
-        <Card hot>
-          <p className="font-display text-gold-grad text-6xl font-bold">${s.prices.suscripcion}<span className="text-lg text-white/60"> /mes</span></p>
-          <ul className="mt-6 space-y-2 text-white/80">
-            <li>• Eliges tus {s.subscriptionWashes} días del mes.</li>
-            <li>• No necesitas reservar hora: si el garage está libre, pasas.</li>
-            <li>• Exterior sin bajarte del auto. Interior: déjalo cuando esté libre.</li>
-            <li>• ¿Prefieres domicilio? +${s.prices.domicilio} por cada ida.</li>
+        <section id="como" className="tile-bg px-5 py-20">
+          <div className="mx-auto max-w-5xl">
+            <Title kicker="ASÍ FUNCIONA" dark>Si está libre, está libre</Title>
+            <ol className="mt-12 grid gap-5 sm:grid-cols-3">
+              {[
+                ["I", "Míralo en vivo", "Verde: pasa ahora. Rojo: hay un auto lavándose. La cortina abajo: cerrado."],
+                ["II", "Llega o reserva", "Sin cita si está libre. Si quieres tu hora asegurada, resérvala y págala aquí."],
+                ["III", "Exterior o interior", "Exterior: no necesitas bajarte del auto. Interior: déjalo con nosotros mientras lo dejamos impecable."],
+              ].map(([n, t, d]) => (
+                <li key={n} className="rounded-2xl border border-black/10 bg-white/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,.06)] backdrop-blur">
+                  <span className="font-display text-3xl font-semibold text-[#a8862a]">{n}</span>
+                  <h3 className="mt-2 text-lg font-bold">{t}</h3>
+                  <p className="mt-1.5 leading-relaxed text-black/65">{d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="reservar" className="mx-auto max-w-5xl scroll-mt-4 px-5 py-20">
+          <Title kicker="RESERVA Y PAGO EN LÍNEA">Lavado normal</Title>
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5">
+            {([["Carro", s.prices.carro], ["Camioneta", s.prices.camioneta]] as const).map(([k, v]) => (
+              <div key={k} className="rounded-2xl border border-white/10 bg-white/[.03] p-5 text-center">
+                <p className="text-sm text-white/60">{k}</p>
+                <p className="font-display text-gold-grad mt-1 text-4xl font-semibold sm:text-5xl">${v}</p>
+              </div>
+            ))}
+          </div>
+          <ul className="mt-6 space-y-2 text-white/75">
+            <li><span className="text-gold">·</span> Exterior sin bajarte del auto, o interior dejándolo en el garage.</li>
+            <li><span className="text-gold">·</span> ¿Prefieres que vayamos a tu casa? <b className="text-white">+${s.prices.domicilio}</b> por cada ida.</li>
           </ul>
-          <a className="mt-6 inline-block rounded-full bg-gold px-7 py-3 font-semibold text-black hover:bg-gold-hi"
-            href={whatsappLink("Hola, quiero la suscripción mensual de LUXE GARAGE")}>Quiero suscribirme</a>
-        </Card>
-      </Section>
+          <div className="mt-8 rounded-2xl border border-gold/30 bg-gold/[.06] p-5 text-center">
+            <p className="font-semibold text-gold">Elige día y hora y paga aquí mismo</p>
+            <p className="mt-1 text-sm text-white/60">Estamos activando el calendario y el pago con tarjeta y Apple Pay. Muy pronto.</p>
+          </div>
+        </section>
 
-      <Section id="lugar" kicker="EL LUGAR" title="Así trabajamos">
-        <video className="mx-auto aspect-[9/16] max-h-[70vh] rounded-2xl border border-white/10" src="/media/luxe-loop.mp4"
-          poster="/media/luxe-poster.jpg" autoPlay muted loop playsInline preload="metadata" />
-      </Section>
+        <div className="hairline mx-auto max-w-3xl" />
 
-      <footer className="border-t border-white/10 px-4 py-10 text-center text-sm text-white/50">
-        <p className="font-display text-gold">{BUSINESS.name}</p>
-        <p className="mt-1">{BUSINESS.location}</p>
-        <p className="mt-1">Horario: {horario}</p>
-        <p className="mt-1">© {new Date().getFullYear()} {BUSINESS.name}. Todos los derechos reservados.</p>
+        <section id="suscripcion" className="mx-auto max-w-5xl px-5 py-20">
+          <Title kicker="SUSCRIPCIÓN MENSUAL">{s.subscriptionWashes} lavadas al mes</Title>
+          <div className="mx-auto mt-10 max-w-md rounded-3xl border border-gold/50 bg-gradient-to-b from-gold/[.12] to-transparent p-7 text-center">
+            <p className="font-display text-gold-grad text-6xl font-semibold">${s.prices.suscripcion}</p>
+            <p className="mt-1 text-sm text-white/60">al mes</p>
+            <ul className="mt-6 space-y-3 text-left text-white/85">
+              <li>✓ Eliges tus {s.subscriptionWashes} días del mes.</li>
+              <li>✓ Sin cita: si el garage está libre, pasas.</li>
+              <li>✓ Exterior sin bajarte. Interior: déjalo cuando esté libre.</li>
+              <li>✓ A domicilio: +${s.prices.domicilio} por cada ida.</li>
+            </ul>
+            <p className="mt-6 text-xs text-white/45">Suscripción en línea muy pronto.</p>
+          </div>
+        </section>
+
+        <section id="lugar" className="tile-bg px-5 py-20">
+          <div className="mx-auto max-w-5xl">
+            <Title kicker="EL LUGAR REAL" dark>Azulejo, acero y cuidado</Title>
+            <p className="mx-auto mt-4 max-w-md text-center text-black/60">Nuestra fosa de acero negro y el equipo que deja tu auto como nuevo. Sin filtros.</p>
+            <div className="mt-10"><RealVideo /></div>
+          </div>
+        </section>
+
+        <section id="visitanos" className="mx-auto max-w-5xl px-5 py-20 text-center">
+          <Title kicker="VISÍTANOS">{BUSINESS.location.split(",")[0]}</Title>
+          <p className="mt-4 text-white/70">{BUSINESS.location}</p>
+          <p className="mt-1 text-white/70">Horario: {horario}</p>
+          <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="btn-line mt-8">Abrir en Mapas</a>
+        </section>
+      </main>
+
+      <footer className="border-t border-white/10 px-5 pb-12 pt-10 text-center text-sm text-white/45">
+        <p className="font-display tracking-[.2em] text-gold">LUXE GARAGE</p>
+        <p className="mt-2">© {new Date().getFullYear()} {BUSINESS.name}. Todos los derechos reservados.</p>
       </footer>
-    </main>
+
+    </>
   );
 }

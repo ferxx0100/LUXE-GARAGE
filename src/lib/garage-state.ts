@@ -1,26 +1,25 @@
-import { z } from "zod";
 import { BUSINESS } from "./config";
 import type { Settings } from "./settings";
 import { kvGet, kvSet } from "./store";
 
-// LIBRE: se puede llegar ya. OCUPADO: hay un auto adentro. BLOQUEADO: el admin lo cerró.
-// (CERRADO por horario se calcula, no se guarda.)
-export const GarageMode = z.enum(["LIBRE", "OCUPADO", "BLOQUEADO"]);
-export type GarageMode = z.infer<typeof GarageMode>;
+// Dos interruptores en /admin:
+//   open: el negocio está abierto (false = cerrado manual, la cortina baja).
+//   busy: hay un auto en la fosa (OCUPADO) o no (LIBRE).
+// Fuera del horario configurado el público ve CERRADO aunque open = true.
 export type GarageStatus = "LIBRE" | "OCUPADO" | "CERRADO";
-
-export interface GarageRecord { mode: GarageMode; updatedAt: string | null }
+export interface GarageRecord { open: boolean; busy: boolean; updatedAt: string | null }
 export interface PublicGarage { status: GarageStatus; updatedAt: string | null }
 
-const KEY = "lg:garage";
+const KEY = "lg:garage:v2";
+const DEFAULT: GarageRecord = { open: true, busy: false, updatedAt: null };
 
 /** Lanza error si el almacén falla: es preferible "reconectando" a mostrar un estado falso. */
 export async function getGarage(): Promise<GarageRecord> {
-  return (await kvGet<GarageRecord>(KEY)) ?? { mode: "LIBRE", updatedAt: null };
+  return { ...DEFAULT, ...((await kvGet<GarageRecord>(KEY)) ?? {}) };
 }
 
-export async function setGarage(mode: GarageMode): Promise<GarageRecord> {
-  const rec = { mode, updatedAt: new Date().toISOString() };
+export async function patchGarage(patch: Partial<Pick<GarageRecord, "open" | "busy">>): Promise<GarageRecord> {
+  const rec = { ...(await getGarage()), ...patch, updatedAt: new Date().toISOString() };
   await kvSet(KEY, rec);
   return rec;
 }
@@ -41,7 +40,7 @@ export function isWithinHours(h: Settings["hours"], d = new Date()): boolean {
 }
 
 export function toPublic(rec: GarageRecord, h: Settings["hours"], now = new Date()): PublicGarage {
-  // BLOQUEADO y fuera de horario se muestran igual al público: CERRADO. Sin datos de personas.
-  const status: GarageStatus = rec.mode === "BLOQUEADO" || !isWithinHours(h, now) ? "CERRADO" : rec.mode;
+  // Al público: solo el estado, nunca datos de quién está.
+  const status: GarageStatus = !rec.open || !isWithinHours(h, now) ? "CERRADO" : rec.busy ? "OCUPADO" : "LIBRE";
   return { status, updatedAt: rec.updatedAt };
 }

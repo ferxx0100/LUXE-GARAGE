@@ -1,20 +1,16 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { Semaforo } from "@/components/GarageScene";
 
-type Mode = "LIBRE" | "OCUPADO" | "BLOQUEADO";
 type Settings = {
   prices: { carro: number; camioneta: number; domicilio: number; suscripcion: number };
   subscriptionWashes: number;
   hours: { open: number; close: number; days: number[] };
   notice: string;
 };
-type Data = { settings: Settings; garage: { mode: Mode; updatedAt: string | null } | null; storage: "redis" | "memory" };
+type Garage = { open: boolean; busy: boolean; updatedAt: string | null };
+type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "memory" };
 
-const MODES: { mode: Mode; label: string; hint: string; on: string }[] = [
-  { mode: "LIBRE", label: "Libre", hint: "Se puede llegar ya", on: "border-emerald-400 bg-emerald-500/20 text-emerald-200" },
-  { mode: "OCUPADO", label: "Ocupado", hint: "Hay un auto adentro", on: "border-red-400 bg-red-500/20 text-red-200" },
-  { mode: "BLOQUEADO", label: "Bloqueado", hint: "Cerrado manualmente", on: "border-zinc-300 bg-zinc-500/25 text-zinc-100" },
-];
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const PRICE_FIELDS: { key: keyof Settings["prices"]; label: string }[] = [
   { key: "carro", label: "Lavado carro" },
@@ -63,12 +59,12 @@ export default function Admin() {
     if (r.ok) { setMsg(""); load(); } else setMsg(r.data.error ?? "Error");
   }
 
-  async function setMode(mode: Mode) {
+  async function setGarage(patch: Partial<Pick<Garage, "open" | "busy">>) {
     setBusy(true);
-    const r = await api("garage", "POST", { mode });
+    const r = await api("garage", "POST", patch);
     setBusy(false);
     if (r.status === 401) return setAuthed(false);
-    if (r.ok) { setData((d) => d && { ...d, garage: r.data }); setMsg(`Garage: ${mode}. La web se actualiza en segundos.`); }
+    if (r.ok) { setData((d) => d && { ...d, garage: r.data }); setMsg("Listo. La página se actualiza en segundos."); }
     else setMsg(r.data.error ?? "Error");
   }
 
@@ -102,7 +98,8 @@ export default function Admin() {
       </main>
     );
 
-  const mode = data?.garage?.mode;
+  const g = data?.garage;
+  const preview: "LIBRE" | "OCUPADO" | "CERRADO" = !g || !g.open ? "CERRADO" : g.busy ? "OCUPADO" : "LIBRE";
   const set = (patch: Partial<Settings>) => setForm((f) => f && { ...f, ...patch });
 
   return (
@@ -123,18 +120,26 @@ export default function Admin() {
       )}
 
       <section className="mt-8">
-        <h2 className="text-sm tracking-[.3em] text-white/50">ESTADO DEL GARAGE</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          {MODES.map((m) => (
-            <button key={m.mode} onClick={() => setMode(m.mode)} disabled={busy} aria-pressed={mode === m.mode}
-              className={`rounded-xl border px-5 py-6 text-left transition active:scale-[.98] disabled:opacity-60 ${
-                mode === m.mode ? m.on : "border-white/10 bg-white/[.03] text-white/70 hover:border-white/30"}`}>
-              <div className="text-xl font-semibold">{m.label}</div>
-              <div className="text-sm opacity-80">{m.hint}</div>
-            </button>
-          ))}
+        <h2 className="text-sm tracking-[.3em] text-white/50">SEMÁFORO DEL GARAGE</h2>
+        <div className="mt-3 grid grid-cols-[auto_1fr] items-center gap-5 rounded-2xl border border-white/10 bg-white/[.03] p-4">
+          <svg viewBox="0 0 48 128" className="h-36 w-auto" aria-label={`Así lo ve el cliente: ${preview}`}>
+            <defs>
+              <filter id="lg-glow-sm" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+              <filter id="lg-glow-lg" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" /></filter>
+            </defs>
+            <Semaforo status={preview} x={2} y={2} />
+          </svg>
+          <div>
+            <p className="text-xs text-white/50">Así lo ve el cliente ahora:</p>
+            <p className={`font-display mt-1 text-3xl font-semibold ${preview === "LIBRE" ? "text-emerald-400" : preview === "OCUPADO" ? "text-red-400" : "text-zinc-400"}`}>{preview}</p>
+            <p className="mt-1 text-xs text-white/40">Fuera del horario siempre se ve CERRADO.</p>
+          </div>
         </div>
-        <p className="mt-2 text-xs text-white/40">Fuera del horario configurado, la web muestra CERRADO aunque esté en Libre.</p>
+
+        <Switch label="Negocio" on={g?.open ?? true} onText="Abierto" offText="Cerrado" onCls="bg-emerald-500" offCls="bg-zinc-600"
+          hint="Cerrado baja la cortina en la página." disabled={busy} onChange={(v) => setGarage({ open: v })} />
+        <Switch label="Fosa" on={!(g?.busy ?? false)} onText="Libre" offText="Ocupado" onCls="bg-emerald-500" offCls="bg-red-500"
+          hint="Ocupado: el auto entra a la fosa y el semáforo se pone en rojo." disabled={busy || !(g?.open ?? true)} onChange={(v) => setGarage({ busy: !v })} />
       </section>
 
       {form && (
@@ -195,5 +200,25 @@ export default function Admin() {
 
       <p className="fixed inset-x-0 bottom-0 bg-ink/95 p-3 text-center text-sm text-white/80 empty:hidden" role="status">{msg}</p>
     </main>
+  );
+}
+
+function Switch({ label, on, onText, offText, onCls, offCls, hint, disabled, onChange }: {
+  label: string; on: boolean; onText: string; offText: string; onCls: string; offCls: string; hint: string; disabled?: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-2xl border border-white/10 bg-white/[.03] p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs tracking-[.25em] text-white/50">{label.toUpperCase()}</p>
+          <p className="mt-0.5 text-2xl font-bold">{on ? onText : offText}</p>
+        </div>
+        <button role="switch" aria-checked={on} aria-label={`${label}: ${on ? onText : offText}`} disabled={disabled} onClick={() => onChange(!on)}
+          className={`relative h-14 w-28 shrink-0 rounded-full transition-colors disabled:opacity-40 ${on ? onCls : offCls}`}>
+          <span className={`absolute top-1.5 size-11 rounded-full bg-white shadow-lg transition-all ${on ? "left-[3.75rem]" : "left-1.5"}`} />
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-white/45">{hint}</p>
+    </div>
   );
 }

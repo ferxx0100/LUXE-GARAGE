@@ -2,7 +2,8 @@
 export const BUSINESS = {
   name: "LUXE GARAGE",
   tagline: "Auto Detailing & Car Care",
-  whatsapp: "526566006823",
+  phone: "525665006823", // +52 56 6500 6823
+  phoneDisplay: "56 6500 6823",
   location: "Las Palomas, Zamora, Michoacán",
   timezone: "America/Mexico_City",
   slotMinutes: 60,
@@ -10,5 +11,8 @@ export const BUSINESS = {
 } as const;
 
 export function whatsappLink(text: string): string {
-  return `https://wa.me/${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${BUSINESS.phone}?text=${encodeURIComponent(text)}`;
 }
+
+export const telLink = `tel:+${BUSINESS.phone}`;
+export const mapsLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("LUXE GARAGE Las Palomas Zamora Michoacán");

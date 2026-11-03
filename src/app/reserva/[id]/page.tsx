@@ -1,6 +1,7 @@
-import { fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/booking-core";
+import { capFirst, fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/booking-core";
 import { durationOf, getBooking, liveSeal } from "@/lib/bookings";
 import { BUSINESS, mapsLink, telLink, whatsappLink } from "@/lib/config";
+import { mailConfigured } from "@/lib/mail";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReceiptSeal from "./ReceiptSeal";
@@ -45,7 +46,7 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
           )}
         </div>
         <dl className="grid gap-4 px-6 py-6 text-lg">
-          <div><dt className="text-sm text-white/60">Cuándo</dt><dd className="font-semibold"><span className="capitalize">{fmtDay(b.date)}</span><br />{range}</dd></div>
+          <div><dt className="text-sm text-white/60">Cuándo</dt><dd className="font-semibold">{capFirst(fmtDay(b.date))}<br /><span className="num">{range}</span></dd></div>
           <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-semibold">{serviceText({ kind: b.kind, vehicle: b.vehicle })}</dd></div>
           <div><dt className="text-sm text-white/60">Dónde</dt><dd className="font-semibold">{b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location}</dd></div>
           <div className="grid grid-cols-2 gap-4">
@@ -60,14 +61,15 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
       </section>
 
       <div className="mt-6 grid gap-3">
-        {["confirmed", "pending"].includes(b.status) && <a href={`/api/booking/${b.id}/ics`} className="btn-gold min-h-14 text-lg">Agregar a mi calendario</a>}
+        {["confirmed", "pending", "done"].includes(b.status) && <a href={`/api/booking/${b.id}/ticket`} download={`${b.code}.png`} className="btn-gold min-h-16 text-lg">Guardar ticket en mi celular</a>}
+        {["confirmed", "pending"].includes(b.status) && <a href={`/api/booking/${b.id}/ics`} className="btn-line min-h-14 text-lg">Agregar a mi calendario</a>}
         {b.place === "garage" && b.status !== "cancelled" && <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="btn-line min-h-14 text-lg">Cómo llegar</a>}
         {["confirmed", "pending", "conflict"].includes(b.status) && (
           <a href={whatsappLink(`Hola, quiero cambiar o cancelar mi reserva ${b.code} (${fmtDay(b.date)}, ${range}).`)} target="_blank" rel="noopener noreferrer" className="btn-line min-h-14 text-lg">Cambiar o cancelar</a>
         )}
         <a href={telLink} className="btn-line min-h-14 text-lg">¿Dudas? Llámanos</a>
       </div>
-      {b.email && <p className="mt-6 text-center text-sm text-white/55">Te llegó el recibo de Mercado Pago a {b.email.replace(/^(.).*(@.*)$/, "$1***$2")}.</p>}
+      {mailConfigured() && b.email && b.status !== "hold" && <p className="mt-6 text-center text-sm text-white/55">También te lo enviamos a {b.email.replace(/^(.).*(@.*)$/, "$1***$2")}.</p>}
     </main>
   );
 }

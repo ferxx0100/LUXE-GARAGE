@@ -8,6 +8,8 @@ const TZ = "America/Mexico_City";
 const DAY = new Intl.DateTimeFormat("es-MX", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" });
 const HMS = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
 
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 /** "4:32:15 pm" (hora de Zamora, con segundos). */
 function clock(d: Date) {
   const [h, m, s] = HMS.format(d).split(":").map(Number);
@@ -80,7 +82,7 @@ export default function ReceiptSeal({ endpoint, initial, tone = "gold" }: Props)
       <p className="num mt-5 text-[2.6rem] font-light leading-none text-white" aria-live="off">
         {c ? <>{c.hm}<span className="rs-sec">:{c.s}</span> <span className="text-2xl text-white/70">{c.ap}</span></> : <span className="text-white/30">··:··:··</span>}
       </p>
-      <p className="mt-2 text-base capitalize text-white/60">{now ? DAY.format(now) : " "}</p>
+      <p className="mt-2 text-base text-white/60">{now ? cap(DAY.format(now)) : " "}</p>
 
       {stamp && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-label={stamp}>

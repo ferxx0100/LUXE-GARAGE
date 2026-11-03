@@ -78,13 +78,15 @@ for (const [xa, xb] of [[-FX + 0.05, -0.035], [0.035, FX - 0.05]]) {
 }
 
 /* ───────── Piezas montadas en la pared del fondo ───────── */
-const SEM_K = 0.88; // semáforo (44×124 a escala 1) a la izquierda de la entrada, lado del conductor
-const SEM = { x: X(-2.1, 0) - 22 * SEM_K, y: Y(2.42, 0) };
+const SEM_K = 1; // semáforo (44×124 a escala 1) a la izquierda de la entrada, lado del conductor
+const SEM = { x: X(-2.1, 0) - 22 * SEM_K, y: Y(2.52, 0) };
 const SEM_CX = X(-2.1, 0), SEM_BOTTOM = SEM.y + 124 * SEM_K;
 const LAMP_Y = { OCUPADO: SEM.y + 34 * SEM_K, LIBRE: SEM.y + 90 * SEM_K };
 const SIGN = face(-1.75, 2.7, 1.75, 3.38, -0.12); // letrero LUXE GARAGE sobre la entrada
 const HOUSING = face(-1.74, 2.5, 1.74, 2.64, -0.16); // caja de la cortina
-const LED = face(-1.2, 2.07, 1.2, 2.47, -0.05); // display de matriz de puntos bajo el dintel
+// Letrero de neón colgado del techo del pasillo, cerca de la cámara: el estado en letras gigantes.
+const NEON = face(-1.42, 2.62, 1.42, 3.42, -4.5);
+const NEON_ROD_Y = Y(CH, -4.5);
 const RAIL_L = face(-W - 0.08, 0, -W, H, -0.02), RAIL_R = face(W, 0, W + 0.08, H, -0.02);
 
 /* ───────── Semáforo LED de matriz de puntos (7×7) ───────── */
@@ -92,6 +94,13 @@ const GRID = range(-3, 3, 6);
 const X_MARK = (i: number, j: number) => i === j || i === -j;
 const ARROW = (i: number, j: number) => (j <= 0 ? Math.abs(i) <= j + 3 : Math.abs(i) <= 1);
 const SIG = { LIBRE: "#2ee87f", OCUPADO: "#ff3b30" } as const;
+/** Color del tubo de neón y de su núcleo (casi blanco, como un neón real). */
+const NEON_TONE = {
+  LIBRE: { tube: "#2ee87f", core: "#e6fff0" },
+  OCUPADO: { tube: "#ff3b30", core: "#ffe3df" },
+  CERRADO: { tube: "#ffb547", core: "#fff1d6" },
+  NONE: { tube: "#8d8b85", core: "#d6d4ce" },
+} as const;
 
 function Lamp({ cx, cy, on, color, shape, dim }: { cx: number; cy: number; on: boolean; color: string; shape: (i: number, j: number) => boolean; dim: string }) {
   return (
@@ -210,7 +219,11 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const SANS = { fontFamily: "var(--font-sans)" };
 const DISPLAY = { fontFamily: "var(--font-display)" };
 
-export default function GarageScene({ status, opensShort, busyShort }: { status: Status | null; opensShort?: string; busyShort?: string }) {
+/**
+ * status: lo que dice el letrero gigante. sub: la segunda línea del neón ("PASA, NO HAY FILA",
+ * "LIBRE A LAS 4:30 PM", "ABRE HOY 12 PM"). La escena no tiene más texto que eso.
+ */
+export default function GarageScene({ status, sub }: { status: Status | null; sub?: string }) {
   const carRef = useRef<SVGGElement>(null);
   const brakeRef = useRef<SVGGElement>(null);
   const revRef = useRef<SVGGElement>(null);
@@ -267,34 +280,34 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
 
   const sig = status === "LIBRE" || status === "OCUPADO" ? SIG[status] : null;
   const closed = status === "CERRADO";
-  const busy = status === "OCUPADO" && busyShort ? busyShort.toUpperCase() : null;
-  const [busyA, ...busyB] = busy ? busy.split(" ") : [];
-  const busyMax = LED.w - 12;
-  const busyFit = busy && busy.length * 8.6 > busyMax ? { textLength: busyMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
-  const opensFit = opensShort && opensShort.length * 7.4 > 150 ? { textLength: 150, lengthAdjust: "spacingAndGlyphs" as const } : {};
   const shutterY = closed ? 0 : -DH - 4;
-  const label = !status
-    ? "Garage en vivo: conectando"
-    : status === "LIBRE"
-      ? "Garage en vivo: libre, puedes pasar"
-      : status === "OCUPADO"
-        ? `Garage en vivo: ocupado${busyShort ? `, ${busyShort.toLowerCase()}` : ""}`
-        : `Garage en vivo: cerrado${opensShort ? `, ${opensShort.toLowerCase()}` : ""}`;
+  const tone = NEON_TONE[status ?? "NONE"];
+  const word = status ?? "···";
+  const line = (sub ?? "").toUpperCase();
+  // Letras gigantes: se ajustan al ancho del letrero solo si no caben.
+  const wordMax = NEON.w - 34, lineMax = NEON.w - 30;
+  const wordFit = word.length * 41 > wordMax ? { textLength: wordMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
+  const lineFit = line.length * 13.6 > lineMax ? { textLength: lineMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
+  const label = `Garage en vivo: ${status ? status.toLowerCase() : "conectando"}${sub ? `. ${sub.toLowerCase()}` : ""}`;
 
   return (
     <svg viewBox="0 0 400 600" className="block h-auto w-full select-none" role="img" aria-label={label}>
       <style>{`
         .lg-halo{animation:lgHalo 2.8s ease-in-out infinite}
         @keyframes lgHalo{0%,100%{opacity:.6}50%{opacity:.95}}
-        .lg-dm{animation:lgDm 3.4s ease-in-out infinite}
-        @keyframes lgDm{0%,100%{opacity:1}50%{opacity:.8}}
-        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-dm{animation:none}}
+        .lg-neon-on{animation:lgNeonOn 1.2s steps(1) both}
+        @keyframes lgNeonOn{0%{opacity:.08}8%{opacity:1}13%{opacity:.15}22%{opacity:1}27%{opacity:.35}36%,100%{opacity:1}}
+        .lg-buzz{animation:lgBuzz 6s ease-in-out 1.4s infinite}
+        @keyframes lgBuzz{0%,100%{opacity:1}46%{opacity:1}48%{opacity:.82}50%{opacity:1}53%{opacity:.9}55%{opacity:1}}
+        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-neon-on,.lg-buzz{animation:none}}
       `}</style>
       <defs>
         <filter id="lg-blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="4" /></filter>
         <filter id="lg-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.8" /></filter>
         <filter id="lg-glow-sm" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         <filter id="lg-glow-lg" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" /></filter>
+        <filter id="lg-neon-halo" x="-15%" y="-80%" width="130%" height="260%"><feGaussianBlur stdDeviation="6" /></filter>
+        <filter id="lg-neon-tube" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="1.3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         {/* pasillo */}
         <linearGradient id="lg-c-ceil" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={END.y0}><stop offset="0" stopColor="#e2e0da" /><stop offset="1" stopColor="#f1f0eb" /></linearGradient>
         <linearGradient id="lg-c-wallL" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={END.x0} y2="0"><stop offset="0" stopColor="#e0ded7" /><stop offset="1" stopColor="#f7f6f2" /></linearGradient>
@@ -316,7 +329,6 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
         <linearGradient id="lg-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3a424b" /><stop offset="1" stopColor="#0b0d10" /></linearGradient>
         <linearGradient id="lg-shutter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8d9095" /><stop offset=".5" stopColor="#74777c" /><stop offset="1" stopColor="#5a5d61" /></linearGradient>
         <pattern id="lg-slats" width="8" height="7" patternUnits="userSpaceOnUse"><rect width="8" height="7" fill="url(#lg-shutter)" /><rect y="5.6" width="8" height="1.4" fill="#3c3e41" /><rect y="0" width="8" height=".7" fill="#c4c7cb" opacity=".6" /></pattern>
-        <pattern id="lg-led" width="2.6" height="2.6" patternUnits="userSpaceOnUse"><path fillRule="evenodd" fill="#070707" opacity=".72" d="M0 0H2.6V2.6H0Z M1.3 .35 A.95 .95 0 1 0 1.301 .35Z" /></pattern>
         <linearGradient id="lg-goldv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6e2a0" /><stop offset=".55" stopColor="#d4af37" /><stop offset="1" stopColor="#8a6d1a" /></linearGradient>
         {/* luz */}
         <radialGradient id="lg-spill"><stop offset="0" stopColor={sig ?? "#fff"} stopOpacity=".5" /><stop offset="1" stopColor={sig ?? "#fff"} stopOpacity="0" /></radialGradient>
@@ -425,7 +437,7 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
       <path d={AO_TOP} stroke="#8a867d" strokeWidth="3" opacity=".22" filter="url(#lg-soft)" fill="none" />
 
       {/* luz de color del estado que baña el pasillo */}
-      <rect width="400" height="600" fill={sig ?? "#fff"} opacity={sig ? 0.05 : 0} className="lg-fade" />
+      <rect width="400" height="600" fill={sig ?? "#fff"} opacity={sig ? 0.08 : 0} className="lg-fade" />
       <ellipse cx={CX} cy={DOOR.y1 + 12} rx="230" ry="88" fill="url(#lg-spill)" opacity={sig ? 0.85 : 0} className="lg-fade" />
       <ellipse cx={SEM_CX} cy={(SEM.y + SEM_BOTTOM) / 2} rx="52" ry="78" fill="url(#lg-spill)" opacity={sig ? 0.75 : 0} className={sig ? "lg-fade lg-halo" : "lg-fade"} />
 
@@ -442,20 +454,6 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
       <rect x={SEM.x + 3} y={SEM.y + 4} width={44 * SEM_K} height={124 * SEM_K} rx="8" fill="#2a2620" opacity=".28" filter="url(#lg-soft)" />
       <g className="lg-power" transform={`translate(${SEM.x.toFixed(1)} ${SEM.y.toFixed(1)}) scale(${SEM_K})`}><Semaforo status={status} /></g>
 
-      {/* display de matriz de puntos: a qué hora se desocupa */}
-      {busy && (
-        <g className="lg-dm">
-          <rect x={LED.x} y={LED.y} width={LED.w} height={LED.h} rx="2.5" fill="#0a0a0b" stroke="#2c2c2f" />
-          <g filter="url(#lg-glow-sm)">
-            <text x={CX} y={LED.y + LED.h / 2 + 4.1} textAnchor="middle" fontSize="11.5" fontWeight="800" letterSpacing="1.1" style={SANS} {...busyFit}>
-              <tspan fill="#fff4dc">{busyA}</tspan>
-              {busyB.length > 0 && <tspan fill="#ffb547">{` ${busyB.join(" ")}`}</tspan>}
-            </text>
-          </g>
-          <rect x={LED.x + 1} y={LED.y + 1} width={LED.w - 2} height={LED.h - 2} rx="2" fill="url(#lg-led)" />
-        </g>
-      )}
-
       {/* sombra del letrero sobre el azulejo */}
       <rect x={SIGN.x + 2} y={SIGN.y + 4} width={SIGN.w} height={SIGN.h} rx="3" fill="#2a2620" opacity=".3" filter="url(#lg-soft)" />
 
@@ -466,20 +464,6 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
       <ellipse cx={CX} cy={DOOR.y1 + 16} rx="175" ry="46" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 1 : 0} />
       <ellipse cx={CX} cy={SIGN.y + SIGN.h / 2} rx="150" ry="42" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 0.45 : 0} />
 
-      {/* letrero LED ámbar de la cortina */}
-      <g clipPath="url(#lg-door)">
-        <g className="lg-shutter" style={{ transform: `translateY(${shutterY}px)` }}>
-          <g transform={`translate(${CX} ${(DOOR.y0 + DOOR.y1) / 2 - 6})`}>
-            <rect x="-82" y="-32" width="164" height="60" rx="6" fill="#070707" stroke="#2d2d30" strokeWidth="1.5" />
-            <g filter="url(#lg-glow-sm)" className={closed ? "lg-neon" : ""}>
-              <text x="0" y="1" textAnchor="middle" fontSize="23" fontWeight="800" letterSpacing="3.6" fill="#ffb547" style={SANS}>CERRADO</text>
-              {opensShort && <text x="0" y="19" textAnchor="middle" fontSize="9.5" fontWeight="700" letterSpacing="1.6" fill="#ffd79a" style={SANS} {...opensFit}>{opensShort}</text>}
-            </g>
-            <rect x="-80" y="-30" width="160" height="56" rx="5" fill="url(#lg-led)" />
-          </g>
-        </g>
-      </g>
-
       {/* letrero negro y oro sobre la entrada (iluminado) */}
       <g>
         <rect x={SIGN.x} y={SIGN.y} width={SIGN.w} height={SIGN.h} rx="2.5" fill="#060606" stroke="#3b331d" />
@@ -488,6 +472,28 @@ export default function GarageScene({ status, opensShort, busyShort }: { status:
         <text x={SIGN.x + 37 + (SIGN.w - 43) / 2} y={SIGN.y + SIGN.h / 2 + 2.6} textAnchor="middle" fontSize="14.5" fontWeight="600" letterSpacing="1.6" fill="url(#lg-goldv)" style={DISPLAY}>LUXE GARAGE</text>
         <text x={SIGN.x + 37 + (SIGN.w - 43) / 2} y={SIGN.y + SIGN.h - 6.5} textAnchor="middle" fontSize="5.2" letterSpacing="1.5" fill="#c9ad62" style={SANS}>AUTO DETAILING &amp; CAR CARE</text>
         <rect x={SIGN.x + 1} y={SIGN.y + 1} width={SIGN.w - 2} height={SIGN.h * 0.42} rx="2" fill="#fff" opacity=".05" />
+      </g>
+
+      {/* ─── Neón colgado: el estado en letras gigantes ─── */}
+      <g aria-hidden>
+        {[NEON.x + 40, NEON.x + NEON.w - 40].map((x) => (
+          <line key={x} x1={x} y1={NEON_ROD_Y} x2={x} y2={NEON.y} stroke="#3a3a3d" strokeWidth="1.6" />
+        ))}
+        {/* luz del neón sobre el techo y las paredes */}
+        <ellipse cx={CX} cy={NEON.y + NEON.h / 2} rx={NEON.w * 0.62} ry={NEON.h * 0.95} fill={tone.tube} opacity={status ? 0.22 : 0.06} filter="url(#lg-blur)" className="lg-fade" />
+        <rect x={NEON.x} y={NEON.y} width={NEON.w} height={NEON.h} rx="9" fill="#0a0a0b" stroke="#2b2b2e" strokeWidth="1.5" />
+        <rect x={NEON.x + 4} y={NEON.y + 4} width={NEON.w - 8} height={NEON.h - 8} rx="6" fill="none" stroke={tone.tube} strokeOpacity=".22" strokeWidth="1" className="lg-fade" />
+        <g key={status ?? "none"} className={status ? "lg-neon-on" : ""}>
+          <g className={status ? "lg-buzz" : ""}>
+            {/* halo de color */}
+            <text x={CX} y={NEON.y + 58} textAnchor="middle" fontSize="56" fontWeight="800" letterSpacing="4" fill={tone.tube} filter="url(#lg-neon-halo)" style={SANS} {...wordFit}>{word}</text>
+            {/* tubo: núcleo casi blanco con borde de color */}
+            <text x={CX} y={NEON.y + 58} textAnchor="middle" fontSize="56" fontWeight="800" letterSpacing="4" fill={tone.core} stroke={tone.tube} strokeWidth="1.6" paintOrder="stroke" filter="url(#lg-neon-tube)" style={SANS} {...wordFit}>{word}</text>
+            {line && (
+              <text x={CX} y={NEON.y + NEON.h - 14} textAnchor="middle" fontSize="18" fontWeight="700" letterSpacing="2.4" fill={tone.core} stroke={tone.tube} strokeWidth=".6" paintOrder="stroke" filter="url(#lg-neon-tube)" style={SANS} {...lineFit}>{line}</text>
+            )}
+          </g>
+        </g>
       </g>
 
       {/* el auto */}

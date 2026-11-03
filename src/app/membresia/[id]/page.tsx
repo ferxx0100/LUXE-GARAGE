@@ -1,6 +1,7 @@
-import { fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/booking-core";
+import { capFirst, fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/booking-core";
 import { liveSeal } from "@/lib/bookings";
 import { BUSINESS, mapsLink, telLink } from "@/lib/config";
+import { mailConfigured } from "@/lib/mail";
 import { getMembership, membershipBookings } from "@/lib/memberships";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -65,7 +66,7 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
                   <li key={w.date} className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${done ? "border-white/10 bg-white/[.03] text-white/50" : "border-[#22d3ee]/25 bg-[#22d3ee]/[.06]"}`}>
                     <span className={`num grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-semibold ${done ? "bg-white/10" : "bg-[#22d3ee] text-[#031b2e]"}`}>{done ? "✓" : i + 1}</span>
                     <span className="min-w-0 flex-1">
-                      <span className={`block font-semibold capitalize ${off ? "line-through" : ""}`}>{fmtDay(w.date)}</span>
+                      <span className={`block font-semibold ${off ? "line-through" : ""}`}>{capFirst(fmtDay(w.date))}</span>
                       <span className="num block text-base text-white/80">{fmtRange(w.time, m.duration)}</span>
                     </span>
                     {(done || off) && <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">{done ? "USADA" : "CANCELADA"}</span>}
@@ -82,11 +83,17 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
         </section>
 
         <div className="mt-6 grid gap-3">
-          {(m.status === "confirmed" || m.status === "pending") && !allUsed && <a href={`/api/membership/${m.id}/ics`} className={btnCyan}>Agregar a mi calendario</a>}
+          {(m.status === "confirmed" || m.status === "pending") && !allUsed && (
+            <>
+              <a href={`/api/membership/${m.id}/ticket`} download={`${m.code}.png`} className={`${btnCyan} min-h-16`}>Guardar ticket en mi celular</a>
+              <a href={`/api/membership/${m.id}/ics`} className={btnLine}>Agregar a mi calendario</a>
+            </>
+          )}
           <a href={mapsLink} target="_blank" rel="noopener noreferrer" className={btnLine}>Cómo llegar</a>
           <a href={telLink} className={btnLine}>¿Dudas? Llámanos</a>
         </div>
-        <p className="mt-6 text-center text-sm text-white/55">{BUSINESS.location}</p>
+        {mailConfigured() && m.email && m.status !== "hold" && <p className="mt-6 text-center text-sm text-white/55">También te la enviamos a {m.email.replace(/^(.).*(@.*)$/, "$1***$2")}.</p>}
+        <p className="mt-2 text-center text-sm text-white/55">{BUSINESS.location}</p>
       </main>
     </div>
   );

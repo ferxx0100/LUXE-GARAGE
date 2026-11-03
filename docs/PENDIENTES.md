@@ -10,8 +10,9 @@ La última entrega pasa las 17 pruebas automáticas; no se pudo compilar ni ver 
 - [ ] Hero blanco en 3D: estados LIBRE / OCUPADO / CERRADO (con hora actual y "se desocupa a las…").
 - [ ] Tarjeta "Próximo lugar" → botón "Apartar este lugar".
 - [ ] Reserva en 3 pasos (solo nombre y teléfono).
-- [ ] Membresía (tema agua con burbujas) → calendario de 4 fechas con turno de 30 min → pago.
-- [ ] Tipografía nueva (más discreta): títulos en Cinzel, horas/precios/códigos en Manrope; pie con dirección y horario.
+- [ ] Hero nuevo: neón gigante LIBRE/OCUPADO/CERRADO, "EN VIVO" con la hora, botones Reservar y Llegar.
+- [ ] Membresía: ficha con título y precio, video con sonido; ventana a pantalla completa con 4 casillas → día → hora → datos → pago.
+- [ ] Recibos: botón "Guardar ticket en mi celular" (imagen) y calendario.
 - [ ] Sección del video sobre mosaico gris/crema.
 - [ ] Comprobante `/reserva/...` y `/membresia/...` (sello que cambia cada 30 s y reloj con segundos).
 - [ ] Panel: Agenda, Verificar recibo, Ocupado 30/20 min, Ajustes.
@@ -56,6 +57,7 @@ La última entrega pasa las 17 pruebas automáticas; no se pudo compilar ni ver 
 - [ ] Prueba completa con **Redis real** del apartado atómico (scripts Lua) y de la membresía de punta a punta. Se interrumpió para ahorrar créditos; en modo memoria sí pasó.
 - [ ] Capturas y pulido visual en iPhone y computadora.
 - [ ] Renovación automática de la membresía cada mes (hoy es un pago único por 30 días).
+- [ ] Apple Wallet (pase .pkpass): requiere Apple Developer Program y un certificado "Pass Type ID". Hoy el ticket se guarda como imagen y llega por correo.
 - [ ] Decidir si "Solo exterior" cuesta menos (hoy cuesta lo mismo que exterior e interior).
 - [ ] Decidir si a domicilio debe bloquear tiempo extra de traslado (hoy bloquea solo la duración del servicio).
 - [ ] Crear la rama `main` para producción y trabajar en ramas aparte.

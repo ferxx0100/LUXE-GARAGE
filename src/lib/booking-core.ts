@@ -300,6 +300,42 @@ export function serviceText(x: { kind: string; vehicle?: string; plate?: string 
   return [x.kind === "exterior" ? "Solo exterior" : "Exterior e interior", v, x.plate ?? ""].filter(Boolean).join(" · ");
 }
 
+/** "martes 4 de noviembre" → "Martes 4 de noviembre" (solo la primera letra). */
+export const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/* ───────── Ticket para guardar en el celular ───────── */
+/** Lo que lleva la imagen del ticket. Sin teléfono, correo ni dirección; el nombre abreviado. */
+export type TicketData = { tone: "gold" | "cyan"; kicker: string; code: string; rows: { label: string; value: string }[]; washes: { day: string; time: string }[]; total: string };
+
+export function bookingTicket(b: {
+  code: string; date: string; time: string; duration: number; kind: string; vehicle?: string; place: string; amount: number; name: string; membershipCode?: string;
+}, location: string): TicketData {
+  return {
+    tone: "gold", kicker: "Reserva", code: b.code,
+    rows: [
+      { label: "Cuándo", value: capFirst(fmtDay(b.date)) },
+      { label: "Hora", value: fmtRange(b.time, b.duration) },
+      { label: "Servicio", value: serviceText({ kind: b.kind, vehicle: b.vehicle }) },
+      { label: "Dónde", value: b.place === "domicilio" ? "A domicilio" : location },
+      { label: "A nombre de", value: maskName(b.name) },
+    ],
+    washes: [],
+    total: b.membershipCode ? `Incluida en membresía ${b.membershipCode}` : `$${b.amount} pagado`,
+  };
+}
+
+export function membershipTicket(m: { code: string; washes: { date: string; time: string }[]; duration: number; name: string; amount: number; validTo: string }): TicketData {
+  return {
+    tone: "cyan", kicker: "Membresía", code: m.code,
+    rows: [
+      { label: "A nombre de", value: maskName(m.name) },
+      { label: "Vigencia", value: `Hasta el ${fmtDay(m.validTo)}` },
+    ],
+    washes: [...m.washes].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((w) => ({ day: capFirst(fmtDay(w.date)), time: fmtRange(w.time, m.duration) })),
+    total: `$${m.amount} pagado`,
+  };
+}
+
 /** Enmascara datos personales para logs/vistas públicas: 55****6823, j***@dominio.com. */
 export function maskPhone(p: string) { const d = p.replace(/\D/g, ""); return d.length < 6 ? "****" : `${d.slice(0, 2)}****${d.slice(-4)}`; }
 export function maskName(n: string) { const [first, ...rest] = n.trim().split(/\s+/); return [first, ...rest.map((r) => `${r[0]}.`)].join(" "); }

@@ -103,7 +103,7 @@ export async function sendBookingConfirmed(b: Booking): Promise<void> {
   const html = layout("¡Tu lavado está reservado!", `
 <tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(b.name.split(" ")[0])}, tu pago fue aprobado. Muestra tu código al llegar.</td></tr>
 ${rows(b)}
-<tr><td align="center" style="padding:4px 20px">${button(link, "Ver mi reserva")}${b.place === "garage" ? button(maps, "Cómo llegar", false) : ""}</td></tr>
+<tr><td align="center" style="padding:4px 20px">${button(link, "Ver mi reserva")}${button(`${site()}/api/booking/${b.id}/ticket`, "Guardar ticket", false)}${b.place === "garage" ? button(maps, "Cómo llegar", false) : ""}</td></tr>
 <tr><td style="padding:12px 28px 0;font-size:13px;color:#9a978f">Adjuntamos tu cita: ábrela para agregarla a tu calendario (te avisa 1 hora antes).</td></tr>`);
   const text = `¡Tu lavado está reservado! Código ${b.code}. ${when(b.date, b.time, dur(b))}. Total $${b.amount}. Ver: ${link}`;
   const ics = Buffer.from(icsFor(b)).toString("base64");
@@ -143,7 +143,7 @@ ${list}
   const html = layout("¡Tu membresía está activa!", `
 <tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(m.name.split(" ")[0])}, tu pago fue aprobado. Estas son tus ${m.washes.length} lavadas; muestra tu código al llegar.</td></tr>
 ${block}
-<tr><td align="center" style="padding:4px 20px">${button(link, "Ver mi membresía")}</td></tr>
+<tr><td align="center" style="padding:4px 20px">${button(link, "Ver mi membresía")}${button(`${site()}/api/membership/${m.id}/ticket`, "Guardar ticket", false)}</td></tr>
 <tr><td style="padding:12px 28px 0;font-size:13px;color:#9a978f">Adjuntamos tus ${m.washes.length} citas: ábrelas para agregarlas a tu calendario (te avisa 1 hora antes de cada una).</td></tr>`);
   const text = `¡Tu membresía está activa! Código ${m.code}. ${m.washes.map((w, i) => `${i + 1}) ${when(w.date, w.time, m.duration)}`).join(" ")}. Ver: ${link}`;
   const ics = Buffer.from(icsForMembership(m)).toString("base64");

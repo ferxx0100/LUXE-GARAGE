@@ -28,13 +28,6 @@ const Bubbles = () => (
     ))}
   </div>
 );
-const Drop = () => (
-  <svg viewBox="0 0 20 24" className="mt-1 size-5 shrink-0" aria-hidden>
-    <path d="M10 1C10 1 2 10.5 2 15.5a8 8 0 0 0 16 0C18 10.5 10 1 10 1Z" fill="#22d3ee" />
-    <path d="M6.5 15.5a3.5 3.5 0 0 0 3.5 3.5" stroke="#e0fbff" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-  </svg>
-);
-
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
@@ -80,51 +73,34 @@ export default async function Home() {
       </nav>
 
       <main>
-        <LiveGarage hours={horario} mapsUrl={mapsLink} />
+        <LiveGarage mapsUrl={mapsLink} />
 
         <section id="reservar" className="mx-auto max-w-xl scroll-mt-16 px-5 py-20">
           <Title>Aparta tu lugar</Title>
-          <p className="mt-3 text-center text-lg text-white/70">Elige qué lavamos y la hora, paga y listo.</p>
           <div className="mt-10">
             <BookingFlow prices={s.prices} hours={s.hours} today={today} mpPublicKey={mpKey} />
           </div>
         </section>
 
-        {/* Membresía: tema agua, con burbujas */}
-        <section id="membresia" className="water-bg relative scroll-mt-14 overflow-hidden px-5 py-24 text-white">
+        {/* Membresía: la ficha dice solo qué es y cuánto cuesta; el video real la acompaña con efectos de agua detrás */}
+        <section id="membresia" className="water-bg relative scroll-mt-14 overflow-hidden px-5 pb-28 pt-24 text-white">
           <Bubbles />
           <svg className="lg-wave top-0 text-[#09090a]" style={{ "--d": "18s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
             <path fill="currentColor" d="M0 0h1200v28c-50 0-100 22-150 22S950 28 900 28 800 50 750 50 650 28 600 28 500 50 450 50 350 28 300 28 200 50 150 50 50 28 0 28Z" />
           </svg>
           <div className="relative mx-auto max-w-md text-center">
-            <Title>Membresía</Title>
-            <p className="mt-3 text-lg text-cyan-50/75">{s.membershipWashes} lavadas por dentro y por fuera</p>
-            <div className="mt-8 rounded-[30px] border border-cyan-200/25 bg-white/[.07] p-7 shadow-[0_30px_80px_rgba(0,20,40,.45)] backdrop-blur-sm">
-              <p className="num text-[4.25rem] font-light leading-none">${s.prices.suscripcion}</p>
-              <p className="mt-2 text-base text-cyan-50/70">pago único · 30 días</p>
-              <ul className="mt-7 space-y-3 text-left text-lg leading-snug text-white/90">
-                <li className="flex gap-3"><Drop />{s.membershipWashes} lavadas completas dentro de 30 días.</li>
-                <li className="flex gap-3"><Drop />Eliges tus {s.membershipWashes} fechas y turnos al comprar.</li>
-                <li className="flex gap-3"><Drop />Va a tu nombre: trae el auto que quieras.</li>
-                <li className="flex gap-3"><Drop />Tu turno queda apartado: llegas y pasas.</li>
-              </ul>
+            <div className="rounded-[30px] border border-cyan-200/25 bg-white/[.07] px-7 pb-7 pt-8 shadow-[0_30px_80px_rgba(0,20,40,.45)] backdrop-blur-sm">
+              <h2 className="font-display text-[2.2rem] font-medium leading-none tracking-[.02em] sm:text-5xl">Membresía</h2>
+              <p className="num mt-4 text-[4.5rem] font-light leading-none">${s.prices.suscripcion}</p>
               <MembershipFlow price={s.prices.suscripcion} washes={s.membershipWashes} hours={s.hours} today={today} mpPublicKey={mpKey} />
             </div>
+            <div className="mt-14">
+              <RealVideo />
+            </div>
           </div>
-          <svg className="lg-wave bottom-0 text-[#dcd8cf]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
+          <svg className="lg-wave bottom-0 text-[#09090a]" style={{ "--d": "12s" } as React.CSSProperties} viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden>
             <path fill="currentColor" d="M0 70h1200V42c-50 0-100-22-150-22s-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22-100 22-150 22-100-22-150-22S50 42 0 42Z" />
           </svg>
-        </section>
-
-        {/* El lugar real: video sobre mosaico */}
-        <section id="video" className="tile-mosaic px-5 pb-28 pt-20">
-          <header className="mx-auto max-w-xl text-center">
-            <Title className="text-[#141414]">Si está libre,<br />está libre</Title>
-            <p className="mt-3 text-lg text-black/70">Azulejo, fosa de acero y un equipo que deja tu auto como nuevo.</p>
-          </header>
-          <div className="mx-auto mt-10 max-w-[21rem]">
-            <RealVideo />
-          </div>
         </section>
 
       </main>

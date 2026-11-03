@@ -42,19 +42,6 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .btn-line:hover { background: color-mix(in oklab, var(--color-gold) 10%, transparent); }
 .btn-gold:active, .btn-line:active { transform: scale(.97); }
 
-/* Azulejo blanco del lugar */
-.tile-bg {
-  background-color: var(--color-tile);
-  background-image:
-    linear-gradient(115deg, rgba(255,255,255,.55), rgba(255,255,255,0) 40%, rgba(255,255,255,.35) 60%, rgba(255,255,255,0) 75%),
-    linear-gradient(#cfcbc1 1px, transparent 1px),
-    linear-gradient(90deg, #cfcbc1 1px, transparent 1px);
-  background-size: 100% 100%, 46px 46px, 46px 46px;
-  color: #141414;
-}
-/* Reflejo del video sobre el piso mojado (Safari/iPhone y Chrome) */
-.video-reflect { -webkit-box-reflect: below 10px linear-gradient(transparent 72%, rgba(255,255,255,.22)); }
-.hairline { height: 1px; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-gold) 70%, transparent), transparent); }
 
 /* Indicador "en vivo" */
 .live-dot { width: .55rem; height: .55rem; border-radius: 999px; box-shadow: 0 0 0 0 currentColor; animation: live 1.8s ease-out infinite; }
@@ -68,8 +55,6 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 @keyframes lgPower { from { opacity: .35; } }
 .lg-chevron { animation: lgChevron 1.6s ease-in-out infinite; }
 @keyframes lgChevron { 0%,100% { opacity: .18; } 35% { opacity: 1; } 60% { opacity: .3; } }
-.lg-neon { animation: lgNeon 4s ease-in-out infinite; }
-@keyframes lgNeon { 0%,100% { opacity: 1; } 48% { opacity: 1; } 50% { opacity: .55; } 52% { opacity: 1; } 54% { opacity: .7; } 56% { opacity: 1; } }
 .lg-shutter { transition: transform 1.9s cubic-bezier(.6,.05,.3,1); }
 .lg-foam { opacity: 0; transition: opacity 1.2s ease 1.2s; }
 .lg-foam.on { opacity: 1; }
@@ -86,23 +71,7 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
     linear-gradient(90deg, #d3cec4 1px, transparent 1px);
   background-size: 100% 100%, 44px 44px, 44px 44px;
 }
-.btn-line-dark {
-  display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; border-radius: 999px;
-  border: 1.5px solid rgba(20,20,20,.7); color: #141414; font-weight: 650; font-size: 1.05rem; background: rgba(255,255,255,.55);
-  transition: transform .15s, background .2s;
-}
-.btn-line-dark:active { transform: scale(.97); }
 
-/* ——— Sección del video: mosaico gris/crema plano ——— */
-.tile-mosaic {
-  background-color: #dcd8cf;
-  background-image:
-    linear-gradient(160deg, rgba(255,255,255,.35), rgba(255,255,255,0) 35%, rgba(255,255,255,.18) 55%, rgba(255,255,255,0) 70%),
-    linear-gradient(#c6c0b4 1.5px, transparent 1.5px),
-    linear-gradient(90deg, #c6c0b4 1.5px, transparent 1.5px);
-  background-size: 100% 100%, 26px 26px, 26px 26px;
-  color: #141414;
-}
 
 /* ——— Membresía: tema agua ——— */
 .water-bg {
@@ -146,12 +115,31 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 }
 @keyframes lgCaustic { to { transform: translate3d(4%, -3%, 0) scale(1.08); opacity: .4; } }
 
+/* Detrás del video de la membresía: ondas que se expanden y rayos de luz bajo el agua (nunca encima del video). */
+.lg-ripples { position: absolute; left: 50%; top: 44%; width: 0; height: 0; pointer-events: none; }
+.lg-ripples span {
+  position: absolute; left: -9rem; top: -9rem; width: 18rem; height: 18rem; border-radius: 999px;
+  border: 2px solid rgba(103,232,249,.5); opacity: 0; animation: lgRipple 4.5s ease-out infinite;
+}
+.lg-ripples span:nth-child(2) { animation-delay: 1.5s; }
+.lg-ripples span:nth-child(3) { animation-delay: 3s; }
+@keyframes lgRipple { 0% { transform: scale(.45); opacity: 0; } 15% { opacity: .75; } 100% { transform: scale(1.7); opacity: 0; } }
+.lg-rays {
+  position: absolute; inset: -25% -70%; pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 8%, rgba(165,243,252,.16) 10% 13%, transparent 15% 30%, rgba(165,243,252,.11) 32% 34%,
+    transparent 36% 55%, rgba(165,243,252,.14) 57% 60%, transparent 62% 80%, rgba(165,243,252,.1) 82% 84%, transparent 86%);
+  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 75%); mask: radial-gradient(closest-side, #000 25%, transparent 75%);
+  animation: lgRays 40s linear infinite;
+}
+@keyframes lgRays { to { transform: rotate(360deg); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .lg-bubble, .lg-wave, .lg-caustic { animation: none; }
+  .lg-bubble, .lg-wave, .lg-caustic, .lg-ripples span, .lg-rays { animation: none; }
+  .lg-ripples span { opacity: .25; }
   .lg-bubble { opacity: .5; bottom: auto; top: var(--y, 50%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in, .lg-neon { animation: none; }
+  .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in { animation: none; }
   .lg-shutter, .lg-foam { transition: none; }
 }

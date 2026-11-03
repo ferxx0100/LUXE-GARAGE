@@ -4,7 +4,7 @@ import { createHmac } from "node:crypto";
 import {
   addDays, blocksFromCells, candidateStarts, cellsFor, checkWashes, dayWindow, estimateFreeAt, fits, fmtRange, fmtTime, fromMin,
   hoursText, isDateStr, isOpenAt, localNow, maskName, maskPhone, membershipCode, nextFree, nextOpening, normalizeCode, priceFor,
-  sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
+  bookingTicket, capFirst, membershipTicket, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
 } from "./booking-core.ts";
 
 const prices = { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 };
@@ -97,6 +97,25 @@ test("servicio: la lavada de membresía no se liga a un auto", () => {
   assert.equal(serviceText({ kind: "completo" }), "Exterior e interior");
   assert.equal(serviceText({ kind: "completo", vehicle: "camioneta", plate: "AAA-000-A" }), "Exterior e interior · Camioneta · AAA-000-A");
   assert.equal(serviceText({ kind: "exterior", vehicle: "carro", plate: "" }), "Solo exterior · Carro");
+});
+
+test("ticket para el celular: sin teléfono ni correo, nombre abreviado", () => {
+  const b = { code: "LG-ABC234", date: "2026-11-04", time: "12:30", duration: 30, kind: "completo", vehicle: "carro", place: "garage", amount: 180, name: "Juan Prueba López", phone: "5500000000", email: "prueba@example.com" };
+  const t = bookingTicket(b, "Las Palomas, Zamora, Michoacán");
+  assert.equal(t.code, "LG-ABC234");
+  assert.deepEqual(t.rows.map((r) => r.value), ["Miércoles 4 de noviembre", "12:30 pm – 1:00 pm", "Exterior e interior · Carro", "Las Palomas, Zamora, Michoacán", "Juan P. L."]);
+  assert.equal(t.total, "$180 pagado");
+  const text = JSON.stringify(t);
+  assert.ok(!text.includes("5500000000") && !text.includes("example.com") && !text.includes("Prueba"));
+  assert.equal(bookingTicket({ ...b, place: "domicilio" }, "x").rows[3].value, "A domicilio"); // nunca la dirección
+  assert.match(bookingTicket({ ...b, membershipCode: "LG-MABCDE" }, "x").total, /membresía LG-MABCDE/);
+
+  const m = membershipTicket({ code: "LG-MABCDE", duration: 30, name: "Juan Prueba", amount: 555, validTo: "2026-12-03",
+    washes: [{ date: "2026-11-18", time: "12:00" }, { date: "2026-11-04", time: "13:00" }, { date: "2026-11-09", time: "12:30" }, { date: "2026-11-13", time: "14:00" }] });
+  assert.equal(m.washes.length, 4);
+  assert.deepEqual(m.washes[0], { day: "Miércoles 4 de noviembre", time: "1:00 pm – 1:30 pm" }); // en orden
+  assert.equal(m.rows[0].value, "Juan P.");
+  assert.equal(capFirst("martes 3 de noviembre"), "Martes 3 de noviembre");
 });
 
 test("abierto ahora, próxima apertura, textos y etiquetas", () => {

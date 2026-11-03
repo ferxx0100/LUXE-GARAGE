@@ -85,9 +85,14 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
     return () => window.removeEventListener("lg:prefill", on);
   }, []);
 
-  // Horas libres del día para ese servicio, en vivo.
+  // Horas libres del día para ese servicio, en vivo. Si solo cambia el servicio, la hora elegida se queda (si sigue libre).
+  const timeRef = useRef(time);
+  useEffect(() => { timeRef.current = time; }, [time]);
+  const lastDate = useRef(date);
   useEffect(() => {
     let alive = true;
+    const keep = lastDate.current === date ? timeRef.current : "";
+    lastDate.current = date;
     setAvail(null); setTime("");
     fetch(`/api/booking/availability?date=${date}&kind=${kind}`, { cache: "no-store" })
       .then((r) => r.json())
@@ -97,10 +102,21 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
         setAvail(a);
         const p = pendingTime.current;
         if (p) { pendingTime.current = null; if (a.starts.includes(p)) setTime(p); else setError("Ese lugar se acaba de ocupar. Elige otra hora."); }
+        else if (keep && a.starts.includes(keep)) setTime(keep);
       })
       .catch(() => alive && setAvail({ starts: [], next: null, duration: KIND[kind].min }));
     return () => { alive = false; };
   }, [date, kind, reload]);
+
+  // Mientras escriben (teclado abierto en el iPhone) la barra de pagar se esconde para no tapar los campos.
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    const on = (e: FocusEvent) => setTyping(!!formRef.current?.contains(e.target as Node) && (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement));
+    const off = () => setTyping(false);
+    document.addEventListener("focusin", on);
+    document.addEventListener("focusout", off);
+    return () => { document.removeEventListener("focusin", on); document.removeEventListener("focusout", off); };
+  }, []);
 
   // Si hoy ya no hay horas, abrimos directo "Otro día".
   const noneToday = date === today && avail !== null && avail.starts.length === 0;
@@ -273,7 +289,7 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
       {error && <p role="alert" className="rounded-2xl bg-stop/15 p-4 text-lg font-medium text-red-200">{error}</p>}
 
       {/* Barra con el total, siempre a la mano en el celular */}
-      <div className={`fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-ink/95 px-4 pt-3 backdrop-blur-md transition-transform duration-300 ${inView ? "translate-y-0" : "translate-y-full"}`}
+      <div className={`fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-ink/95 px-4 pt-3 backdrop-blur-md transition-transform duration-300 ${inView && !typing ? "translate-y-0" : "translate-y-full"}`}
         style={{ paddingBottom: "max(.8rem, env(safe-area-inset-bottom))" }}>
         <div className="mx-auto flex max-w-xl items-center gap-4">
           <div className="min-w-0 flex-1">

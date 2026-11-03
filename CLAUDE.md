@@ -28,6 +28,8 @@
 - Estado del garage + ajustes (precios, horario, aviso): Upstash Redis vía `src/lib/store.ts` (memoria si no hay variables KV_*). Editables en `/admin`.
 - Reservas: también en Upstash (`src/lib/bookings.ts`). Un horario = una clave `lg:slot:fecha:hora` apartada con SET NX (15 min) y fijada al aprobarse el pago: imposible vender dos veces la misma hora.
 - Pagos: `src/lib/payments/mercadopago.ts` (Card Payment Brick + /v1/payments). Webhook en `/api/mp/webhook` (firma, consulta a la API, monto, idempotencia).
+- "Pagar con Mercado Pago" (Checkout Pro): `/api/booking/[id]/checkout` y `/api/membership/[id]/checkout` crean la preferencia con el monto guardado, vence con el apartado, sin OXXO/efectivo y `binary_mode`. Regresa al recibo, que consulta el pago a la API (`syncReturn` en `src/lib/payments/apply.ts`, la misma lógica que el webhook). Nunca confirmar por lo que diga la URL.
+- Apple Pay: Mercado Pago México lo ofrece para sitios web con su SDK de JavaScript (Orders API), pero exige cuenta Apple Developer del negocio, Merchant ID y certificados cargados en Mercado Pago, y verificar el dominio. Pendiente de esos datos del dueño.
 - Comprobante del cliente: `/reserva/[id]` (enlace secreto) + archivo de calendario `.ics`. Agenda del equipo: `/admin` → Agenda.
 - Correos: `src/lib/mail.ts` (Resend). Confirmación al cliente con `.ics` adjunto + aviso al negocio; cancelación. Sin `RESEND_API_KEY` no envía.
 - Pruebas: `npm test` (lógica pura en `src/lib/booking-core.ts`).

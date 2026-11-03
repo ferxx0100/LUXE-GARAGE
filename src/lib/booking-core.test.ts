@@ -4,7 +4,7 @@ import { createHmac } from "node:crypto";
 import {
   addDays, blocksFromCells, candidateStarts, cellsFor, checkWashes, dayWindow, estimateFreeAt, fits, fmtRange, fmtTime, fromMin,
   hoursText, isDateStr, isOpenAt, localNow, maskName, maskPhone, membershipCode, nextFree, nextOpening, normalizeCode, priceFor,
-  bookingTicket, capFirst, membershipTicket, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
+  bookingTicket, capFirst, checkoutPreference, membershipTicket, paymentDecision, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
 } from "./booking-core.ts";
 
 const prices = { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 };
@@ -97,6 +97,27 @@ test("servicio: la lavada de membresía no se liga a un auto", () => {
   assert.equal(serviceText({ kind: "completo" }), "Exterior e interior");
   assert.equal(serviceText({ kind: "completo", vehicle: "camioneta", plate: "AAA-000-A" }), "Exterior e interior · Camioneta · AAA-000-A");
   assert.equal(serviceText({ kind: "exterior", vehicle: "carro", plate: "" }), "Solo exterior · Carro");
+});
+
+test("Mercado Pago: preferencia con monto del servidor y decisión solo con lo que dice la API", () => {
+  const exp = new Date("2026-11-03T18:15:00Z");
+  const p = checkoutPreference({ id: "abcdefghijklmnopqrstuv", code: "LG-ABC234", amount: 180, title: "LUXE GARAGE · Lavado", returnUrl: "https://luxegaragee.com/reserva/abcdefghijklmnopqrstuv", expiresAt: exp }, "https://luxegaragee.com");
+  assert.equal(p.items[0].unit_price, 180);
+  assert.equal(p.items[0].currency_id, "MXN");
+  assert.equal(p.external_reference, "abcdefghijklmnopqrstuv");
+  assert.equal(p.notification_url, "https://luxegaragee.com/api/mp/webhook");
+  assert.equal(p.binary_mode, true);
+  assert.equal(p.expiration_date_to, "2026-11-03T18:15:00.000+00:00");
+  assert.deepEqual(p.payment_methods.excluded_payment_types.map((x) => x.id), ["ticket", "atm"]);
+  assert.equal(p.back_urls.failure, p.back_urls.success);
+
+  const t = { id: "abcdefghijklmnopqrstuv", amount: 180 };
+  assert.equal(paymentDecision({ status: "approved", external_reference: t.id, transaction_amount: 180 }, t), "confirm");
+  assert.equal(paymentDecision({ status: "approved", external_reference: t.id, transaction_amount: 1 }, t), "mismatch"); // monto alterado
+  assert.equal(paymentDecision({ status: "approved", external_reference: "otra-reserva", transaction_amount: 180 }, t), "ignore"); // pago de otra cosa
+  assert.equal(paymentDecision({ status: "in_process", external_reference: t.id, transaction_amount: 180 }, t), "pending");
+  assert.equal(paymentDecision({ status: "rejected", external_reference: t.id, transaction_amount: 180 }, t), "ignore");
+  assert.equal(paymentDecision({ status: "approved", external_reference: t.id, transaction_amount: 180 }, null), "ignore");
 });
 
 test("ticket para el celular: sin teléfono ni correo, nombre abreviado", () => {

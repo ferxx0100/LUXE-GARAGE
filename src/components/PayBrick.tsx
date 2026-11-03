@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 declare global {
   interface Window { MercadoPago?: new (key: string, o?: { locale?: string }) => { bricks: () => { create: (t: string, el: string, s: unknown) => Promise<{ unmount: () => void }> } } }
@@ -24,13 +24,14 @@ interface Props {
   onError: (msg: string) => void;
   accent?: string;
   id?: string;
+  checkoutUrl?: string;    // /api/booking/{id}/checkout o /api/membership/{id}/checkout (Pagar con Mercado Pago)
 }
 
 /**
  * Card Payment Brick de Mercado Pago: la tarjeta y el correo se capturan en campos de Mercado Pago
  * y nunca pasan por nuestro servidor (solo el token que genera el Brick).
  */
-export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, accent = "#d4af37", id = "mp-brick" }: Props) {
+export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, accent = "#d4af37", id = "mp-brick", checkoutUrl }: Props) {
   const brickRef = useRef<{ unmount: () => void } | null>(null);
   const errRef = useRef(onError);
   useEffect(() => { errRef.current = onError; }, [onError]);
@@ -66,5 +67,49 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
     return () => { cancelled = true; brickRef.current?.unmount(); brickRef.current = null; };
   }, [publicKey, amount, payUrl, doneUrl, accent, id]);
 
-  return <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[.03] p-3"><div id={id} /></div>;
+  return (
+    <div className="grid gap-4">
+      {checkoutUrl && <MpButton checkoutUrl={checkoutUrl} onError={onError} />}
+      {checkoutUrl && (
+        <p className="flex items-center gap-3 text-sm text-white/55" aria-hidden>
+          <span className="h-px flex-1 bg-white/15" />o con tarjeta<span className="h-px flex-1 bg-white/15" />
+        </p>
+      )}
+      <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[.03] p-3"><div id={id} /></div>
+    </div>
+  );
+}
+
+/** Pagar dentro de Mercado Pago (su cuenta, tarjetas guardadas o saldo). El link lo crea el servidor con su monto. */
+function MpButton({ checkoutUrl, onError }: { checkoutUrl: string; onError: (m: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    if (busy) return;
+    setBusy(true); onError("");
+    try {
+      const r = await fetch(checkoutUrl, { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && typeof d.url === "string" && d.url.startsWith("https://")) { window.location.assign(d.url); return; }
+      onError(d.error ?? "No pudimos abrir Mercado Pago. Intenta con tarjeta.");
+    } catch { onError("Sin conexión. Intenta de nuevo."); }
+    setBusy(false);
+  }
+  return (
+    <button type="button" onClick={go} disabled={busy}
+      className="flex min-h-16 w-full flex-col items-center justify-center rounded-full bg-[#009ee3] px-6 text-white shadow-[0_12px_30px_rgba(0,158,227,.35)] transition active:scale-[.97] disabled:opacity-60">
+      <span className="text-lg font-semibold">{busy ? "Abriendo Mercado Pago…" : "Pagar con Mercado Pago"}</span>
+      {!busy && <span className="text-[13px] text-white/85">Con tu cuenta: tarjetas guardadas o saldo</span>}
+    </button>
+  );
+}
+
+/** Para el recibo: reintentar el pago en Mercado Pago mientras el apartado siga vigente (con su propio mensaje de error). */
+export function MpCheckout({ checkoutUrl }: { checkoutUrl: string }) {
+  const [error, setError] = useState("");
+  return (
+    <div className="grid gap-3">
+      <MpButton checkoutUrl={checkoutUrl} onError={setError} />
+      {error && <p role="alert" className="rounded-2xl bg-red-500/20 p-4 text-base font-medium text-red-100">{error}</p>}
+    </div>
+  );
 }

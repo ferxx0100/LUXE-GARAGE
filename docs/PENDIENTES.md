@@ -43,11 +43,15 @@ La última entrega pasa las 17 pruebas automáticas; no se pudo compilar ni ver 
 ## 4. Plan de Vercel
 - [ ] El plan **Hobby** no permite uso comercial. Para cobrar: plan **Pro**.
 
-## 5. Apple Pay (opcional, después)
-1. Cuenta **Apple Developer Program** (empresa).
-2. Crear **Merchant ID** y certificados según la guía de Mercado Pago (Apple Pay México).
-3. Verificar el dominio: mándame el archivo `apple-developer-merchantid-domain-association` y lo publico en `/.well-known/`.
-4. Yo integro el botón (solo aparece en Safari con Wallet).
+## 5. Apple Pay
+Ya se puede pagar con tarjeta y con el botón **"Pagar con Mercado Pago"** (cuenta del cliente: tarjetas guardadas o saldo).
+Para agregar Apple Pay, Mercado Pago pide (guía "Apple Pay" en developers de Mercado Pago México):
+1. Cuenta **Apple Developer Program** a nombre del negocio.
+2. Crear un **Merchant ID** y los **certificados** que indica la guía, y cargarlos en tu aplicación de Mercado Pago.
+3. Verificar el dominio `luxegaragee.com`: mándame el archivo `apple-developer-merchantid-domain-association` y lo publico en `/.well-known/`.
+4. Yo integro el botón con el SDK de Mercado Pago (solo aparece en iPhone/Safari con Wallet).
+
+**Ojo con las credenciales:** si las de producción también están en "Preview" de Vercel, un pago en la vista previa es un cobro real. Lo correcto: credenciales de prueba en Preview y de producción solo en Production.
 
 ## 6. Legal
 - [ ] El abogado revisa el **aviso de privacidad** (`/privacidad`): LFPDPPP 2025, menciona Mercado Pago, Resend, Vercel y Upstash.

@@ -2,7 +2,9 @@ import { capFirst, fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/bookin
 import { liveSeal } from "@/lib/bookings";
 import { BUSINESS, mapsLink, telLink } from "@/lib/config";
 import { mailConfigured } from "@/lib/mail";
-import { getMembership, membershipBookings } from "@/lib/memberships";
+import { getMembership, membershipBookings, membershipHoldValid } from "@/lib/memberships";
+import { syncReturn } from "@/lib/payments/apply";
+import { MpCheckout } from "@/components/PayBrick";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReceiptSeal from "../../reserva/[id]/ReceiptSeal";
@@ -14,10 +16,20 @@ const btnCyan = "inline-flex min-h-14 items-center justify-center rounded-full b
 const btnLine = "inline-flex min-h-14 items-center justify-center rounded-full border border-[#22d3ee]/60 px-6 text-base font-semibold text-[#22d3ee] active:scale-[.97]";
 
 // Comprobante de la membresía (enlace secreto). Tema agua: cian sobre azul profundo.
-export default async function Membresia({ params }: { params: Promise<{ id: string }> }) {
+type Q = Promise<{ payment_id?: string; collection_id?: string; status?: string }>;
+
+export default async function Membresia({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Q }) {
   const { id } = await params;
-  const m = await getMembership(id).catch(() => null);
+  const q = await searchParams;
+  let m = await getMembership(id).catch(() => null);
   if (!m) notFound();
+  // Regreso de Mercado Pago: confirmamos consultando el pago a la API (la URL sola no vale).
+  if (m.status === "hold" && (q.payment_id || q.collection_id)) {
+    await syncReturn(id, q.payment_id ?? q.collection_id);
+    m = (await getMembership(id).catch(() => null)) ?? m;
+  }
+  const canPay = m.status === "hold" && (await membershipHoldValid(m).catch(() => false));
+  const failed = m.status === "hold" && (q.status === "rejected" || q.status === "null");
 
   const booked = m.status === "confirmed" ? await membershipBookings(m).catch(() => []) : [];
   const byDate = new Map(booked.map((b) => [b.date, b]));
@@ -29,7 +41,9 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
   const state = {
     confirmed: { t: allUsed ? "Membresía completada" : "¡Membresía activa!", s: allUsed ? "Ya usaste tus lavadas. ¡Gracias!" : "Muestra esta pantalla en cada visita." },
     pending: { t: "Pago en revisión", s: "Mercado Pago está revisando tu pago. Esta página se actualiza sola." },
-    hold: { t: "Pago pendiente", s: "Tus lavadas estuvieron apartadas 15 minutos. Si no pagaste, vuelve a elegirlas." },
+    hold: canPay
+      ? { t: failed ? "El pago no se completó" : "Falta tu pago", s: "Tus lavadas siguen apartadas unos minutos. Paga para confirmarlas." }
+      : { t: "Pago pendiente", s: "Tus lavadas estuvieron apartadas 15 minutos. Si no pagaste, vuelve a elegirlas." },
     cancelled: { t: "Membresía cancelada", s: "Si tienes dudas, llámanos." },
     conflict: { t: "Pago recibido", s: "Tu pago llegó, pero una de tus horas se ocupó. Te contactamos para reagendar o devolverte el dinero." },
   }[m.status];
@@ -83,6 +97,8 @@ export default async function Membresia({ params }: { params: Promise<{ id: stri
         </section>
 
         <div className="mt-6 grid gap-3">
+          {canPay && <MpCheckout checkoutUrl={`/api/membership/${m.id}/checkout`} />}
+          {m.status === "hold" && !canPay && <a href="/#membresia" className={`${btnCyan} min-h-16`}>Elegir otra vez</a>}
           {(m.status === "confirmed" || m.status === "pending") && !allUsed && (
             <>
               <a href={`/api/membership/${m.id}/ticket`} download={`${m.code}.png`} className={`${btnCyan} min-h-16`}>Guardar ticket en mi celular</a>

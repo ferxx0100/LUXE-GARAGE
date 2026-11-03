@@ -262,7 +262,7 @@ export default function MembershipFlow({ price, washes: need, validDays = 30, ho
               {left === 0 || !mpPublicKey ? (
                 <button type="button" onClick={() => { setHold(null); setStep("fechas"); }} className="btn-water min-h-16 w-full text-lg">Elegir otra vez</button>
               ) : (
-                <PayBrick id="mp-brick-mb" publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/membership/${hold.id}/pay`} doneUrl={`/membresia/${hold.id}`} onError={setError} accent="#22d3ee" />
+                <PayBrick id="mp-brick-mb" publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/membership/${hold.id}/pay`} checkoutUrl={`/api/membership/${hold.id}/checkout`} doneUrl={`/membresia/${hold.id}`} onError={setError} accent="#22d3ee" />
               )}
               <p className="text-center text-sm text-white/65">Pago seguro con Mercado Pago. Tu ticket llega a tu correo.</p>
             </div>

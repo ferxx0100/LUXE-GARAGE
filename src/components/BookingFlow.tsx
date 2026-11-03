@@ -183,7 +183,7 @@ export default function BookingFlow({ prices, hours, today: serverToday, mpPubli
         {left === 0 || !mpPublicKey ? (
           <button onClick={() => { setHold(null); setReload((n) => n + 1); }} className="btn-gold mt-6 min-h-14 w-full text-xl">Elegir otra vez</button>
         ) : (
-          <div className="mt-6"><PayBrick publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/booking/${hold.id}/pay`} doneUrl={`/reserva/${hold.id}`} onError={setError} /></div>
+          <div className="mt-6"><PayBrick publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/booking/${hold.id}/pay`} checkoutUrl={`/api/booking/${hold.id}/checkout`} doneUrl={`/reserva/${hold.id}`} onError={setError} /></div>
         )}
         {error && <p role="alert" className="mt-4 rounded-2xl bg-stop/15 p-4 text-lg font-medium text-red-200">{error}</p>}
         <p className="mt-4 text-center text-base text-white/65">Pago seguro con Mercado Pago. Te llega el recibo a tu correo.</p>

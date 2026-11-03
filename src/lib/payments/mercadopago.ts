@@ -2,6 +2,7 @@
 // El navegador nunca ve datos de tarjeta: el Brick de Mercado Pago los convierte en un token.
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { checkoutPreference } from "../booking-core";
 import { SITE_URL } from "../config";
 
 const BASE = process.env.MP_API_BASE ?? "https://api.mercadopago.com"; // MP_API_BASE: solo para pruebas locales
@@ -66,6 +67,12 @@ export async function chargeCard(b: { id: string; code: string; amount: number; 
 }
 
 export const getPayment = (id: string) => mp<MpPayment>(`/v1/payments/${encodeURIComponent(id)}`);
+
+/** Checkout Pro: link para pagar dentro de Mercado Pago (cuenta, tarjetas guardadas o saldo). Ver checkoutPreference. */
+export async function createPreference(o: Parameters<typeof checkoutPreference>[0]): Promise<{ id: string; init_point: string }> {
+  const body = checkoutPreference(o, process.env.SITE_URL ?? SITE_URL);
+  return mp<{ id: string; init_point: string }>("/checkout/preferences", { method: "POST", body: JSON.stringify(body) });
+}
 
 /** Mensajes claros para el cliente según el motivo de rechazo. */
 export function rejectMessage(detail?: string): string {

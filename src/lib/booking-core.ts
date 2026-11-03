@@ -300,6 +300,39 @@ export function serviceText(x: { kind: string; vehicle?: string; plate?: string 
   return [x.kind === "exterior" ? "Solo exterior" : "Exterior e interior", v, x.plate ?? ""].filter(Boolean).join(" · ");
 }
 
+/* ───────── Pago dentro de Mercado Pago (Checkout Pro) ───────── */
+/**
+ * Preferencia de Checkout Pro: el cliente paga en Mercado Pago con su cuenta (tarjetas guardadas o saldo).
+ * El monto es el que guardó el servidor; vence cuando vence el apartado; sin OXXO ni efectivo (quedarían
+ * "pendientes" días) y binary_mode: solo aprobado o rechazado.
+ */
+export function checkoutPreference(o: { id: string; code: string; amount: number; title: string; returnUrl: string; expiresAt: Date }, site: string) {
+  return {
+    items: [{ id: o.code, title: o.title.slice(0, 120), quantity: 1, unit_price: o.amount, currency_id: "MXN" }],
+    external_reference: o.id,
+    notification_url: `${site}/api/mp/webhook`,
+    back_urls: { success: o.returnUrl, pending: o.returnUrl, failure: o.returnUrl },
+    auto_return: "approved",
+    binary_mode: true,
+    expires: true,
+    expiration_date_to: o.expiresAt.toISOString().replace("Z", "+00:00"),
+    payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }], installments: 1 },
+    statement_descriptor: "LUXE GARAGE",
+    metadata: { code: o.code },
+  };
+}
+
+/**
+ * Qué hacer con un pago consultado a la API de Mercado Pago (webhook o regreso de Checkout Pro).
+ * Nunca se confía en lo que diga la URL: solo en el pago leído de la API.
+ */
+export function paymentDecision(pay: { status: string; external_reference?: string; transaction_amount?: number }, target: { id: string; amount: number } | null): "confirm" | "pending" | "mismatch" | "ignore" {
+  if (!target || pay.external_reference !== target.id) return "ignore";
+  if (pay.status === "approved") return Number(pay.transaction_amount) === target.amount ? "confirm" : "mismatch";
+  if (pay.status === "in_process" || pay.status === "pending") return "pending";
+  return "ignore";
+}
+
 /** "martes 4 de noviembre" → "Martes 4 de noviembre" (solo la primera letra). */
 export const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 

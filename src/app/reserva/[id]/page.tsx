@@ -1,7 +1,9 @@
 import { capFirst, fmtDay, fmtRange, maskPhone, serviceText } from "@/lib/booking-core";
-import { durationOf, getBooking, liveSeal } from "@/lib/bookings";
+import { durationOf, getBooking, holdStillValid, liveSeal } from "@/lib/bookings";
 import { BUSINESS, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import { mailConfigured } from "@/lib/mail";
+import { syncReturn } from "@/lib/payments/apply";
+import { MpCheckout } from "@/components/PayBrick";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReceiptSeal from "./ReceiptSeal";
@@ -10,16 +12,28 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Tu reserva | LUXE GARAGE", robots: { index: false, follow: false } };
 
 // El comprobante que recibe el cliente. El enlace es secreto (id aleatorio de 128 bits).
-export default async function Reserva({ params }: { params: Promise<{ id: string }> }) {
+type Q = Promise<{ payment_id?: string; collection_id?: string; status?: string }>;
+
+export default async function Reserva({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Q }) {
   const { id } = await params;
-  const b = await getBooking(id).catch(() => null);
+  const q = await searchParams;
+  let b = await getBooking(id).catch(() => null);
   if (!b) notFound();
+  // Regreso de Mercado Pago: confirmamos consultando el pago a la API (la URL sola no vale).
+  if (b.status === "hold" && (q.payment_id || q.collection_id)) {
+    await syncReturn(id, q.payment_id ?? q.collection_id);
+    b = (await getBooking(id).catch(() => null)) ?? b;
+  }
+  const canPay = b.status === "hold" && (await holdStillValid(b).catch(() => false));
+  const failed = b.status === "hold" && (q.status === "rejected" || q.status === "null");
 
   const state = {
     confirmed: { t: "¡Reserva confirmada!", c: "text-go", s: "Te esperamos. Muestra esta pantalla al llegar." },
     done: { t: "Servicio completado", c: "text-gold", s: "Gracias por tu visita." },
     pending: { t: "Pago en revisión", c: "text-amber-300", s: "Mercado Pago está revisando tu pago. Esta página se actualiza sola." },
-    hold: { t: "Pago pendiente", c: "text-amber-300", s: "Tu hora estuvo apartada 15 minutos. Si no pagaste, vuelve a reservar." },
+    hold: canPay
+      ? { t: failed ? "El pago no se completó" : "Falta tu pago", c: "text-amber-300", s: "Tu hora sigue apartada unos minutos. Paga para confirmarla." }
+      : { t: "Pago pendiente", c: "text-amber-300", s: "Tu hora estuvo apartada 15 minutos. Si no pagaste, vuelve a reservar." },
     cancelled: { t: "Reserva cancelada", c: "text-zinc-300", s: "Si tienes dudas, toca Ayuda." },
     conflict: { t: "Pago recibido", c: "text-amber-300", s: "Tu pago llegó, pero esa hora se ocupó. Te contactamos para reagendar o devolverte el dinero." },
   }[b.status];
@@ -61,6 +75,8 @@ export default async function Reserva({ params }: { params: Promise<{ id: string
       </section>
 
       <div className="mt-6 grid gap-3">
+        {canPay && <MpCheckout checkoutUrl={`/api/booking/${b.id}/checkout`} />}
+        {b.status === "hold" && !canPay && <a href="/#reservar" className="btn-gold min-h-16 text-lg">Reservar otra vez</a>}
         {["confirmed", "pending", "done"].includes(b.status) && <a href={`/api/booking/${b.id}/ticket`} download={`${b.code}.png`} className="btn-gold min-h-16 text-lg">Guardar ticket en mi celular</a>}
         {["confirmed", "pending"].includes(b.status) && <a href={`/api/booking/${b.id}/ics`} className="btn-line min-h-14 text-lg">Agregar a mi calendario</a>}
         {b.place === "garage" && b.status !== "cancelled" && <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="btn-line min-h-14 text-lg">Cómo llegar</a>}

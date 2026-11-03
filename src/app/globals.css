@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #09090a;
+  --color-ink-2: #121214;
+  --color-gold: #d4af37;
+  --color-gold-hi: #f1d77a;
+  --color-tile: #eceae4;
+  --color-go: #34d399;
+  --font-display: "Cinzel", "Trajan Pro", ui-serif, Georgia, serif;
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); }
+.text-gold-grad { background: linear-gradient(180deg, #fff1b8, #d4af37 55%, #8a6d1a); -webkit-background-clip: text; color: transparent; }
+
+/* ——— Escena del garage ——— */
+.car { transform: translateX(var(--car-x, 0px)); transition: transform 2.6s cubic-bezier(.22,.8,.25,1); }
+.wheel { transform-box: fill-box; transform-origin: center; }
+.moving .wheel { animation: spin .5s linear infinite; }
+.moving .car-lights { opacity: 1; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fluor { animation: flicker 1.4s steps(1) 1 both; }
+@keyframes flicker { 0%{opacity:.1} 12%{opacity:1} 20%{opacity:.2} 34%{opacity:1} 44%{opacity:.4} 60%,100%{opacity:1} }
+
+.bubble { animation: rise 4.5s ease-in infinite; opacity: 0; }
+@keyframes rise { 0%{transform:translateY(0) scale(.6);opacity:0} 15%{opacity:.85} 100%{transform:translateY(-120px) scale(1.2);opacity:0} }
+
+.spray { stroke-dasharray: 6 10; animation: dash .6s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -32; } }
+
+.pulse-dot { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.5); opacity: .5; } }
+.pulse-dot { transform-box: fill-box; transform-origin: center; }
+
+.floor-glow { transition: fill .8s ease, opacity .8s ease; }
+.rise-in { animation: riseIn .9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes riseIn { from { opacity: 0; transform: translateY(18px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .car { transition-duration: .01s; }
+  .moving .wheel, .bubble, .spray, .pulse-dot, .fluor { animation: none; }
+  .bubble { opacity: .6; }
+}

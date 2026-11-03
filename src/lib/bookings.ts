@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { canBook, localNow, priceFor, shortCode, slotsFor, toMinutes, type Kind, type Place, type Vehicle } from "./booking-core";
 import { BUSINESS } from "./config";
+import { sendBookingCancelled, sendBookingConfirmed } from "./mail";
 import { getSettings } from "./settings";
 import { kvGet, kvSet, redis } from "./store";
 
@@ -94,6 +95,7 @@ export async function confirmBooking(id: string, paymentId: string): Promise<Boo
   const next: Booking = { ...b, status: mine ? "confirmed" : "conflict", paymentId, paymentStatus: "approved", paidAt: now, updatedAt: now };
   await kvSet(bk(id), next);
   await index(next);
+  if (next.status === "confirmed") await sendBookingConfirmed(next).catch(() => {}); // solo una vez: arriba se sale si ya estaba confirmada
   return next;
 }
 
@@ -129,5 +131,7 @@ export async function adminAction(id: string, action: "done" | "cancel" | "confi
   }
   const next = { ...b, status, updatedAt: now };
   await kvSet(bk(id), next);
+  if (action === "cancel" && ["confirmed", "pending", "conflict"].includes(b.status)) await sendBookingCancelled(next).catch(() => {});
+  if (action === "confirm" && b.status === "pending") await sendBookingConfirmed(next).catch(() => {});
   return next;
 }

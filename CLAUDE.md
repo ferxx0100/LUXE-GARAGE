@@ -21,6 +21,7 @@
 - Reservas: también en Upstash (`src/lib/bookings.ts`). Un horario = una clave `lg:slot:fecha:hora` apartada con SET NX (15 min) y fijada al aprobarse el pago: imposible vender dos veces la misma hora.
 - Pagos: `src/lib/payments/mercadopago.ts` (Card Payment Brick + /v1/payments). Webhook en `/api/mp/webhook` (firma, consulta a la API, monto, idempotencia).
 - Comprobante del cliente: `/reserva/[id]` (enlace secreto) + archivo de calendario `.ics`. Agenda del equipo: `/admin` → Agenda.
+- Correos: `src/lib/mail.ts` (Resend). Confirmación al cliente con `.ics` adjunto + aviso al negocio; cancelación. Sin `RESEND_API_KEY` no envía.
 - Pruebas: `npm test` (lógica pura en `src/lib/booking-core.ts`).
 - Precios y reglas: `src/lib/settings.ts` (el servidor manda, nunca el navegador). Despliegue: `docs/VERCEL.md`.
 

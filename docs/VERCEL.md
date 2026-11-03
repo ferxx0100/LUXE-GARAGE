@@ -56,3 +56,13 @@ Deployments → último despliegue → **Redeploy** (las variables nuevas solo a
 5. Prueba con las tarjetas de prueba de Mercado Pago. Cuando todo funcione, cambia a las credenciales de **producción**.
 
 Mientras falten estas variables, la página muestra "Pagos en línea en activación" y no aparta horarios.
+
+## 8. Correos de confirmación (Resend)
+1. Crea cuenta en **resend.com** (plan gratis: 3,000 correos/mes).
+2. **Domains → Add Domain →** `luxegaragee.com`. Resend te da 3–4 registros (TXT/MX para `send` y `resend._domainkey`).
+   Agrégalos en Hostinger → Editor de zona DNS **sin borrar** los que ya existen. Espera a que Resend diga **Verified**.
+3. **API Keys → Create API Key** (permiso *Sending access*). En Vercel:
+   - `RESEND_API_KEY` (Secret) = esa llave
+   - `MAIL_FROM` (Config) = `LUXE GARAGE <reservas@luxegaragee.com>`
+   - `MAIL_TO_ADMIN` (Config) = el correo del negocio donde quieres recibir cada reserva
+4. **Redeploy**. Al aprobarse un pago: correo al cliente (con la cita para su calendario) + aviso al negocio.

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { FosaBar, fmt12 } from "./AdminAgenda";
+import { FosaBar } from "./AdminAgenda";
 
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busyUntil?: string | null; public: Pub };
@@ -43,15 +43,15 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
   return (
     <div className="grid gap-6">
       <section className="rounded-3xl border border-white/10 bg-white/[.03] p-4">
-        <p className={`font-display text-center text-4xl font-bold ${pub === "LIBRE" ? "text-emerald-400" : pub === "OCUPADO" ? "text-red-400" : "text-gold"}`}>{pub ?? "···"}</p>
-        {pub === "OCUPADO" && g?.busyUntil && <p className="text-center text-base text-white/80">Se desocupa <b className="num">{fmt12(g.busyUntil)}</b></p>}
-        <div className="mt-4 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Negocio">
-          {([["auto", "Horario"], ["open", "Abrir hoy"], ["closed", "Cerrar hoy"]] as const).map(([m, t]) => (
+        <p className="text-xs font-semibold uppercase tracking-[.22em] text-white/55">Negocio hoy</p>
+        <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Negocio">
+          {([["auto", "Automático"], ["open", "Abrir hoy"], ["closed", "Cerrar hoy"]] as const).map(([m, t]) => (
             <button key={m} role="radio" aria-checked={g?.mode === m} disabled={busy} onClick={() => setGarage({ mode: m })}
               className={`min-h-14 rounded-2xl border-2 text-base font-bold disabled:opacity-50 ${g?.mode === m ? "border-gold bg-gold text-ink" : "border-white/12 text-white/80"}`}>{t}</button>
           ))}
         </div>
-        <div className="mt-3">
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[.22em] text-white/55">Lugar de lavado</p>
+        <div className="mt-2">
           <FosaBar pub={pub ?? "CERRADO"} busyUntil={g?.busyUntil ?? null} disabled={busy}
             onFosa={(busyNow, minutes) => setGarage(busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false })} />
         </div>
@@ -69,7 +69,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
                   <span className="min-w-0">
                     <span className="block truncate text-lg font-bold">{b.name}</span>
                     <span className="block text-sm text-white/65">
-                      <span className={`mr-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${b.socio ? "bg-gold/20 text-gold" : "bg-white/10 text-white/80"}`}>{b.socio ? "Socio" : b.status === "confirmed" ? "Pagada" : b.status === "pending" ? "Pago en revisión" : "Suelta"}</span>
+                      <span className={`mr-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${b.socio ? "bg-gold/20 text-gold" : "bg-white/10 text-white/80"}`}>{b.socio ? "Socio" : b.status === "confirmed" ? "Pagada" : b.status === "pending" ? "Pago en revisión" : "Individual"}</span>
                       {b.vehicle === "camioneta" ? "Camioneta" : b.vehicle === "carro" ? "Carro" : ""}
                     </span>
                   </span>

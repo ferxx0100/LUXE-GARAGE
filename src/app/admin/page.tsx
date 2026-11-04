@@ -17,10 +17,10 @@ type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busySince?: str
 type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "memory" };
 
 const PRICE_FIELDS: { group: "socio" | "single"; key: keyof Money; label: string }[] = [
-  { group: "socio", key: "carro", label: "Socio carro (al mes)" },
-  { group: "socio", key: "camioneta", label: "Socio camioneta (al mes)" },
-  { group: "single", key: "carro", label: "Lavada suelta carro" },
-  { group: "single", key: "camioneta", label: "Lavada suelta camioneta" },
+  { group: "socio", key: "carro", label: "Suscripción · carro (al mes)" },
+  { group: "socio", key: "camioneta", label: "Suscripción · camioneta (al mes)" },
+  { group: "single", key: "carro", label: "Lavado individual · carro" },
+  { group: "single", key: "camioneta", label: "Lavado individual · camioneta" },
 ];
 
 async function api(path: string, method = "GET", body?: unknown) {
@@ -100,9 +100,12 @@ export default function Admin() {
 
   if (!authed)
     return (
-      <main className="mx-auto max-w-sm p-6 pt-24">
-        <h1 className="font-display text-2xl text-gold">Panel LUXE GARAGE</h1>
-        <form onSubmit={login} className="mt-6 space-y-3">
+      <main className="mx-auto max-w-sm p-6 pt-20">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/emblem-128.png" alt="" width="64" height="64" className="mx-auto" />
+        <h1 className="font-display mt-4 text-center text-2xl text-gold">Panel del negocio</h1>
+        <p className="mt-2 text-center text-base text-white/60">Solo para el dueño y el empleado.<br />Los socios entran en <a href="/socio" className="text-gold underline underline-offset-4">Cuenta de socio</a>.</p>
+        <form onSubmit={login} className="mt-8 space-y-3">
           <div className="relative">
             <input type={show ? "text" : "password"} autoComplete="current-password" autoCapitalize="none" autoCorrect="off" spellCheck={false}
               value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña"
@@ -133,6 +136,7 @@ export default function Admin() {
         <div className="flex min-w-0 items-center gap-2.5">
           <span className={`size-3 shrink-0 rounded-full shadow-[0_0_12px_currentColor] ${preview === "LIBRE" ? "bg-emerald-400 text-emerald-400" : preview === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-gold text-gold"}`} aria-hidden />
           <h1 className="font-display truncate text-xl font-semibold tracking-wide"><span className="text-gold-grad">LUXE</span> <span className="text-white/80">Panel</span></h1>
+          {role && <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/75">{role === "owner" ? "Dueño" : "Empleado"}</span>}
         </div>
         <div className="flex shrink-0 gap-2 whitespace-nowrap text-sm">
           <a href="/" target="_blank" className="grid min-h-11 place-items-center rounded-xl border border-white/15 px-3 active:border-gold">Ver sitio</a>

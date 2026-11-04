@@ -1,5 +1,5 @@
 import HelpButton from "@/components/HelpButton";
-import JoinFlow from "@/components/JoinFlow";
+import PlanCard from "@/components/PlanCard";
 import LiveGarage from "@/components/LiveGarage";
 import RealVideo from "@/components/RealVideo";
 import ReserveSheet from "@/components/ReserveSheet";
@@ -62,41 +62,33 @@ export default async function Home() {
       <main>
         <LiveGarage mapsUrl={mapsLink} />
 
-        {/* Lo principal: la membresía. Título, precio, qué incluye y un botón. */}
-        <section id="membresia" className="scroll-mt-14 px-5 pb-16 pt-16 text-white">
-          <div className="mx-auto max-w-md text-center">
-            <h2 className="font-display text-[2.4rem] font-semibold leading-none tracking-[.02em] text-gold">Membresía</h2>
-            <p className="mt-3 text-lg text-white/80">{s.membershipWashes} lavadas al mes · por dentro y por fuera</p>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+        {/* Lo principal: la suscripción, presentada como plan. */}
+        <section id="membresia" className="scroll-mt-14 px-5 pb-14 pt-14 text-white">
+          <div className="mx-auto max-w-md">
+            <PlanCard prices={s.socio} washes={s.membershipWashes} mpPublicKey={mpKey} seats={seats} />
+          </div>
+        </section>
+
+        {/* El lugar real: solo el video, grande. */}
+        <section id="video" aria-label="Video del lugar" className="px-4 pb-14">
+          <div className="mx-auto max-w-md"><RealVideo /></div>
+        </section>
+
+        {/* Secundario: lavado individual */}
+        <section id="suelta" className="scroll-mt-14 px-5 pb-16">
+          <div className="mx-auto max-w-md rounded-[28px] border border-white/10 bg-white/[.03] p-6">
+            <h2 className="text-xl font-semibold text-white">Lavado individual</h2>
+            <p className="mt-1 text-base text-white/60">Interior y exterior · pagas al reservar</p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
               {(["carro", "camioneta"] as const).map((v) => (
-                <div key={v} className="rounded-3xl border border-white/12 bg-white/[.04] px-3 py-5">
-                  <p className="text-base font-semibold text-white/75">{v === "carro" ? "Carro" : "Camioneta"}</p>
-                  <p className="num mt-1 text-[2.6rem] font-bold leading-none text-white">${s.socio[v]}</p>
-                  <p className="mt-1 text-sm text-white/55">al mes</p>
+                <div key={v} className="rounded-2xl bg-white/[.04] px-4 py-3">
+                  <p className="text-sm text-white/60">{v === "carro" ? "Carro" : "Camioneta"}</p>
+                  <p className="num text-2xl font-bold text-white">${s.single[v]}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 grid gap-3">
-              <JoinFlow prices={s.socio} washes={s.membershipWashes} mpPublicKey={mpKey} soldOut={seats <= 0} />
-              <a href="/socio" className="btn-line min-h-14 text-lg">Ya soy socio · Entrar</a>
-            </div>
-            <p className="mt-4 text-sm text-white/55">Tú eliges día y hora en tu cuenta. Se cobra solo cada mes; cancelas cuando quieras.</p>
+            <div className="mt-5"><SingleWashButton /></div>
           </div>
-        </section>
-
-        {/* El lugar real */}
-        <section id="video" className="bg-[#f2f0eb] px-5 py-16 text-[#141414]">
-          <h2 className="font-display text-center text-[1.9rem] font-semibold leading-tight">Así se ve por dentro</h2>
-          <div className="mx-auto mt-8 max-w-[21rem]">
-            <RealVideo />
-          </div>
-        </section>
-
-        {/* Secundario: lavada suelta */}
-        <section id="suelta" className="scroll-mt-14 px-5 py-14 text-center">
-          <h2 className="text-xl font-bold">Lavada suelta</h2>
-          <p className="num mt-1 text-base text-white/70">Carro ${s.single.carro} · Camioneta ${s.single.camioneta}</p>
-          <div className="mx-auto mt-5 max-w-xs"><SingleWashButton /></div>
         </section>
 
         <section id="visitanos" className="border-t border-white/10 px-5 py-12 text-center">

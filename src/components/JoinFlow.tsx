@@ -11,8 +11,10 @@ const digits = (s: string) => s.replace(/\D/g, "");
  * Hazte socio en 3 pasos que no se mueven: (1) carro o camioneta, (2) nombre, celular y NIP, (3) pago.
  * Al pagar entra solo a su cuenta (/socio). Se abre sobre toda la pantalla (portal al body).
  */
-export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label = "Hazte socio", className = "btn-gold min-h-16 w-full text-lg" }: {
+export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label = "Hazte socio", className = "btn-gold min-h-16 w-full text-lg", preset }: {
   prices: Record<Vehicle, number>; washes: number; mpPublicKey: string | null; soldOut?: boolean; label?: string; className?: string;
+  /** Vehículo ya elegido en el plan: abre directo en "tus datos". */
+  preset?: Vehicle;
 }) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -124,7 +126,7 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
   if (soldOut) return <p className="rounded-2xl bg-white/[.06] p-4 text-center text-base font-semibold text-white/80">Lugares de socio agotados por ahora.</p>;
   return (
     <>
-      <button type="button" onClick={() => { setOpen(true); setError(""); }} className={className}>{label}</button>
+      <button type="button" onClick={() => { if (preset) { setVehicle(preset); setStep(2); } setOpen(true); setError(""); }} className={className}>{label}</button>
       {mounted && open && createPortal(sheet, document.body)}
     </>
   );

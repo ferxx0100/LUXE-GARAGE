@@ -214,7 +214,7 @@ export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
       <div className="flex items-center gap-3">
         <span className={`size-4 shrink-0 animate-pulse rounded-full shadow-[0_0_14px_currentColor] ${dot}`} />
         <div className="min-w-0">
-          <p className="text-xs tracking-[.25em] text-white/60">SEMÁFORO</p>
+          <p className="text-xs tracking-[.25em] text-white/60">LO QUE VE EL CLIENTE</p>
           <p className="font-display text-2xl font-semibold leading-tight">{pub ?? "…"}</p>
         </div>
         {pub === "OCUPADO" && busyUntil && (
@@ -222,8 +222,8 @@ export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
         )}
       </div>
       {pub === "LIBRE" && (
-        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-          {([[30, "Ext. e interior", "30 min"], [20, "Solo exterior", "20 min"]] as const).map(([m, t, d]) => (
+        <div className="mt-3 grid gap-2.5">
+          {([[30, "Marcar ocupado", "30 min"]] as const).map(([m, t, d]) => (
             <button key={m} disabled={disabled} onClick={() => onFosa(true, m)}
               className="flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-red-500 px-4 py-3 text-left text-white shadow-[0_8px_24px_-10px_rgba(239,68,68,.9)] transition active:scale-[.98] disabled:opacity-50">
               <span><span className="block text-xs font-bold tracking-[.2em] opacity-80">OCUPADO</span><span className="block text-lg font-bold leading-tight">{t}</span></span>
@@ -238,7 +238,7 @@ export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
           ✓ Ya está libre
         </button>
       )}
-      {pub === "CERRADO" && <p className="mt-2 text-sm text-white/60">Cerrado. Para marcar libre u ocupado, primero toca "Abrir hoy" (en Hoy).</p>}
+      {pub === "CERRADO" && <p className="mt-2 text-sm text-white/60">Para marcar libre u ocupado, primero toca "Abrir hoy".</p>}
     </div>
   );
 }

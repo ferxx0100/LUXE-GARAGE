@@ -78,7 +78,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
   }
 
   const back = step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => setStep("who") : null;
-  const title = step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? "Lavada suelta" : "Pagar";
+  const title = step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? "Lavado individual" : "Pagar";
 
   const sheet = (
     <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
@@ -107,7 +107,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
                 <span className="text-xl font-bold">Soy socio</span><span className="text-sm text-white/70">Usa una de tus lavadas</span>
               </a>
               <button type="button" onClick={() => setStep("single")} className="flex min-h-20 items-center justify-between rounded-3xl border-2 border-white/15 bg-white/[.04] px-6 text-left active:scale-[.98]">
-                <span className="text-xl font-bold">Lavada suelta</span><span className="num text-sm text-white/70">Carro ${prices.carro} · Camioneta ${prices.camioneta}</span>
+                <span className="text-xl font-bold">Lavado individual</span><span className="num text-sm text-white/70">Desde ${Math.min(prices.carro, prices.camioneta)}</span>
               </button>
             </div>
           )}

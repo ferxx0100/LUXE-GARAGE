@@ -209,19 +209,27 @@ function Login({ onDone, help, prices, washes, mpPublicKey }: { onDone: () => vo
     onDone();
   }
   return (
-    <div className="grid gap-8">
-      <form onSubmit={go} className="grid gap-3">
-        <h1 className="font-display text-center text-3xl font-semibold text-gold">Mi cuenta de socio</h1>
-        <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-        <input className={`${field} num text-center text-2xl tracking-[.5em]`} value={nip} onChange={(e) => setNip(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="NIP" inputMode="numeric" type="password" autoComplete="current-password" aria-label="NIP de 4 números" />
+    <div className="grid gap-6">
+      <form onSubmit={go} className="grid gap-4 rounded-[28px] border border-white/10 bg-white/[.03] p-6">
+        <div className="text-center">
+          <h1 className="font-display text-3xl font-semibold text-gold">Cuenta de socio</h1>
+          <p className="mt-2 text-base text-white/60">Entra con tu celular y tu NIP.</p>
+        </div>
+        <label className="grid gap-1.5 text-sm font-semibold text-white/70">Celular
+          <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10 dígitos" inputMode="tel" autoComplete="tel" maxLength={20} />
+        </label>
+        <label className="grid gap-1.5 text-sm font-semibold text-white/70">NIP de 4 números
+          <input className={`${field} num text-center text-2xl tracking-[.5em]`} value={nip} onChange={(e) => setNip(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="••••" inputMode="numeric" type="password" autoComplete="current-password" />
+        </label>
         {error && <p role="alert" className="rounded-2xl bg-stop/15 p-4 text-base font-semibold text-red-200">{error}</p>}
-        <button disabled={busy || phone.replace(/\D/g, "").length < 10 || nip.length < 4} className="btn-gold min-h-16 text-lg disabled:opacity-45">{busy ? "Entrando…" : "Entrar"}</button>
+        <button disabled={busy || phone.replace(/\D/g, "").length < 10 || nip.length < 4} className="btn-gold mt-1 min-h-16 text-lg disabled:opacity-45">{busy ? "Entrando…" : "Entrar"}</button>
         <p className="text-center text-sm text-white/55">¿Olvidaste tu NIP? <a href={help} className="text-gold underline underline-offset-4">Llámanos</a> y te damos uno nuevo.</p>
       </form>
-      <div className="rounded-3xl border border-white/10 bg-white/[.03] p-5 text-center">
-        <p className="text-lg font-bold">¿Aún no eres socio?</p>
-        <p className="mt-1 text-sm text-white/65">{washes} lavadas completas al mes · carro ${prices.carro} · camioneta ${prices.camioneta}</p>
-        <div className="mt-4"><JoinFlow prices={prices} washes={washes} mpPublicKey={mpPublicKey} /></div>
+      <div className="rounded-[28px] border border-gold/30 bg-[linear-gradient(160deg,#1c1709,#0b0b0c)] p-6 text-center">
+        <p className="text-sm font-semibold uppercase tracking-[.22em] text-gold">Suscripción mensual</p>
+        <p className="mt-2 text-lg text-white/85">{washes} lavadas completas al mes</p>
+        <p className="num mt-1 text-base text-white/60">Carro ${prices.carro} · Camioneta ${prices.camioneta} al mes</p>
+        <div className="mt-5"><JoinFlow prices={prices} washes={washes} mpPublicKey={mpPublicKey} label="Suscribirme" /></div>
       </div>
     </div>
   );

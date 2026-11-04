@@ -9,7 +9,7 @@
 - **Nadie es dueño de un horario:** cada lavada es un turno de una fecha exacta. Si no paga el mes siguiente, la cuenta queda **vencida**: no puede apartar y no aparece en "Hoy".
 - **Lavada normal** (secundaria, al final de la página; nunca decir "suelta"): exterior y aspirado de interior. Carro **$149**, camioneta **$199**, SUV o pick up **$249**, pago completo en línea al apartar (todo por Mercado Pago: Checkout Pro; la suscripción por link de /preapproval). **Sin servicio a domicilio.**
 - **Panel del dueño:** todo. **Panel del empleado** (contraseña aparte): solo "Hoy" (hora, nombre abreviado, socio o suelta, carro o camioneta, sello vivo para comparar con el celular del cliente), abrir/cerrar y libre/ocupado. Sin teléfonos, correos, precios ni ajustes. El empleado no da de alta, no cobra, no descuenta.
-- Horario: lunes a jueves 12 pm–7 pm; viernes y sábado 1 pm–6 pm; domingo cerrado (editable por día en /admin → Ajustes). 76 turnos de 30 min por semana (~245 útiles al mes).
+- Horario: lunes a viernes 12 pm–7 pm; sábado 11 am–5 pm; domingo cerrado (editable por día en /admin → Ajustes). 41 h por semana: ~169 lavadas al mes como máximo con la mezcla normal (~118 reales).
 - La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y rejillas de acero negro. Nada de imágenes generadas por IA.
 - Paleta: negro #0b0b0c · crema/azulejo #f2f0eb · oro #d4af37; verde y rojo SOLO para el estado. Tipografía: Cinzel solo en la marca, el letrero de estado y los títulos; Manrope en todo lo demás (horas, precios y códigos con la utilidad `num`). Pocas negritas, sin texto con degradado, sin secciones de relleno.
 - Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en "Ayuda".

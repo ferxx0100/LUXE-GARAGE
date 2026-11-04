@@ -28,7 +28,8 @@ export const Settings = z.object({
 });
 export type Settings = z.infer<typeof Settings>;
 
-export const DEFAULT_HOURS: Settings["hours"] = [null, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 13, close: 18 }, { open: 13, close: 18 }];
+// Lunes a viernes 12 pm–7 pm, sábado 11 am–5 pm, domingo cerrado (editable en /admin → Ajustes).
+export const DEFAULT_HOURS: Settings["hours"] = [null, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 12, close: 19 }, { open: 11, close: 17 }];
 export const DEFAULT_SETTINGS: Settings = Settings.parse({ hours: DEFAULT_HOURS });
 
 const KEY = "lg:settings";

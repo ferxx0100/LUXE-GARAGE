@@ -5,7 +5,7 @@ import AdminMembers from "@/components/AdminMembers";
 import AdminTeam from "@/components/AdminTeam";
 import AdminToday from "@/components/AdminToday";
 
-type Money = { carro: number; camioneta: number };
+type Money = { carro: number; camioneta: number; suv: number };
 type Settings = {
   socio: Money; single: Money;
   membershipWashes: number; memberCap: number;
@@ -20,8 +20,10 @@ type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "mem
 const PRICE_FIELDS: { group: "socio" | "single"; key: keyof Money; label: string }[] = [
   { group: "socio", key: "carro", label: "Suscripción · carro (al mes)" },
   { group: "socio", key: "camioneta", label: "Suscripción · camioneta (al mes)" },
+  { group: "socio", key: "suv", label: "Suscripción · SUV o pick up (al mes)" },
   { group: "single", key: "carro", label: "Lavada normal · carro" },
   { group: "single", key: "camioneta", label: "Lavada normal · camioneta" },
+  { group: "single", key: "suv", label: "Lavada normal · SUV o pick up" },
 ];
 
 async function api(path: string, method = "GET", body?: unknown) {

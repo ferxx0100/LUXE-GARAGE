@@ -2,15 +2,18 @@ import { z } from "zod";
 import { kvGet, kvSet } from "./store";
 
 const money = z.number().int().min(0).max(100000);
-const byVehicle = (carro: number, camioneta: number) => z.object({ carro: money, camioneta: money }).default({ carro, camioneta });
+const byVehicle = (carro: number, camioneta: number, suv: number) => z.preprocess(
+  (v) => (v && typeof v === "object" && "suv" in v ? v : undefined), // precios viejos de 2 tamaños → los nuevos
+  z.object({ carro: money, camioneta: money, suv: money }).default({ carro, camioneta, suv }),
+);
 
 // Todo lo que el dueño controla desde /admin. El servidor valida y es la única fuente de precios.
 // Claves nuevas (socio/single): los precios viejos guardados (prices: 180/220/555…) se descartan solos.
 export const Settings = z.object({
   /** Suscripción mensual (cobro automático): lo principal del negocio. */
-  socio: byVehicle(399, 519),
-  /** Lavada suelta, pagada al apartar (secundaria). */
-  single: byVehicle(120, 250),
+  socio: byVehicle(450, 650, 999),
+  /** Lavada normal, pagada al apartar (secundaria). */
+  single: byVehicle(149, 199, 249),
   /** Lavadas completas por mes pagado. */
   membershipWashes: z.number().int().min(1).max(31).default(4),
   /** Socios activos como máximo (para no sobrevender el horario). */

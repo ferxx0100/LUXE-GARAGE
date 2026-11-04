@@ -1,10 +1,12 @@
 // Lógica pura de reservas: sin red ni base de datos, para poder probarla.
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export type Vehicle = "carro" | "camioneta";
+export type Vehicle = "carro" | "camioneta" | "suv";
+export const VEHICLES: Vehicle[] = ["carro", "camioneta", "suv"];
+export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : v === "suv" ? "SUV o pick up" : "");
 export type Kind = "completo" | "exterior"; // "Exterior e interior" | "Solo exterior"
 export type Place = "garage" | "domicilio"; // "domicilio" solo en reservas viejas: ya no se ofrece
-export interface Prices { carro: number; camioneta: number }
+export interface Prices { carro: number; camioneta: number; suv: number }
 /** Horario semanal: índice 0 = domingo … 6 = sábado; null = cerrado ese día. Horas enteras 0–24. */
 export type DayHours = { open: number; close: number } | null;
 export type Hours = DayHours[];
@@ -308,7 +310,7 @@ export function verifyMpSignature(xSignature: string | null, xRequestId: string 
 
 /** "Exterior e interior · Camioneta · AAA-000-A". Sin vehículo (lavada de membresía) solo dice el servicio. */
 export function serviceText(x: { kind: string; vehicle?: string; plate?: string }): string {
-  const v = x.vehicle === "carro" ? "Carro" : x.vehicle === "camioneta" ? "Camioneta" : "";
+  const v = vehicleLabel(x.vehicle);
   return [x.kind === "exterior" ? "Solo exterior" : "Exterior e interior", v, x.plate ?? ""].filter(Boolean).join(" · ");
 }
 

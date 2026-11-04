@@ -1,10 +1,11 @@
 "use client";
+import { vehicleLabel } from "./fmt";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Status = "hold" | "pending" | "confirmed" | "done" | "cancelled" | "conflict";
 interface Booking {
   id: string; code: string; status: Status; date: string; time: string;
-  vehicle: "carro" | "camioneta"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
+  vehicle: "carro" | "camioneta" | "suv"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
   name: string; phone: string; email?: string; plate?: string; notes?: string; amount: number; paymentId?: string;
   duration?: number; membershipId?: string; membershipCode?: string;
 }
@@ -160,7 +161,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onF
                   <p className="mt-1.5 truncate text-xl font-bold">{b.name}</p>
                   <p className="text-base font-semibold text-white/90">🕓 {range12(b.time, dur)} <span className="font-normal text-white/55">· {dur} min</span></p>
                   <p className="text-base text-white/75">
-                    {b.vehicle === "carro" ? "Carro" : "Camioneta"} · {b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} ·{" "}
+                    {vehicleLabel(b.vehicle)} · {b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} ·{" "}
                     {b.membershipId ? <b className="text-gold">Incluido</b> : <b className="text-gold">${b.amount}</b>}
                   </p>
                   {b.place === "domicilio" && <p className="mt-1 break-words text-base text-gold-hi">📍 {b.address}</p>}

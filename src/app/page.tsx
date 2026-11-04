@@ -36,7 +36,7 @@ export default async function Home() {
       opens: `${String(d.open).padStart(2, "0")}:00`,
       closes: `${String(d.close % 24).padStart(2, "0")}:00`,
     }] : []),
-    priceRange: `$${s.single.carro}–$${s.socio.camioneta}`,
+    priceRange: `$${s.single.carro}–$${s.socio.suv}`,
   };
 
   return (
@@ -79,10 +79,10 @@ export default async function Home() {
           <div className="mx-auto max-w-md rounded-[28px] border border-white/10 bg-white/[.03] p-6">
             <h2 className="text-xl font-semibold text-white">Lavada normal</h2>
             <p className="mt-1 text-base text-white/60">Exterior y aspirado de interior</p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              {(["carro", "camioneta"] as const).map((v) => (
-                <div key={v} className="rounded-2xl bg-white/[.04] px-4 py-3">
-                  <p className="text-sm text-white/60">{v === "carro" ? "Carro" : "Camioneta"}</p>
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {(["carro", "camioneta", "suv"] as const).map((v) => (
+                <div key={v} className="rounded-2xl bg-white/[.04] px-3 py-3">
+                  <p className="text-sm leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : "SUV / pick up"}</p>
                   <p className="num text-2xl font-bold text-white">${s.single[v]}</p>
                 </div>
               ))}

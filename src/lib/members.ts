@@ -5,7 +5,7 @@ import { createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from 
 import { z } from "zod";
 import {
   canChange, CELL, cellsFor, chargedMonths, dayWindow, fits, fromMin, isTimeStr, MEMBER_DUR, memberBookingError, memberCode,
-  memberStatusFrom, memberValid, nipError, normalizePhone, periodFromCharges, shortCode, toMin, type MemberStatus, type Vehicle,
+  memberStatusFrom, memberValid, nipError, normalizePhone, vehicleLabel, periodFromCharges, shortCode, toMin, type MemberStatus, type Vehicle,
 } from "./booking-core";
 import { serverKey } from "./auth";
 import { getBooking, getBookings, indexCode, saveIndexed, startAllowed, todayCtx, type Booking } from "./bookings";
@@ -130,7 +130,7 @@ export async function login(phoneRaw: string, nip: string, ip: string): Promise<
 
 /* ───────── Alta: datos → pago con tarjeta (suscripción) ───────── */
 export const SignupInput = z.object({
-  vehicle: z.enum(["carro", "camioneta"]),
+  vehicle: z.enum(["carro", "camioneta", "suv"]),
   name: z.string().trim().min(2, "Escribe tu nombre").max(80),
   phone: z.string().trim().max(25),
   nip: z.string().trim(),
@@ -175,7 +175,7 @@ export async function subscribeLink(m: Member, email: string): Promise<Result<{ 
     }
     if (prev && prev.status !== "cancelled") await cancelPreapproval(m.preapprovalId).catch(() => {});
   }
-  const pre = await createSubscriptionLink({ memberId: m.id, email, amount, reason: `LUXE GARAGE · Socio ${m.vehicle === "carro" ? "carro" : "camioneta"} · ${s.membershipWashes} lavadas al mes` });
+  const pre = await createSubscriptionLink({ memberId: m.id, email, amount, reason: `LUXE GARAGE · Socio ${vehicleLabel(m.vehicle).toLowerCase()} · ${s.membershipWashes} lavadas al mes` });
   if (!pre.init_point?.startsWith("https://")) return fail(502, "Mercado Pago no regresó el link de pago. Intenta de nuevo.");
   const fresh = pre.id !== m.preapprovalId ? { anchor: undefined, charges: 0, paidLog: 0, periodStart: undefined, periodEnd: undefined } : {};
   const next = await save({ ...m, ...fresh, email, price: amount, perPeriod: s.membershipWashes, preapprovalId: pre.id });
@@ -194,7 +194,7 @@ export async function subscribe(m: Member, cardToken: string, email: string): Pr
     }
     if (prev && prev.status !== "cancelled") await cancelPreapproval(m.preapprovalId).catch(() => {});
   }
-  const pre = await createSubscription({ memberId: m.id, email, amount, cardToken, reason: `LUXE GARAGE · Socio ${m.vehicle === "carro" ? "carro" : "camioneta"} · ${s.membershipWashes} lavadas al mes` });
+  const pre = await createSubscription({ memberId: m.id, email, amount, cardToken, reason: `LUXE GARAGE · Socio ${vehicleLabel(m.vehicle).toLowerCase()} · ${s.membershipWashes} lavadas al mes` });
   // Suscripción nueva (alta o renovación después de vencer): los meses se cuentan desde su primer cobro.
   const fresh = pre.id !== m.preapprovalId ? { anchor: undefined, charges: 0, periodStart: undefined, periodEnd: undefined } : {};
   const next = await save({ ...m, ...fresh, email, price: amount, perPeriod: s.membershipWashes, preapprovalId: pre.id });

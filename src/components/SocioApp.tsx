@@ -4,7 +4,7 @@ import ReceiptSeal from "@/app/reserva/[id]/ReceiptSeal";
 import JoinFlow from "./JoinFlow";
 import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
-import { addDays, DAY, MONTH, toMin, wd, type DayHours, type Vehicle } from "./fmt";
+import { addDays, DAY, MONTH, toMin, wd, vehicleLabel, type DayHours, type Vehicle } from "./fmt";
 
 type Wash = { id: string; date: string; time: string; duration: number; past: boolean; canChange: boolean };
 type Me = {
@@ -119,7 +119,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
         <div className="border-t border-dashed border-gold/30 px-6 py-5 text-center">
           <p className="text-xs font-semibold tracking-[.2em] text-white/55">SOCIO</p>
           <p className="num text-3xl font-semibold text-gold">{m.code}</p>
-          <p className="mt-1 text-base text-white/80">{m.vehicle === "carro" ? "Carro" : "Camioneta"} · {m.perPeriod} lavadas al mes</p>
+          <p className="mt-1 text-base text-white/80">{vehicleLabel(m.vehicle)} · {m.perPeriod} lavadas al mes</p>
           <p className={`mt-2 text-base font-bold ${statusLine.c}`}>{statusLine.t}</p>
         </div>
       </section>
@@ -232,7 +232,7 @@ function Login({ onDone, help, prices, washes, mpPublicKey }: { onDone: () => vo
       <div className="rounded-[28px] border border-gold/30 bg-[linear-gradient(160deg,#1c1709,#0b0b0c)] p-6 text-center">
         <p className="text-sm font-semibold uppercase tracking-[.22em] text-gold">Suscripción mensual</p>
         <p className="mt-2 text-lg text-white/85">{washes} lavadas completas al mes</p>
-        <p className="num mt-1 text-base text-white/60">Carro ${prices.carro} · Camioneta ${prices.camioneta} al mes</p>
+        <p className="num mt-1 text-base text-white/60">Carro ${prices.carro} · Camioneta ${prices.camioneta} · SUV/pick up ${prices.suv} al mes</p>
         <div className="mt-5"><JoinFlow prices={prices} washes={washes} mpPublicKey={mpPublicKey} label="Suscribirme" /></div>
       </div>
     </div>

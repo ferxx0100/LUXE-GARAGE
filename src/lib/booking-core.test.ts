@@ -8,7 +8,7 @@ import {
   bookingTicket, capFirst, checkoutPreference, paymentDecision, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
 } from "./booking-core.ts";
 
-const prices = { carro: 120, camioneta: 250 };
+const prices = { carro: 149, camioneta: 199, suv: 249 };
 // Horario real: lun–jue 12–19, vie–sáb 13–18, domingo cerrado.
 const L = { open: 12, close: 19 }, V = { open: 13, close: 18 };
 const hours = [null, L, L, L, L, V, V];
@@ -17,8 +17,9 @@ const hm = (t: string) => toMin(t);
 const times = (xs: number[]) => xs.map(fromMin);
 
 test("precio: lo calcula el servidor con domicilio +100", () => {
-  assert.equal(priceFor(prices, "carro"), 120);
-  assert.equal(priceFor(prices, "camioneta"), 250);
+  assert.equal(priceFor(prices, "carro"), 149);
+  assert.equal(priceFor(prices, "camioneta"), 199);
+  assert.equal(priceFor(prices, "suv"), 249);
 });
 
 test("ventana del día: lunes 12–19, viernes 13–18, domingo cerrado, fecha inválida", () => {

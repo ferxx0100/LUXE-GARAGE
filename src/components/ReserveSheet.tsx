@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
-import { DAY, MONTH, toMin, wd, type DayHours, type Vehicle } from "./fmt";
+import { DAY, MONTH, toMin, wd, VEHICLES, vehicleLabel, type DayHours, type Vehicle } from "./fmt";
 
 export type ReserveDetail = { date?: string; time?: string };
 /** Abre la ventana de apartar desde cualquier botón: window.dispatchEvent(new CustomEvent("lg:reserve", { detail })) */
@@ -107,18 +107,18 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
                 <span className="text-xl font-bold">Soy socio</span><span className="text-sm text-white/70">Usa una de tus lavadas</span>
               </a>
               <button type="button" onClick={() => setStep("single")} className="flex min-h-20 items-center justify-between rounded-3xl border-2 border-white/15 bg-white/[.04] px-6 text-left active:scale-[.98]">
-                <span className="text-xl font-bold">Lavada normal</span><span className="num text-sm text-white/70">Desde ${Math.min(prices.carro, prices.camioneta)}</span>
+                <span className="text-xl font-bold">Lavada normal</span><span className="num text-sm text-white/70">Desde ${Math.min(prices.carro, prices.camioneta, prices.suv)}</span>
               </button>
             </div>
           )}
 
           {step === "single" && (
             <div className="grid gap-3">
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Vehículo">
-                {(["carro", "camioneta"] as const).map((v) => (
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Vehículo">
+                {VEHICLES.map((v) => (
                   <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => setVehicle(v)}
                     className={`min-h-20 rounded-2xl border-2 text-center transition ${vehicle === v ? "border-gold bg-gold text-ink" : "border-white/15 bg-white/[.04]"}`}>
-                    <span className="block text-lg font-bold">{v === "carro" ? "Carro" : "Camioneta"}</span>
+                    <span className="block text-lg font-bold">{v === "suv" ? "SUV / pick up" : vehicleLabel(v)}</span>
                     <span className="num block text-xl font-bold">${prices[v]}</span>
                   </button>
                 ))}

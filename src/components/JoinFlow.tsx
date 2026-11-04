@@ -2,13 +2,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MpButton } from "./PayBrick";
-import type { Vehicle } from "./fmt";
+import { VEHICLES, vehicleLabel, type Vehicle } from "./fmt";
 
 const field = "w-full min-h-16 rounded-2xl border-2 border-white/15 bg-black/30 px-5 text-lg text-white outline-none placeholder:text-white/40 focus:border-gold";
 const digits = (s: string) => s.replace(/\D/g, "");
 
 /**
- * Hazte socio en 3 pasos que no se mueven: (1) carro o camioneta, (2) nombre, celular y NIP, (3) pago.
+ * Hazte socio en 3 pasos que no se mueven: (1) carro, camioneta o SUV/pick up, (2) nombre, celular y NIP, (3) pago.
  * Al pagar entra solo a su cuenta (/socio). Se abre sobre toda la pantalla (portal al body).
  */
 export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label = "Hazte socio", className = "btn-gold min-h-16 w-full text-lg", preset }: {
@@ -73,10 +73,10 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
           {step === 1 && (
             <div className="grid gap-3">
               <p className="text-center text-xl font-bold">¿Qué manejas?</p>
-              {(["carro", "camioneta"] as const).map((v) => (
+              {VEHICLES.map((v) => (
                 <button key={v} type="button" onClick={() => { setVehicle(v); setStep(2); setError(""); }}
                   className={`flex min-h-24 items-center justify-between rounded-3xl border-2 px-6 text-left transition active:scale-[.98] ${vehicle === v ? "border-gold bg-gold/10" : "border-white/12 bg-white/[.04]"}`}>
-                  <span className="text-2xl font-bold">{v === "carro" ? "Carro" : "Camioneta"}</span>
+                  <span className="text-2xl font-bold">{vehicleLabel(v)}</span>
                   <span className="text-right"><span className="num block text-3xl font-bold text-gold">${prices[v]}</span><span className="block text-sm text-white/60">al mes</span></span>
                 </button>
               ))}
@@ -101,7 +101,7 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
           {step === 3 && member && vehicle && (
             <div className="grid gap-4">
               <div className="rounded-3xl border border-gold/40 bg-gold/[.07] p-5 text-center">
-                <p className="text-base text-white/75">{vehicle === "carro" ? "Carro" : "Camioneta"} · {washes} lavadas al mes</p>
+                <p className="text-base text-white/75">{vehicleLabel(vehicle)} · {washes} lavadas al mes</p>
                 <p className="num mt-1 text-4xl font-bold text-gold">${member.amount} <span className="text-lg font-semibold text-white/70">al mes</span></p>
                 <p className="mt-2 text-sm text-white/65">Se cobra solo cada mes. Cancelas cuando quieras.</p>
               </div>

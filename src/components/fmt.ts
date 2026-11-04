@@ -1,6 +1,8 @@
 // Formatos de fecha y hora para el navegador (sin node:crypto, a diferencia de booking-core).
 export type Kind = "completo" | "exterior";
-export type Vehicle = "carro" | "camioneta";
+export type Vehicle = "carro" | "camioneta" | "suv";
+export const VEHICLES: Vehicle[] = ["carro", "camioneta", "suv"];
+export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : v === "suv" ? "SUV o pick up" : "");
 export type DayHours = { open: number; close: number } | null;
 
 export const KIND: Record<Kind, { title: string; sub: string; min: number }> = {

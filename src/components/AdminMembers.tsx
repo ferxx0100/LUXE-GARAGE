@@ -1,7 +1,8 @@
 "use client";
+import { vehicleLabel } from "./fmt";
 import { useCallback, useEffect, useState } from "react";
 
-type Row = { id: string; code: string; name: string; phone: string; vehicle: "carro" | "camioneta"; status: string; valid: boolean; periodEnd: string | null; perPeriod: number; used: number;
+type Row = { id: string; code: string; name: string; phone: string; vehicle: "carro" | "camioneta" | "suv"; status: string; valid: boolean; periodEnd: string | null; perPeriod: number; used: number;
   payments: { n: number; at: string; amount: number }[]; history: { date: string; time: string; status: string; doneBy: string | null }[] };
 const day = (d: string) => `${Number(d.slice(8))} ${MONTH[Number(d.slice(5, 7)) - 1]}`;
 const MONTH = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -51,7 +52,7 @@ export default function AdminMembers({ onUnauthorized }: { onUnauthorized: () =>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-lg font-bold">{m.name}</p>
-                  <p className="num text-sm text-white/65">{m.phone} · {m.code} · {m.vehicle === "carro" ? "Carro" : "Camioneta"}</p>
+                  <p className="num text-sm text-white/65">{m.phone} · {m.code} · {vehicleLabel(m.vehicle)}</p>
                 </div>
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${m.valid ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-200"}`}>{m.valid ? `Hasta ${m.periodEnd ? until(m.periodEnd) : ""}` : m.status === "pending" ? "Sin cobro" : "Vencido"}</span>
               </div>

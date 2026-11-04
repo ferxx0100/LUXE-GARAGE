@@ -24,7 +24,7 @@ export const BookingInput = z
   .object({
     date: DateStr,
     time: TimeStr,
-    vehicle: z.enum(["carro", "camioneta"]),
+    vehicle: z.enum(["carro", "camioneta", "suv"]),
     kind: z.enum(["completo", "exterior"]),
     place: z.enum(["garage", "domicilio"]),
     address: z.string().trim().max(200).default(""),

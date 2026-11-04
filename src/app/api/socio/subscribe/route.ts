@@ -33,6 +33,6 @@ export async function POST(req: Request) {
     return json({ status: member.status }, 200, { "Set-Cookie": memberCookie(member) });
   } catch (e) {
     console.error("suscripción falló:", mpReason(e));
-    return json({ error: "No pudimos procesar el pago. No se hizo ningún cargo; intenta de nuevo." }, 502);
+    return json({ error: "No pudimos completar el pago. Revisa tu cuenta en unos minutos antes de intentar otra vez." }, 502);
   }
 }

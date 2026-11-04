@@ -109,7 +109,7 @@ test("Mercado Pago: preferencia con monto del servidor y decisión solo con lo q
   assert.equal(p.notification_url, "https://luxegaragee.com/api/mp/webhook");
   assert.equal(p.binary_mode, true);
   assert.equal(p.expiration_date_to, "2026-11-03T18:15:00.000+00:00");
-  assert.deepEqual(p.payment_methods.excluded_payment_types.map((x) => x.id), ["ticket", "atm"]);
+  assert.deepEqual(p.payment_methods.excluded_payment_types.map((x) => x.id), ["ticket", "atm", "bank_transfer"]);
   assert.equal(p.back_urls.failure, p.back_urls.success);
 
   const t = { id: "abcdefghijklmnopqrstuv", amount: 180 };

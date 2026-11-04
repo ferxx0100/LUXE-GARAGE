@@ -34,6 +34,7 @@ export async function checkoutLink(id: string, origin: string): Promise<Out> {
     id, code: t.code, amount: t.amount, title: t.title, expiresAt,
     returnUrl: `${site}/reserva/${id}`,
   });
-  await redis("SET", key, pref.init_point, "EX", left);
+  if (!pref.init_point?.startsWith("https://")) throw new Error("Mercado Pago no regresó el link de pago");
+  await redis("SET", key, pref.init_point, "EX", left).catch(() => {});
   return { ok: true, url: pref.init_point };
 }

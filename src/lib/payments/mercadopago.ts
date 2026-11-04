@@ -6,9 +6,14 @@ import { checkoutPreference } from "../booking-core";
 import { SITE_URL } from "../config";
 
 const BASE = process.env.MP_API_BASE ?? "https://api.mercadopago.com"; // MP_API_BASE: solo para pruebas locales
-// La llave se limpia de espacios y saltos de línea (es fácil que se cuelen al pegarla en Vercel).
-const token = () => (process.env.MP_ACCESS_TOKEN ?? "").replace(/\s+/g, "");
+// La llave se limpia de espacios, saltos de línea y caracteres invisibles (es fácil que se cuelen al pegarla
+// en Vercel) y debe tener el formato de Mercado Pago. Si no, ni se envía: el log lo dice sin mostrarla.
+const token = () => {
+  const t = (process.env.MP_ACCESS_TOKEN ?? "").replace(/[^\x21-\x7e]/g, "");
+  return /^(APP_USR|TEST)-[A-Za-z0-9-]+$/.test(t) ? t : "";
+};
 export const mpConfigured = () => token().length > 0;
+if (process.env.MP_ACCESS_TOKEN && !token()) console.error("MP_ACCESS_TOKEN con formato inválido: vuelve a copiarla de Mercado Pago (una sola línea).");
 
 export class MpError extends Error { name = "MpError"; constructor(public status: number, msg: string) { super(msg); } }
 export { mpReason } from "../logsafe";

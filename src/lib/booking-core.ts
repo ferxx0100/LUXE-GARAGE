@@ -328,7 +328,7 @@ export function checkoutPreference(o: { id: string; code: string; amount: number
     binary_mode: true,
     expires: true,
     expiration_date_to: o.expiresAt.toISOString().replace("Z", "+00:00"),
-    payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }], installments: 1 },
+    payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }, { id: "bank_transfer" }], installments: 1 },
     statement_descriptor: "LUXE GARAGE",
     metadata: { code: o.code },
   };

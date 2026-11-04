@@ -125,7 +125,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
               </div>
               <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
               <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-              <p className="text-center text-xs text-white/50">Lavado por dentro y por fuera, 30 min. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
+              <p className="text-center text-xs text-white/50">Exterior y aspirado de interior · 30 min. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
             </div>
           )}
 

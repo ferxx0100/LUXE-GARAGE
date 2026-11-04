@@ -8,7 +8,7 @@ import { addDays, DAY, MONTH, toMin, wd, type DayHours, type Vehicle } from "./f
 
 type Wash = { id: string; date: string; time: string; duration: number; past: boolean; canChange: boolean };
 type Me = {
-  member: { code: string; name: string; vehicle: Vehicle; status: "pending" | "active" | "cancelled" | "expired"; valid: boolean; periodStart: string | null; periodEnd: string | null; perPeriod: number; price: number };
+  member: { code: string; name: string; vehicle: Vehicle; status: "pending" | "active" | "cancelled" | "expired"; valid: boolean; processing?: boolean; periodStart: string | null; periodEnd: string | null; perPeriod: number; price: number };
   used: number; washes: Wash[];
 };
 type Seal = { status: string; seal: string; secondsLeft: number };
@@ -45,6 +45,9 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
     if (s.ok) setSeal(await s.json());
   }, []);
   useEffect(() => { load(); }, [load]);
+  // Mientras Mercado Pago confirma el primer cobro, la cuenta se revisa sola cada 25 s.
+  const waiting = !!me && me !== "out" && me.member.status === "pending";
+  useEffect(() => { if (!waiting) return; const t = setInterval(load, 25000); return () => clearInterval(t); }, [waiting, load]);
 
   // Si viene del letrero ("Apartar 4:30–5:00"), ya trae el turno elegido.
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
   }
 
   // Siempre claro: activa (hasta cuándo), falta pagar o vencida. Nunca "cancelado" sin explicar.
-  const statusLine = m.status === "pending" ? { c: "text-gold", t: "Falta tu primer pago" }
+  const statusLine = m.status === "pending" ? { c: "text-gold", t: m.processing ? "Procesando tu primer cobro (puede tardar hasta 1 hora)" : "Falta tu primer pago" }
     : m.valid ? { c: "text-go", t: `Activa hasta el ${lastDay ? longDay(lastDay) : ""}${m.status === "cancelled" ? " · no se renueva" : ""}` }
     : { c: "text-stop", t: "Vencida · renueva para apartar" };
 
@@ -182,7 +185,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
         </section>
       )}
 
-      {!m.valid && (
+      {!m.valid && !m.processing && (
         <JoinRenew prices={prices} vehicle={m.vehicle} mpPublicKey={mpPublicKey} pending={m.status === "pending"} />
       )}
 

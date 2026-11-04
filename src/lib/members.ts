@@ -163,6 +163,13 @@ export async function subscribe(m: Member, cardToken: string, email: string): Pr
   if (memberValid(m, (await todayCtx()).now.date) && m.status === "active") return { ok: true, value: m };
   const s = await getSettings();
   const amount = s.socio[m.vehicle]; // el precio de hoy, del servidor
+  if (m.preapprovalId) {
+    const prev = await getPreapproval(m.preapprovalId).catch(() => null);
+    if (prev && (prev.status === "authorized" || prev.status === "pending")) {
+      if (m.status === "pending" || memberValid(m, (await todayCtx()).now.date)) return { ok: true, value: await applyPreapproval(m, prev) };
+    }
+    if (prev && prev.status !== "cancelled") await cancelPreapproval(m.preapprovalId).catch(() => {});
+  }
   const pre = await createSubscription({ memberId: m.id, email, amount, cardToken, reason: `LUXE GARAGE · Socio ${m.vehicle === "carro" ? "carro" : "camioneta"} · ${s.membershipWashes} lavadas al mes` });
   // Suscripción nueva (alta o renovación después de vencer): los meses se cuentan desde su primer cobro.
   const fresh = pre.id !== m.preapprovalId ? { anchor: undefined, charges: 0, periodStart: undefined, periodEnd: undefined } : {};
@@ -289,6 +296,7 @@ export async function recordVisit(m: Member, by: string): Promise<Result<{ booki
   if ((await redis("SET", lock, "1", "NX", "EX", 15)) !== "OK") return fail(409, "Espera un momento e intenta de nuevo.");
   try {
     const c = await todayCtx();
+    if (!memberValid(m, c.now.date)) m = await syncMember(m, true);
     if (!memberValid(m, c.now.date)) return fail(409, m.status === "pending" ? "Este socio no ha pagado: no tiene lavadas." : "Membresía vencida: no tiene lavadas.");
     const list = await memberWashes(m);
     const now = new Date().toISOString();
@@ -346,5 +354,7 @@ export function publicMember(m: Member, today: string) {
   return {
     code: m.code, name: m.name, vehicle: m.vehicle, status: m.status, valid: memberValid(m, today),
     periodStart: m.periodStart ?? null, periodEnd: m.periodEnd ?? null, perPeriod: m.perPeriod, price: m.price,
+    /** Ya dio su tarjeta y Mercado Pago está procesando el primer cobro (puede tardar hasta 1 hora). */
+    processing: m.status === "pending" && !!m.preapprovalId,
   };
 }

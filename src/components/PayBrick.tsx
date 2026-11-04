@@ -9,7 +9,12 @@ declare global {
 function report(where: string, err: unknown) {
   const e = err as { type?: string; message?: string; cause?: unknown } | undefined;
   const msg = [e?.type, e?.message, typeof e?.cause === "string" ? e.cause : e?.cause ? JSON.stringify(e.cause).slice(0, 120) : ""].filter(Boolean).join(" · ") || String(err);
-  try { navigator.sendBeacon?.("/api/log", new Blob([JSON.stringify({ where, msg })], { type: "application/json" })); } catch { /* nada */ }
+  const body = JSON.stringify({ where, msg });
+  try {
+    if (!navigator.sendBeacon?.("/api/log", new Blob([body], { type: "application/json" }))) throw new Error("beacon");
+  } catch {
+    fetch("/api/log", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {});
+  }
 }
 
 function loadMp(): Promise<void> {
@@ -50,18 +55,22 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
   useEffect(() => { errRef.current = onError; }, [onError]);
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false, settled = false;
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
     (async () => {
       try {
         await loadMp();
-        if (cancelled || !window.MercadoPago) return;
+        if (cancelled) { report("cerrado", "antes de crear el formulario"); return; }
+        if (!window.MercadoPago) { report("carga", "SDK sin MercadoPago"); return; }
+        report("inicio", "creando formulario");
+        watchdog = setTimeout(() => { if (!settled) report("sin-respuesta", "20 s sin listo ni error"); }, 20000);
         const mp = new window.MercadoPago(publicKey, { locale: "es-MX" });
         const b = await mp.bricks().create("cardPayment", id, {
           initialization: { amount },
           customization: { visual: { style: { theme: "dark", customVariables: { baseColor: accent } } }, paymentMethods: { maxInstallments: 1 } },
           callbacks: {
-            onReady: () => report("listo", "formulario visible"),
-            onError: (err: unknown) => { report("brick", err); errRef.current("Hubo un problema con el formulario de pago. Recarga la página."); },
+            onReady: () => { settled = true; report("listo", "formulario visible"); },
+            onError: (err: unknown) => { settled = true; report("brick", err); errRef.current("Hubo un problema con el formulario de pago. Recarga la página."); },
             onSubmit: (form: unknown) => new Promise<void>((resolve, reject) => {
               errRef.current("");
               fetch(payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(wrap ? wrap(form) : form) })
@@ -70,14 +79,14 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
                   if (okStatuses.includes(d.status)) { resolve(); window.location.href = doneUrl; }
                   else { errRef.current(d.error ?? "Pago rechazado. Revisa los datos de tu tarjeta."); reject(); }
                 })
-                .catch(() => { errRef.current("Sin conexión. No se hizo ningún cargo."); reject(); });
+                .catch(() => { errRef.current("Sin conexión. Revisa tu cuenta antes de intentar otra vez."); reject(); });
             }),
           },
         });
         if (cancelled) b.unmount(); else brickRef.current = b;
       } catch (err) { report("carga", err); errRef.current("No se pudo cargar el pago. Revisa tu conexión y recarga."); }
     })();
-    return () => { cancelled = true; brickRef.current?.unmount(); brickRef.current = null; };
+    return () => { cancelled = true; if (watchdog) clearTimeout(watchdog); brickRef.current?.unmount(); brickRef.current = null; };
   }, [publicKey, amount, payUrl, doneUrl, accent, id]);
 
   return (

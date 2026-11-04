@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const Body = z.object({
   mode: z.enum(["auto", "open", "closed"]).optional(),
   busy: z.boolean().optional(),
-  minutes: z.union([z.literal(20), z.literal(30)]).optional(),
+  minutes: z.union([z.literal(20), z.literal(30), z.literal(50), z.literal(60), z.literal(100)]).optional(),
 }).refine((b) => b.mode !== undefined || b.busy !== undefined);
 
 export async function POST(req: Request) {

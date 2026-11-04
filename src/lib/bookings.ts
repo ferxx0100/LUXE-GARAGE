@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import {
   addDays, blocksFromCells, candidateStarts, CELL, cellsFor, dayWindow, fits, fromMin, inRange, isTimeStr, localNow, nextFree,
-  priceFor, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, shortCode, spotLabel, toMin,
+  priceFor, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, shortCode, spotLabel, toMin, washMin,
   type Block, type Kind, type Now, type Place, type Spot, type Vehicle,
 } from "./booking-core";
 import { serverKey } from "./auth";
@@ -90,9 +90,9 @@ const bookableDay = (c: Ctx, date: string) => inRange(date, c.now.date) && !(dat
 const busyFor = (c: Ctx, date: string) => (date === c.now.date ? c.busyMin : null);
 
 /** Disponibilidad pública: solo horas libres, nunca quién reservó. */
-export async function availability(date: string, kind: Kind) {
+export async function availability(date: string, kind: Kind, vehicle?: Vehicle) {
   const c = await todayCtx();
-  const duration = SERVICE_MIN[kind];
+  const duration = vehicle ? washMin(vehicle) : SERVICE_MIN[kind];
   const w = dayWindow(c.s.hours, date);
   if (!w || !bookableDay(c, date)) return { date, kind, duration, starts: [] as string[], next: null as string | null };
   const blocks = await dayBlocks(date, w);
@@ -109,11 +109,12 @@ export async function nextSpots(c: Ctx): Promise<PublicGarage["next"]> {
     const date = addDays(c.now.date, i), w = dayWindow(c.s.hours, date);
     if (!w || !bookableDay(c, date)) continue;
     const busy = busyFor(c, date);
-    if (kinds.every((k) => nextFree(c.s.hours, date, SERVICE_MIN[k], [], c.now, busy) == null)) continue; // ya no cabe nada hoy: sin leer
+    const durOf = (k: Kind) => (k === "completo" ? washMin("carro") : SERVICE_MIN[k]);
+    if (kinds.every((k) => nextFree(c.s.hours, date, durOf(k), [], c.now, busy) == null)) continue; // ya no cabe nada hoy: sin leer
     const blocks = await dayBlocks(date, w);
     for (const k of kinds) {
       if (out[k]) continue;
-      const m = nextFree(c.s.hours, date, SERVICE_MIN[k], blocks, c.now, busy);
+      const m = nextFree(c.s.hours, date, durOf(k), blocks, c.now, busy);
       if (m == null) continue;
       const time = fromMin(m);
       out[k] = { date, time, inMinutes: i * 1440 + m - c.now.minutes, label: spotLabel(date, time, c.now) } satisfies Spot;
@@ -146,7 +147,7 @@ export function startAllowed(c: Ctx, date: string, time: string, duration: numbe
 /** Aparta las celdas (atómico: todas o ninguna) y crea la reserva sin pagar. */
 export async function createHold(input: z.infer<typeof BookingInput>): Promise<Result<Booking>> {
   const c = await todayCtx();
-  const duration = SERVICE_MIN[input.kind];
+  const duration = washMin(input.vehicle);
   if (!startAllowed(c, input.date, input.time, duration)) return { ok: false, status: 409, error: "Esa hora ya no está disponible. Elige otra." };
   const id = randomBytes(16).toString("base64url");
   if (!(await reserveCells(cellsFor(input.date, toMin(input.time), duration), id, HOLD_SEC))) {

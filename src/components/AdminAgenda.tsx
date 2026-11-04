@@ -43,7 +43,7 @@ const MEMBER = "bg-gold/15 text-gold-hi border-gold/50";
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onFosa }: {
   onUnauthorized: () => void; onMsg: (m: string) => void; pub: Pub | null; busyUntil?: string | null;
-  onFosa: (busy: boolean, minutes?: 20 | 30) => Promise<void> | void;
+  onFosa: (busy: boolean, minutes?: number) => Promise<void> | void;
 }) {
   const [today, setToday] = useState(mxToday);
   const [day, setDay] = useState(today);
@@ -206,7 +206,7 @@ function Act({ onClick, icon, t, c }: { onClick: () => void; icon: string; t: st
 
 /** Barra del semáforo: Libre → dos botones de Ocupado (30 / 20 min); Ocupado → hora estimada + "Ya está libre". */
 export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
-  pub: Pub | null; busyUntil: string | null; disabled?: boolean; onFosa: (busy: boolean, minutes?: 20 | 30) => Promise<void> | void;
+  pub: Pub | null; busyUntil: string | null; disabled?: boolean; onFosa: (busy: boolean, minutes?: number) => Promise<void> | void;
 }) {
   const tone = pub === "LIBRE" ? "border-emerald-400/50 bg-emerald-500/10" : pub === "OCUPADO" ? "border-red-400/50 bg-red-500/10" : "border-gold/40 bg-gold/[.07]";
   const dot = pub === "LIBRE" ? "bg-emerald-400 text-emerald-400" : pub === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-gold text-gold";
@@ -224,7 +224,7 @@ export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
       </div>
       {pub === "LIBRE" && (
         <div className="mt-3 grid gap-2.5">
-          {([[30, "Marcar ocupado", "30 min"]] as const).map(([m, t, d]) => (
+          {([[50, "Carro", "50 min"], [60, "Camioneta", "1 h"], [100, "SUV / pick up", "1:40"]] as const).map(([m, t, d]) => (
             <button key={m} disabled={disabled} onClick={() => onFosa(true, m)}
               className="flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-red-500 px-4 py-3 text-left text-white shadow-[0_8px_24px_-10px_rgba(239,68,68,.9)] transition active:scale-[.98] disabled:opacity-50">
               <span><span className="block text-xs font-bold tracking-[.2em] opacity-80">OCUPADO</span><span className="block text-lg font-bold leading-tight">{t}</span></span>

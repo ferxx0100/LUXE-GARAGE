@@ -1,14 +1,14 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import TimeGrid from "./TimeGrid";
-import { addDays, DAY, MONTH, mxNow, wd, type DayHours } from "./fmt";
+import { addDays, DAY, MONTH, mxNow, wd, type DayHours, type Vehicle } from "./fmt";
 
 /**
  * Un solo calendario para todos (socios y lavada suelta): días en fila y turnos de 30 min.
  * `until` (exclusivo) limita los días al mes pagado del socio.
  */
-export default function SlotPicker({ hours, until, onPick, initialDate }: {
-  hours: DayHours[]; until?: string | null; onPick: (date: string, time: string) => void; initialDate?: string | null;
+export default function SlotPicker({ hours, until, onPick, initialDate, vehicle = "carro" }: {
+  hours: DayHours[]; until?: string | null; onPick: (date: string, time: string) => void; initialDate?: string | null; vehicle?: Vehicle;
 }) {
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => setToday(mxNow().date), []);
@@ -30,12 +30,12 @@ export default function SlotPicker({ hours, until, onPick, initialDate }: {
     if (!date) return;
     let alive = true;
     setStarts(null);
-    fetch(`/api/booking/availability?date=${date}&kind=completo`, { cache: "no-store" })
+    fetch(`/api/booking/availability?date=${date}&kind=completo&vehicle=${vehicle}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => alive && setStarts(Array.isArray(d.starts) ? d.starts : []))
       .catch(() => alive && setStarts([]));
     return () => { alive = false; };
-  }, [date]);
+  }, [date, vehicle]);
 
   if (!today) return <p className="py-6 text-center text-white/60">Cargando…</p>;
   if (!days.length) return <p className="py-6 text-center text-white/70">No hay días disponibles.</p>;

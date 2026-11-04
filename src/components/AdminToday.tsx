@@ -32,7 +32,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
   }, [onUnauthorized]);
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, [load]);
 
-  async function setGarage(patch: { mode?: Garage["mode"]; busy?: boolean; minutes?: 20 | 30 }) {
+  async function setGarage(patch: { mode?: Garage["mode"]; busy?: boolean; minutes?: number }) {
     setBusy(true);
     const r = await fetch("/api/admin/garage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
     setBusy(false);
@@ -66,7 +66,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
         <p className="mt-5 text-xs font-semibold uppercase tracking-[.22em] text-white/55">Lugar de lavado</p>
         <div className="mt-2">
           <FosaBar pub={pub ?? "CERRADO"} busyUntil={g?.busyUntil ?? null} disabled={busy}
-            onFosa={(busyNow, minutes) => setGarage(busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false })} />
+            onFosa={(busyNow, minutes) => setGarage(busyNow ? { busy: true, minutes: minutes ?? 50 } : { busy: false })} />
         </div>
       </section>
 

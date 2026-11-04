@@ -23,7 +23,6 @@ const WORD: Record<Status, { t: string; c: string }> = {
 const pad = (n: number) => String(n).padStart(2, "0");
 /** "16:00" → "4:00" (sin am/pm: el contexto ya lo dice). */
 const hm = (t: string) => { const m = toMin(t); return `${Math.floor(m / 60) % 12 || 12}:${pad(m % 60)}`; };
-const plus30 = (t: string) => { const m = toMin(t) + 30; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
 
 /**
  * Lo primero que se ve: ¿puedo ir ahorita? ROJO o VERDE, con rangos de hora claros ("Ocupado 4:00–4:30")
@@ -95,7 +94,7 @@ export default function LiveGarage({ mapsUrl }: { mapsUrl: string }) {
             <div className="mt-4 grid gap-2.5">
               <button type="button" disabled={!spot} onClick={() => spot && openReserve({ date: spot.date, time: spot.time })}
                 className="btn-gold min-h-16 w-full text-lg disabled:opacity-50">
-                <span className="whitespace-nowrap">{spot ? (soon ? <>Apartar ahora · <span className="num">{hm(spot.time)}–{hm(plus30(spot.time))}</span></> : <>Apartar {spotDay}<span className="num">{hm(spot.time)}–{hm(plus30(spot.time))}</span></>) : "Buscando turno…"}</span>
+                <span className="whitespace-nowrap">{spot ? (soon ? <>Apartar ahora · <span className="num">{hm(spot.time)}</span></> : <>Apartar {spotDay}<span className="num">{hm(spot.time)}</span></>) : "Buscando turno…"}</span>
               </button>
               <button type="button" onClick={() => openReserve()} className="min-h-14 w-full rounded-full border-2 border-black/80 text-lg font-bold active:scale-[.98]">Otro día u hora</button>
             </div>

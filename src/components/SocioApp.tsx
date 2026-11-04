@@ -4,7 +4,7 @@ import ReceiptSeal from "@/app/reserva/[id]/ReceiptSeal";
 import JoinFlow from "./JoinFlow";
 import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
-import { addDays, DAY, MONTH, toMin, wd, vehicleLabel, type DayHours, type Vehicle } from "./fmt";
+import { addDays, DAY, MONTH, toMin, wd, vehicleLabel, WASH_MIN, type DayHours, type Vehicle } from "./fmt";
 
 type Wash = { id: string; date: string; time: string; duration: number; past: boolean; canChange: boolean };
 type Me = {
@@ -150,7 +150,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
             <div className="rounded-3xl border border-gold/40 bg-white/[.04] p-5 text-center">
               <p className="text-sm text-white/60">Apartar</p>
               <p className="text-2xl font-bold">{longDay(pick.date)}</p>
-              <p className="num text-3xl font-bold text-gold">{range(pick.time, 30)}</p>
+              <p className="num text-3xl font-bold text-gold">{range(pick.time, WASH_MIN[m.vehicle])}</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => { setPick(null); setPicking(true); }} className="btn-line min-h-14">Cambiar</button>
                 <button type="button" disabled={busy} onClick={() => book(pick)} className="btn-gold min-h-14 disabled:opacity-50">{busy ? "Apartando…" : "Apartar"}</button>
@@ -159,7 +159,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
           ) : picking ? (
             <div className="rounded-3xl border border-white/10 bg-white/[.03] p-4">
               <div className="mb-3 flex items-center justify-between"><p className="text-lg font-bold">Elige día y hora</p><button type="button" onClick={() => setPicking(false)} className="min-h-11 px-3 text-sm text-white/70">Cerrar</button></div>
-              <SlotPicker hours={hours} until={m.periodEnd} onPick={(date, time) => setPick({ date, time })} />
+              <SlotPicker hours={hours} until={m.periodEnd} vehicle={m.vehicle} onPick={(date, time) => setPick({ date, time })} />
             </div>
           ) : (
             <button type="button" onClick={() => setPicking(true)} className="btn-gold min-h-16 text-lg">Apartar lavada</button>

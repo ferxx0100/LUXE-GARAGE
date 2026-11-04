@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
-import { DAY, MONTH, toMin, wd, VEHICLES, vehicleLabel, type DayHours, type Vehicle } from "./fmt";
+import { DAY, durText, MONTH, toMin, wd, VEHICLES, vehicleLabel, WASH_MIN, type DayHours, type Vehicle } from "./fmt";
 
 export type ReserveDetail = { date?: string; time?: string };
 /** Abre la ventana de apartar desde cualquier botón: window.dispatchEvent(new CustomEvent("lg:reserve", { detail })) */
@@ -11,18 +11,19 @@ export const openReserve = (detail: ReserveDetail = {}) => window.dispatchEvent(
 
 const field = "w-full min-h-16 rounded-2xl border-2 border-white/15 bg-black/30 px-5 text-lg text-white outline-none placeholder:text-white/40 focus:border-gold";
 const pad = (n: number) => String(n).padStart(2, "0");
-const range = (t: string) => { const a = toMin(t), f = (x: number) => `${Math.floor(x / 60) % 12 || 12}:${pad(x % 60)}`; return `${f(a)}–${f(a + 30)}`; };
+const range = (t: string, dur: number) => { const a = toMin(t), f = (x: number) => `${Math.floor(x / 60) % 12 || 12}:${pad(x % 60)}`; return `${f(a)}–${f(a + dur)}`; };
 const dayText = (d: string) => `${DAY[wd(d)]} ${Number(d.slice(8))} de ${MONTH[Number(d.slice(5, 7)) - 1]}`;
 
 /**
- * Apartar un turno, igual para todos: (1) día y hora → (2) "Soy socio" o "Lavada suelta" → (3) pagar (solo la suelta).
+ * Apartar, igual para todos: (1) tamaño (carro 50 min, camioneta 1 h, SUV o pick up 1:40) → (2) día y hora que alcance
+ * → (3) "Soy socio" o "Lavada normal" → (4) pagar en Mercado Pago (solo la lavada normal).
  * Los socios terminan en su cuenta (/socio) con el turno ya elegido.
  */
 export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: DayHours[]; prices: Record<Vehicle, number>; mpPublicKey: string | null }) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
-  const [step, setStep] = useState<"pick" | "who" | "single" | "pay">("pick");
+  const [step, setStep] = useState<"vehicle" | "pick" | "who" | "single" | "pay">("vehicle");
   const [vehicle, setVehicle] = useState<Vehicle>("carro");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,7 +38,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
       const d = (e as CustomEvent<ReserveDetail>).detail ?? {};
       const ok = d.date && d.time && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && /^\d{2}:\d{2}$/.test(d.time);
       setSlot(ok ? { date: d.date!, time: d.time! } : null);
-      setStep(ok ? "who" : "pick"); setError(""); setHold(null); setOpen(true);
+      setStep("vehicle"); setError(""); setHold(null); setOpen(true);
     };
     window.addEventListener("lg:reserve", on);
     return () => window.removeEventListener("lg:reserve", on);
@@ -77,8 +78,21 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
     finally { setBusy(false); }
   }
 
-  const back = step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => setStep("who") : null;
-  const title = step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? "Lavada normal" : "Pagar";
+  // Elegir tamaño: si ya venía una hora (del letrero), se revisa que alcance para ese tamaño.
+  async function chooseVehicle(v: Vehicle) {
+    setVehicle(v); setError("");
+    if (!slot) { setStep("pick"); return; }
+    try {
+      const r = await fetch(`/api/booking/availability?date=${slot.date}&kind=completo&vehicle=${v}`, { cache: "no-store" });
+      const d = await r.json();
+      if (Array.isArray(d.starts) && d.starts.includes(slot.time)) { setStep("who"); return; }
+    } catch { /* si falla, que elija otra hora */ }
+    setError(`A esa hora no alcanza para ${vehicleLabel(v).toLowerCase()} (${durText(WASH_MIN[v])}). Elige otra.`);
+    setSlot(null); setStep("pick");
+  }
+
+  const back = step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => setStep("who") : null;
+  const title = step === "vehicle" ? "¿Qué vas a lavar?" : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? "Lavada normal" : "Pagar";
 
   const sheet = (
     <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
@@ -89,17 +103,30 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
           <button type="button" onClick={() => !busy && setOpen(false)} aria-label="Cerrar" className="grid size-12 place-items-center rounded-full bg-white/10 text-xl">✕</button>
         </header>
 
-        {slot && step !== "pick" && (
+        {slot && step !== "pick" && step !== "vehicle" && (
           <div className="shrink-0 border-b border-white/10 px-5 py-3 text-center">
-            <p className="text-base text-white/70">{dayText(slot.date)}</p>
-            <p className="num text-3xl font-bold text-gold">{range(slot.time)}</p>
+            <p className="text-base text-white/70">{dayText(slot.date)} · {vehicle === "suv" ? "SUV / pick up" : vehicleLabel(vehicle)}</p>
+            <p className="num text-3xl font-bold text-gold">{range(slot.time, WASH_MIN[vehicle])}</p>
           </div>
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
           {error && <p role="alert" className="mb-4 rounded-2xl bg-stop/15 p-4 text-base font-semibold text-red-200">{error}</p>}
 
-          {step === "pick" && <SlotPicker hours={hours} onPick={(date, time) => { setSlot({ date, time }); setStep("who"); setError(""); }} />}
+          {step === "vehicle" && (
+            <div className="grid gap-3" role="radiogroup" aria-label="Vehículo">
+              {VEHICLES.map((v) => (
+                <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => chooseVehicle(v)}
+                  className="flex min-h-20 items-center justify-between rounded-2xl border-2 border-white/15 bg-white/[.04] px-5 text-left transition active:scale-[.98]">
+                  <span><span className="block text-xl font-bold">{vehicleLabel(v)}</span><span className="block text-sm text-white/60">{durText(WASH_MIN[v])}</span></span>
+                  <span className="num text-xl font-bold text-gold">${prices[v]}</span>
+                </button>
+              ))}
+              <p className="text-center text-xs text-white/50">Precio de lavada normal. Si eres socio, no pagas.</p>
+            </div>
+          )}
+
+          {step === "pick" && <SlotPicker hours={hours} vehicle={vehicle} onPick={(date, time) => { setSlot({ date, time }); setStep("who"); setError(""); }} />}
 
           {step === "who" && slot && (
             <div className="grid gap-3">
@@ -107,25 +134,16 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
                 <span className="text-xl font-bold">Soy socio</span><span className="text-sm text-white/70">Usa una de tus lavadas</span>
               </a>
               <button type="button" onClick={() => setStep("single")} className="flex min-h-20 items-center justify-between rounded-3xl border-2 border-white/15 bg-white/[.04] px-6 text-left active:scale-[.98]">
-                <span className="text-xl font-bold">Lavada normal</span><span className="num text-sm text-white/70">Desde ${Math.min(prices.carro, prices.camioneta, prices.suv)}</span>
+                <span className="text-xl font-bold">Lavada normal</span><span className="num text-sm text-white/70">${prices[vehicle]}</span>
               </button>
             </div>
           )}
 
           {step === "single" && (
             <div className="grid gap-3">
-              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Vehículo">
-                {VEHICLES.map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => setVehicle(v)}
-                    className={`min-h-20 rounded-2xl border-2 text-center transition ${vehicle === v ? "border-gold bg-gold text-ink" : "border-white/15 bg-white/[.04]"}`}>
-                    <span className="block text-lg font-bold">{v === "suv" ? "SUV / pick up" : vehicleLabel(v)}</span>
-                    <span className="num block text-xl font-bold">${prices[v]}</span>
-                  </button>
-                ))}
-              </div>
               <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
               <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-              <p className="text-center text-xs text-white/50">Exterior y aspirado de interior · 30 min. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
+              <p className="text-center text-xs text-white/50">Exterior y aspirado de interior · {durText(WASH_MIN[vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
             </div>
           )}
 

@@ -129,6 +129,9 @@ export function spotLabel(date: string, time: string, now: { date: string }): st
 /* ───────── Agenda de UNA sola fosa, en celdas de 10 minutos ───────── */
 /** Duración del servicio en minutos: con interior deja el auto 30 min; solo exterior, 20 min sin bajarse. */
 export const SERVICE_MIN = { completo: 30, exterior: 20 } as const satisfies Record<Kind, number>;
+/** Minutos que tarda la lavada según el tamaño (acordado con el dueño): carro 50, camioneta 1 h, SUV o pick up 1:40. */
+export const WASH_MIN: Record<Vehicle, number> = { carro: 50, camioneta: 60, suv: 100 };
+export const washMin = (v?: Vehicle | null) => WASH_MIN[v ?? "carro"] ?? WASH_MIN.carro;
 export const CELL = 5;         // tamaño de la celda de agenda (min): si está libre, se aparta ~5 min después de ahora
 export const LEAD_MIN = 4;     // hoy: la cita empieza al menos 4 min después de "ahora" (redondeado a 5 → entre 4 y 8 min)
 export const BUSY_BUFFER = 5;  // si está OCUPADO: 5 min de margen después de que se desocupe, para no juntar trabajo
@@ -189,7 +192,7 @@ export function candidateStarts(h: Hours, date: string, dur: number, blocks: Blo
   const w = dayWindow(h, date);
   if (!w) return [];
   const set = new Set<number>();
-  for (let m = w.open; m + dur <= w.close; m += dur) set.add(m);
+  for (let m = w.open; m + dur <= w.close; m += 30) set.add(m);
   for (const b of blocks) set.add(b.end);
   const nx = nextFree(h, date, dur, blocks, now, busyUntilMin);
   if (nx != null) set.add(nx);

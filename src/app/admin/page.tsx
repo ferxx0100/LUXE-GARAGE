@@ -167,7 +167,7 @@ export default function Admin() {
       {role === "owner" && tab === "equipo" && <div className="mt-6"><AdminTeam onUnauthorized={() => setAuthed(false)} /></div>}
 
       {role === "owner" && tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} pub={g?.public ?? null} busyUntil={g?.busyUntil ?? null} onFosa={async (busyNow, minutes) => {
-        const r = await api("garage", "POST", busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false });
+        const r = await api("garage", "POST", busyNow ? { busy: true, minutes: minutes ?? 50 } : { busy: false });
         if (r.status === 401) return setAuthed(false);
         if (r.ok) { setData((d) => d && { ...d, garage: r.data }); setMsg("Listo. La página se actualiza en segundos."); }
       }} /></div>}

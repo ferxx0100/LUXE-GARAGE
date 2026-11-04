@@ -34,7 +34,7 @@ test("rejilla: completo cada 30 min, exterior cada 20, sin pasarse del cierre", 
   const c = times(candidateStarts(hours, FRI, SERVICE_MIN.completo, []));
   assert.equal(c[0], "13:00"); assert.equal(c[1], "13:30"); assert.equal(c.at(-1), "17:30"); assert.equal(c.length, 10);
   const e = times(candidateStarts(hours, FRI, SERVICE_MIN.exterior, []));
-  assert.equal(e[1], "13:20"); assert.equal(e.at(-1), "17:40"); assert.equal(e.length, 15);
+  assert.equal(e[1], "13:30"); assert.equal(e.at(-1), "17:30"); assert.equal(e.length, 10); // cada 30 min
   assert.equal(fits(hours, FRI, hm("17:40"), 30, []), false); // terminaría 18:10
   assert.equal(fits(hours, FRI, hm("17:30"), 30, []), true);
   assert.deepEqual(candidateStarts(hours, SUN, 30, []), []);

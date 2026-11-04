@@ -4,7 +4,7 @@
 import { createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import {
-  canChange, CELL, cellsFor, chargedMonths, dayWindow, fits, fromMin, isTimeStr, MEMBER_DUR, memberBookingError, memberCode,
+  canChange, CELL, cellsFor, chargedMonths, dayWindow, fits, fromMin, isTimeStr, memberBookingError, memberCode, washMin,
   memberStatusFrom, memberValid, nipError, normalizePhone, vehicleLabel, periodFromCharges, shortCode, toMin, type MemberStatus, type Vehicle,
 } from "./booking-core";
 import { serverKey } from "./auth";
@@ -287,17 +287,17 @@ export async function bookWash(m: Member, date: string, time: string, walkIn = f
       day = c.now.date;
       start = Math.floor(c.now.minutes / CELL) * CELL;
       if (toPublic(c.g, c.s.hours).status !== "LIBRE") return fail(409, "Ahorita está ocupado. Aparta el siguiente turno.");
-      if (!dayWindow(c.s.hours, day) || !fits(c.s.hours, day, start, MEMBER_DUR, [])) return fail(409, "Ya no alcanza un turno completo hoy. Aparta otro día.");
-    } else if (!isTimeStr(time) || !startAllowed(c, date, time, MEMBER_DUR)) {
+      if (!dayWindow(c.s.hours, day) || !fits(c.s.hours, day, start, washMin(m.vehicle), [])) return fail(409, "Ya no alcanza un turno completo hoy. Aparta otro día.");
+    } else if (!isTimeStr(time) || !startAllowed(c, date, time, washMin(m.vehicle))) {
       return fail(409, "Ese turno ya no está libre. Elige otro.");
     }
     const err = memberBookingError({ ...m, used: usedThisPeriod(m, list) }, day, c.now.date);
     if (err) return fail(409, err);
     const id = randomBytes(16).toString("base64url");
-    if (!(await claimCells(cellsFor(day, start, MEMBER_DUR), id))) return fail(409, "Alguien acaba de apartar ese turno. Elige otro.");
+    if (!(await claimCells(cellsFor(day, start, washMin(m.vehicle)), id))) return fail(409, "Alguien acaba de apartar ese turno. Elige otro.");
     const now = new Date().toISOString();
     const b: Booking = {
-      id, code: shortCode(id), status: "confirmed", date: day, time: fromMin(start), duration: MEMBER_DUR,
+      id, code: shortCode(id), status: "confirmed", date: day, time: fromMin(start), duration: washMin(m.vehicle),
       kind: "completo", place: "garage", address: "", vehicle: m.vehicle, name: m.name, phone: m.phone, email: m.email,
       plate: "", notes: walkIn ? "Llegó sin reservar" : "", amount: 0, owner: id,
       membershipId: m.id, membershipCode: m.code, paymentStatus: "socio", createdAt: now, updatedAt: now,
@@ -335,7 +335,7 @@ export async function recordVisit(m: Member, by: string): Promise<Result<{ booki
       const id = randomBytes(16).toString("base64url");
       const start = Math.floor(c.now.minutes / CELL) * CELL;
       b = {
-        id, code: shortCode(id), status: "done", date: c.now.date, time: fromMin(start), duration: MEMBER_DUR,
+        id, code: shortCode(id), status: "done", date: c.now.date, time: fromMin(start), duration: washMin(m.vehicle),
         kind: "completo", place: "garage", address: "", vehicle: m.vehicle, name: m.name, phone: m.phone, email: m.email,
         plate: "", notes: "Registrada en el lugar", amount: 0, owner: id,
         membershipId: m.id, membershipCode: m.code, paymentStatus: "socio", doneBy: by, doneAt: now, createdAt: now, updatedAt: now,

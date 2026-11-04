@@ -1,4 +1,4 @@
-import { guard, deny, roleOf } from "@/lib/auth";
+import { guardActor, deny } from "@/lib/auth";
 import { localNow, maskName } from "@/lib/booking-core";
 import { liveSeal, listBookings } from "@/lib/bookings";
 import { busyUntilText, getGarage, openState, toPublic } from "@/lib/garage-state";
@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 // "Hoy": quién viene hoy, para el empleado y el dueño. Sin teléfonos, correos, precios ni direcciones.
 // El sello vivo es el mismo que muestra el celular del cliente (socio: su tarjeta; lavada suelta: su recibo).
 export async function GET(req: Request) {
-  const blocked = guard(req, false, "staff");
-  if (blocked) return blocked;
+  const ga = await guardActor(req, false, "staff");
+  if ("blocked" in ga) return ga.blocked;
   try {
     const today = localNow().date;
     const [s, g, list] = await Promise.all([getSettings(), getGarage(), listBookings([today])]);
@@ -20,11 +20,12 @@ export async function GET(req: Request) {
       .sort((a, b) => a.time.localeCompare(b.time))
       .map((b) => ({
         id: b.id, time: b.time, duration: b.duration ?? 30, name: maskName(b.name),
-        socio: !!b.membershipId, vehicle: b.vehicle ?? null, status: b.status,
+        socio: !!b.membershipId, vehicle: b.vehicle ?? null, status: b.status, doneBy: b.doneBy ?? null,
+        member: b.membershipCode ?? null,
         ...liveSeal(b.membershipId ?? b.id),
       }));
     return json({
-      role: roleOf(req),
+      role: ga.actor.role, name: ga.actor.name,
       garage: { ...g, public: toPublic(g, s.hours).status, reason: openState(g, s.hours).reason, busyUntil: busyUntilText(g) },
       items,
     });

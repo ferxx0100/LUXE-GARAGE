@@ -9,6 +9,9 @@ const BASE = process.env.MP_API_BASE ?? "https://api.mercadopago.com"; // MP_API
 export const mpConfigured = () => !!process.env.MP_ACCESS_TOKEN;
 
 export class MpError extends Error { constructor(public status: number, msg: string) { super(msg); } }
+/** Mensaje de Mercado Pago para los logs, sin correos ni números largos (regla B11). */
+export const mpReason = (e: unknown) => (e instanceof MpError ? `MP ${e.status}: ${e.message}` : String((e as Error)?.message ?? e))
+  .replace(/[\w.+-]+@[\w.-]+/g, "<correo>").replace(/\d{6,}/g, "<n>").slice(0, 200);
 
 async function mp<T>(path: string, init: RequestInit & { idempotency?: string } = {}): Promise<T> {
   const r = await fetch(BASE + path, {

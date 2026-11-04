@@ -1,4 +1,5 @@
-import { deny, guard } from "@/lib/auth";
+import { deny, guardActor } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { busyUntilText, openState, patchGarage, toPublic } from "@/lib/garage-state";
 import { getSettings } from "@/lib/settings";
 import { z } from "zod";
@@ -11,12 +12,14 @@ const Body = z.object({
 }).refine((b) => b.mode !== undefined || b.busy !== undefined);
 
 export async function POST(req: Request) {
-  const blocked = guard(req, true, "staff"); // el empleado también abre/cierra y marca libre/ocupado
-  if (blocked) return blocked;
+  const g = await guardActor(req, true, "staff"); // el empleado también abre/cierra y marca libre/ocupado
+  if ("blocked" in g) return g.blocked;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return deny.bad();
   try {
     const rec = await patchGarage(parsed.data);
+    const d = parsed.data;
+    await audit(g.actor.name, d.mode ? { auto: "Negocio: automático", open: "Abrió hoy", closed: "Cerró hoy" }[d.mode] : d.busy ? "Marcó OCUPADO" : "Marcó LIBRE");
     const s = await getSettings();
     return Response.json(
       { ...rec, public: toPublic(rec, s.hours).status, reason: openState(rec, s.hours).reason, busyUntil: busyUntilText(rec) },

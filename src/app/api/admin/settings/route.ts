@@ -1,4 +1,5 @@
-import { deny, guard } from "@/lib/auth";
+import { deny, guard, guardActor } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { busyUntilText, getGarage, openState, toPublic } from "@/lib/garage-state";
 import { getSettings, saveSettings, Settings } from "@/lib/settings";
 import { storeKind } from "@/lib/store";
@@ -19,12 +20,24 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const blocked = guard(req, true);
-  if (blocked) return blocked;
+  const g = await guardActor(req, true);
+  if ("blocked" in g) return g.blocked;
   const parsed = Settings.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return deny.bad(parsed.error.issues[0]?.message ?? "Datos inválidos");
   try {
+    const before = await getSettings();
     await saveSettings(parsed.data);
+    const d = parsed.data;
+    const money = (label: string, x: number, y: number) => (x !== y ? `${label} $${x}→$${y}` : "");
+    const changes = [
+      money("suscripción carro", before.socio.carro, d.socio.carro),
+      money("suscripción camioneta", before.socio.camioneta, d.socio.camioneta),
+      money("individual carro", before.single.carro, d.single.carro),
+      money("individual camioneta", before.single.camioneta, d.single.camioneta),
+      before.memberCap !== d.memberCap ? `tope ${before.memberCap}→${d.memberCap}` : "",
+      JSON.stringify(before.hours) !== JSON.stringify(d.hours) ? "horario" : "",
+    ].filter(Boolean).join(" · ");
+    await audit(g.actor.name, "Cambió ajustes", changes || "sin cambios de precio");
   } catch {
     return deny.down();
   }

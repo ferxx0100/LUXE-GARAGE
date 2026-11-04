@@ -47,6 +47,8 @@ export interface Booking {
   amount: number; paymentId?: string; paymentStatus?: string; paidAt?: string;
   /** Dueño de las celdas de agenda: el propio id, o el de la membresía. */
   owner?: string; membershipId?: string; membershipCode?: string;
+  /** Sello de lavada hecha: quién la selló (Dueño o nombre del empleado) y cuándo. */
+  doneBy?: string; doneAt?: string;
   createdAt: string; updatedAt: string;
 }
 
@@ -221,6 +223,13 @@ export function liveSeal(ownerId: string, ms = Date.now()) {
 export async function listBookings(dates: string[]): Promise<Booking[]> {
   const ids = (await Promise.all(dates.map((d) => redis<string[]>("ZRANGE", dayKey(d), 0, -1)))).flat();
   return getBookings(ids);
+}
+
+/** Guarda una reserva ya existente (sin cambiar sus índices). */
+export async function kvSave(b: Booking): Promise<Booking> {
+  const next = { ...b, updatedAt: new Date().toISOString() };
+  await kvSet(bk(b.id), next);
+  return next;
 }
 
 export async function adminAction(id: string, action: "done" | "cancel" | "confirm"): Promise<Booking | null> {

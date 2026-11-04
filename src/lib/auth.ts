@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { getStaff } from "./staff";
 import { kvIncr, redis } from "./store";
 
 const COOKIE = "lg_admin";
@@ -59,21 +60,33 @@ export function checkPassword(raw: string): Role | null {
 
 const cookieAttrs = "Path=/api/admin; HttpOnly; Secure; SameSite=Strict";
 
-export function sessionCookie(role: Role): string {
+/** who: "owner", "env" (STAFF_PASSWORD) o el id del empleado (su PIN). */
+export function sessionCookie(role: Role, who: string = role === "owner" ? "owner" : "env"): string {
   const s = secret()!;
-  const v = `${Math.floor(Date.now() / 1000) + TTL}.${role}`;
+  const v = `${Math.floor(Date.now() / 1000) + TTL}.${role}.${who}`;
   return `${COOKIE}=${v}.${sign(v, s)}; ${cookieAttrs}; Max-Age=${TTL}`;
 }
 export const clearCookie = `${COOKIE}=; ${cookieAttrs}; Max-Age=0`;
 
-/** Rol de la sesión del panel (firma y vigencia), o null. */
-export function roleOf(req: Request): Role | null {
+/** Sesión del panel (firma y vigencia): rol y quién es, o null. */
+export function sessionOf(req: Request): { role: Role; who: string } | null {
   const s = secret();
   if (!s) return null;
   const raw = (req.headers.get("cookie") ?? "").split(/;\s*/).find((c) => c.startsWith(`${COOKIE}=`));
-  const [exp, role, mac] = (raw?.slice(COOKIE.length + 1) ?? "").split(".");
-  if (!exp || !mac || (role !== "owner" && role !== "staff") || Number(exp) < Date.now() / 1000) return null;
-  return timingSafeEqual(sha(mac), sha(sign(`${exp}.${role}`, s))) ? role : null;
+  const [exp, role, who, mac] = (raw?.slice(COOKIE.length + 1) ?? "").split(".");
+  if (!exp || !who || !mac || (role !== "owner" && role !== "staff") || Number(exp) < Date.now() / 1000) return null;
+  return timingSafeEqual(sha(mac), sha(sign(`${exp}.${role}.${who}`, s))) ? { role, who } : null;
+}
+export const roleOf = (req: Request): Role | null => sessionOf(req)?.role ?? null;
+
+/** Quién hace la acción (para el historial). Un empleado dado de baja ya no cuenta como sesión. */
+export async function actorOf(req: Request): Promise<{ role: Role; who: string; name: string } | null> {
+  const ses = sessionOf(req);
+  if (!ses) return null;
+  if (ses.role === "owner") return { ...ses, name: "Dueño" };
+  if (ses.who === "env") return { ...ses, name: "Empleado" };
+  const st = await getStaff(ses.who);
+  return st?.active ? { ...ses, name: st.name } : null;
 }
 export const isAuthed = (req: Request) => roleOf(req) !== null;
 
@@ -112,4 +125,12 @@ export function guard(req: Request, mutating: boolean, need: Role = "owner"): Re
   if (!role) return deny.auth();
   if (need === "owner" && role !== "owner") return json({ error: "Solo el dueño puede hacer esto" }, 403);
   return null;
+}
+
+/** Igual que guard, pero además revisa que el empleado siga activo y regresa quién es. */
+export async function guardActor(req: Request, mutating: boolean, need: Role = "owner"): Promise<{ blocked: Response } | { actor: { role: Role; who: string; name: string } }> {
+  const b = guard(req, mutating, need);
+  if (b) return { blocked: b };
+  const actor = await actorOf(req).catch(() => null);
+  return actor ? { actor } : { blocked: deny.auth() };
 }

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AdminAgenda from "@/components/AdminAgenda";
 import AdminMembers from "@/components/AdminMembers";
+import AdminTeam from "@/components/AdminTeam";
 import AdminToday from "@/components/AdminToday";
 
 type Money = { carro: number; camioneta: number };
@@ -45,14 +46,15 @@ export default function Admin() {
   const [msg, setMsg] = useState("");
   useEffect(() => { if (!msg || msg === "…") return; const t = setTimeout(() => setMsg(""), 4000); return () => clearTimeout(t); }, [msg]);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<"hoy" | "agenda" | "socios" | "ajustes">("hoy");
+  const [tab, setTab] = useState<"hoy" | "agenda" | "socios" | "equipo" | "ajustes">("hoy");
   const [role, setRole] = useState<Role | null>(null);
+  const [who, setWho] = useState("");
 
   // Primero, quién entró: el empleado solo ve "Hoy"; el dueño, todo.
   const load = useCallback(async () => {
     const w = await api("whoami");
     if (w.status === 401) return setAuthed(false);
-    setRole(w.data.role);
+    setRole(w.data.role); setWho(w.data.name ?? "");
     setAuthed(true);
     if (w.data.role !== "owner") return;
     const r = await api("settings");
@@ -108,8 +110,8 @@ export default function Admin() {
         <form onSubmit={login} className="mt-8 space-y-3">
           <div className="relative">
             <input type={show ? "text" : "password"} autoComplete="current-password" autoCapitalize="none" autoCorrect="off" spellCheck={false}
-              value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña"
-              className={`${input} py-4 pr-14 text-lg`} required aria-label="Contraseña del panel" />
+              value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña o PIN"
+              className={`${input} py-4 pr-14 text-lg`} required aria-label="Contraseña del panel" inputMode="text" />
             <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Ocultar contraseña" : "Ver contraseña"} aria-pressed={show}
               className="absolute right-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-white/70 hover:text-white">
               {show ? (
@@ -136,7 +138,7 @@ export default function Admin() {
         <div className="flex min-w-0 items-center gap-2.5">
           <span className={`size-3 shrink-0 rounded-full shadow-[0_0_12px_currentColor] ${preview === "LIBRE" ? "bg-emerald-400 text-emerald-400" : preview === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-gold text-gold"}`} aria-hidden />
           <h1 className="font-display truncate text-xl font-semibold tracking-wide"><span className="text-gold-grad">LUXE</span> <span className="text-white/80">Panel</span></h1>
-          {role && <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/75">{role === "owner" ? "Dueño" : "Empleado"}</span>}
+          {role && <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/75">{who || (role === "owner" ? "Dueño" : "Empleado")}</span>}
         </div>
         <div className="flex shrink-0 gap-2 whitespace-nowrap text-sm">
           <a href="/" target="_blank" className="grid min-h-11 place-items-center rounded-xl border border-white/15 px-3 active:border-gold">Ver sitio</a>
@@ -151,15 +153,16 @@ export default function Admin() {
         </p>
       )}
 
-      {role === "owner" && <nav className="sticky z-20 -mx-4 mt-4 grid grid-cols-4 gap-1.5 border-b border-white/5 bg-ink/90 px-4 py-2 backdrop-blur-xl sm:-mx-5 sm:px-5" style={{ top: "env(safe-area-inset-top)" }} aria-label="Secciones del panel">
-        {([["hoy", "Hoy"], ["agenda", "Agenda"], ["socios", "Socios"], ["ajustes", "Ajustes"]] as const).map(([k, t]) => (
+      {role === "owner" && <nav className="sticky z-20 -mx-4 mt-4 grid grid-cols-5 gap-1 border-b border-white/5 bg-ink/90 px-4 py-2 backdrop-blur-xl sm:-mx-5 sm:px-5" style={{ top: "env(safe-area-inset-top)" }} aria-label="Secciones del panel">
+        {([["hoy", "Hoy"], ["agenda", "Agenda"], ["socios", "Socios"], ["equipo", "Equipo"], ["ajustes", "Ajustes"]] as const).map(([k, t]) => (
           <button key={k} onClick={() => setTab(k)} aria-pressed={tab === k}
-            className={`min-h-14 rounded-2xl text-base font-bold transition active:scale-[.97] ${tab === k ? "bg-gold text-ink shadow-[0_6px_20px_-8px_rgba(212,175,55,.8)]" : "bg-white/[.05] text-white/80"}`}>{t}</button>
+            className={`min-h-14 rounded-2xl text-[15px] font-bold transition active:scale-[.97] ${tab === k ? "bg-gold text-ink shadow-[0_6px_20px_-8px_rgba(212,175,55,.8)]" : "bg-white/[.05] text-white/80"}`}>{t}</button>
         ))}
       </nav>}
 
       {(role === "staff" || tab === "hoy") && <div className="mt-6"><AdminToday onUnauthorized={() => setAuthed(false)} onMsg={setMsg} /></div>}
       {role === "owner" && tab === "socios" && <div className="mt-6"><AdminMembers onUnauthorized={() => setAuthed(false)} /></div>}
+      {role === "owner" && tab === "equipo" && <div className="mt-6"><AdminTeam onUnauthorized={() => setAuthed(false)} /></div>}
 
       {role === "owner" && tab === "agenda" && <div className="mt-6"><AdminAgenda onUnauthorized={() => setAuthed(false)} onMsg={setMsg} pub={g?.public ?? null} busyUntil={g?.busyUntil ?? null} onFosa={async (busyNow, minutes) => {
         const r = await api("garage", "POST", busyNow ? { busy: true, minutes: minutes ?? 30 } : { busy: false });

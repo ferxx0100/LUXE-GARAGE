@@ -4,7 +4,7 @@ import { FosaBar } from "./AdminAgenda";
 
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busyUntil?: string | null; public: Pub };
-type Item = { id: string; time: string; duration: number; name: string; socio: boolean; vehicle: "carro" | "camioneta" | null; status: string; seal: string; secondsLeft: number };
+type Item = { id: string; time: string; duration: number; name: string; socio: boolean; vehicle: "carro" | "camioneta" | null; status: string; seal: string; secondsLeft: number; doneBy: string | null; member: string | null };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
@@ -39,6 +39,17 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
     load();
   }
 
+  async function seal(id: string) {
+    if (!confirm("¿Sellar esta lavada como hecha? No se puede deshacer.")) return;
+    setBusy(true);
+    const r = await fetch("/api/admin/today/seal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) });
+    setBusy(false);
+    if (r.status === 401) return onUnauthorized();
+    const d = await r.json().catch(() => ({}));
+    onMsg(r.ok ? "Lavada sellada. Queda en el historial." : d.error ?? "No se pudo sellar.");
+    load();
+  }
+
   const pub = g?.public ?? null;
   return (
     <div className="grid gap-6">
@@ -64,7 +75,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
             {items.map((b) => {
               const end = toMin(b.time) + b.duration, past = end <= mins, nowOn = toMin(b.time) <= mins && mins < end;
               return (
-                <li key={b.id} className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border px-4 py-3 ${nowOn ? "border-gold bg-gold/10" : past ? "border-white/5 bg-white/[.02] text-white/45" : "border-white/10 bg-white/[.04]"}`}>
+                <li key={b.id} className={`grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 rounded-2xl border px-4 py-3 ${nowOn ? "border-gold bg-gold/10" : past ? "border-white/5 bg-white/[.02] text-white/45" : "border-white/10 bg-white/[.04]"}`}>
                   <span className="num w-[5.5rem] text-lg font-bold">{range(b.time, b.duration)}</span>
                   <span className="min-w-0">
                     <span className="block truncate text-lg font-bold">{b.name}</span>
@@ -77,12 +88,17 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
                     <span className="num block rounded-xl bg-black px-3 py-1 text-2xl font-bold tracking-[.2em] text-white" aria-label={`Sello ${b.seal}`}>{b.seal}</span>
                     <span className="block text-[10px] text-white/45">sello</span>
                   </span>
+                  <span className="col-span-3">
+                    {b.status === "done" ? <span className="block rounded-xl bg-emerald-500/15 py-2.5 text-center text-base font-semibold text-emerald-300">✓ Sellada{b.doneBy ? ` · ${b.doneBy}` : ""}</span>
+                      : b.status === "confirmed" ? <button type="button" disabled={busy} onClick={() => seal(b.id)} className="min-h-12 w-full rounded-xl bg-gold text-base font-bold text-ink active:scale-[.98] disabled:opacity-50">Sellar lavada{b.member ? ` · ${b.member}` : ""}</button>
+                      : <span className="block py-1 text-center text-sm text-white/50">Sin pago confirmado: no sellar</span>}
+                  </span>
                 </li>
               );
             })}
           </ul>
         )}
-        <p className="mt-3 text-sm text-white/50">Pide al cliente su pantalla: si los 3 números coinciden y su reloj corre, es real. Si no está en la lista, no tiene turno.</p>
+        <p className="mt-3 text-sm text-white/50">Pide su pantalla: si los 3 números coinciden y el reloj corre, es real. Después toca "Sellar lavada". Si no está en la lista, no tiene turno.</p>
       </section>
     </div>
   );

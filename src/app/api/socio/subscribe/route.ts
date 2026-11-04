@@ -2,7 +2,7 @@ import { sameOrigin } from "@/lib/auth";
 import { json } from "@/lib/http";
 import { sendMemberWelcome } from "@/lib/mail";
 import { getMember, memberCookie, memberFromRequest, subscribe } from "@/lib/members";
-import { CardFormSchema, MpError } from "@/lib/payments/mercadopago";
+import { CardFormSchema, mpReason } from "@/lib/payments/mercadopago";
 import { redis } from "@/lib/store";
 import { z } from "zod";
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     // Entra de una vez a su cuenta: ahí ve su tarjeta y aparta sus lavadas.
     return json({ status: member.status }, 200, { "Set-Cookie": memberCookie(member) });
   } catch (e) {
-    console.error("suscripción:", e instanceof MpError ? `MP ${e.status}` : "error");
+    console.error("suscripción falló:", mpReason(e));
     return json({ error: "No pudimos procesar el pago. No se hizo ningún cargo; intenta de nuevo." }, 502);
   }
 }

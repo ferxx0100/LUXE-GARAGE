@@ -26,6 +26,8 @@ export interface Member {
   preapprovalId?: string;
   /** Cobros aprobados que nos avisó el webhook (respaldo si Mercado Pago no informa el total). */
   charges?: number;
+  /** Cuántos cobros ya están en su historial de pagos (lg:mem:pays:{id}). */
+  paidLog?: number;
   bookingIds: string[];
   createdAt: string; updatedAt: string;
 }
@@ -165,7 +167,10 @@ export async function subscribe(m: Member, cardToken: string, email: string): Pr
   // Suscripción nueva (alta o renovación después de vencer): los meses se cuentan desde su primer cobro.
   const fresh = pre.id !== m.preapprovalId ? { anchor: undefined, charges: 0, periodStart: undefined, periodEnd: undefined } : {};
   const next = await save({ ...m, ...fresh, email, price: amount, perPeriod: s.membershipWashes, preapprovalId: pre.id });
-  if (pre.status !== "authorized" && pre.status !== "pending") return fail(402, "Tu banco no autorizó el cobro. Intenta con otra tarjeta.");
+  if (pre.status !== "authorized" && pre.status !== "pending") {
+    console.error("suscripción no autorizada: estado", pre.status);
+    return fail(402, "Tu banco no autorizó el cobro. Intenta con otra tarjeta.");
+  }
   return { ok: true, value: await applyPreapproval(next, pre) };
 }
 
@@ -177,8 +182,19 @@ async function applyPreapproval(m: Member, pre: MpPreapproval): Promise<Member> 
   const anchor = m.anchor ?? (charged >= 1 ? today : undefined);
   const period = anchor ? periodFromCharges(anchor, charged) : null;
   const status = memberStatusFrom(pre.status, charged);
-  const next: Member = { ...m, status: period && !memberValid({ status, ...period }, today) && status === "cancelled" ? "expired" : status, anchor, ...(period ?? {}) };
+  // Historial de pagos: un renglón por cada cobro que Mercado Pago ya aprobó (nunca por "tarjeta autorizada").
+  const logged = m.paidLog ?? 0;
+  for (let n = logged + 1; n <= charged; n++) {
+    await redis("ZADD", `lg:mem:pays:${m.id}`, Date.now() + n, JSON.stringify({ n, at: new Date().toISOString(), amount: m.price, pre: pre.id }));
+  }
+  const next: Member = { ...m, status: period && !memberValid({ status, ...period }, today) && status === "cancelled" ? "expired" : status, anchor, ...(period ?? {}), paidLog: Math.max(logged, charged) };
   return save(next);
+}
+
+/** Pagos del socio (los más recientes primero): número de cobro, fecha y monto. */
+export async function memberPayments(id: string): Promise<{ n: number; at: string; amount: number }[]> {
+  const raw = await redis<string[]>("ZRANGE", `lg:mem:pays:${id}`, 0, -1).catch(() => []);
+  return raw.map((s) => JSON.parse(s)).map(({ n, at, amount }) => ({ n, at, amount })).reverse();
 }
 
 /** Vuelve a leer la suscripción en Mercado Pago (al ver su cuenta y desde el webhook). Si falla, deja lo guardado. */

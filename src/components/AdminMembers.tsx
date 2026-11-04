@@ -1,7 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 
-type Row = { id: string; code: string; name: string; phone: string; vehicle: "carro" | "camioneta"; status: string; valid: boolean; periodEnd: string | null; perPeriod: number; used: number };
+type Row = { id: string; code: string; name: string; phone: string; vehicle: "carro" | "camioneta"; status: string; valid: boolean; periodEnd: string | null; perPeriod: number; used: number;
+  payments: { n: number; at: string; amount: number }[]; history: { date: string; time: string; status: string; doneBy: string | null }[] };
+const day = (d: string) => `${Number(d.slice(8))} ${MONTH[Number(d.slice(5, 7)) - 1]}`;
 const MONTH = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const until = (end: string) => { const d = new Date(`${end}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - 1); return `${d.getUTCDate()} ${MONTH[d.getUTCMonth()]}`; };
 
@@ -10,6 +12,7 @@ export default function AdminMembers({ onUnauthorized }: { onUnauthorized: () =>
   const [data, setData] = useState<{ cap: number; active: number; members: Row[] } | null>(null);
   const [nip, setNip] = useState<{ name: string; nip: string } | null>(null);
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/admin/members", { cache: "no-store" });
@@ -54,8 +57,27 @@ export default function AdminMembers({ onUnauthorized }: { onUnauthorized: () =>
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <p className="text-sm text-white/70">Lavadas del mes: <b className="num text-white">{m.used} de {m.perPeriod}</b></p>
-                <button type="button" onClick={() => reset(m)} className="min-h-11 rounded-full border border-white/20 px-4 text-sm font-semibold">Nuevo NIP</button>
+                <span className="flex gap-2">
+                  <button type="button" onClick={() => setOpen(open === m.id ? null : m.id)} className="min-h-11 rounded-full border border-white/20 px-4 text-sm font-semibold">{open === m.id ? "Cerrar" : "Historial"}</button>
+                  <button type="button" onClick={() => reset(m)} className="min-h-11 rounded-full border border-white/20 px-4 text-sm font-semibold">Nuevo NIP</button>
+                </span>
               </div>
+              {open === m.id && (
+                <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 text-sm">
+                  <div>
+                    <p className="font-semibold text-white/80">Pagos (Mercado Pago)</p>
+                    {m.payments.length === 0 ? <p className="text-white/55">Ningún cobro aprobado todavía.</p> : m.payments.map((p) => (
+                      <p key={p.n} className="num flex justify-between text-white/75"><span>Mes {p.n} · {new Date(p.at).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short" })}</span><span>${p.amount}</span></p>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white/80">Lavadas</p>
+                    {m.history.length === 0 ? <p className="text-white/55">Sin lavadas.</p> : m.history.map((h, i) => (
+                      <p key={i} className="num flex justify-between text-white/75"><span>{day(h.date)} · {h.time}</span><span>{h.status === "done" ? `✓ ${h.doneBy ?? "Sellada"}` : "Apartada"}</span></p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>

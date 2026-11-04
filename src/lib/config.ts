@@ -7,6 +7,9 @@ export const BUSINESS = {
   location: "Dr. Verduzco Sur 1084, Los Laureles, 59674 Zamora de Hidalgo, Mich.",
   address: { street: "Dr. Verduzco Sur 1084", colonia: "Los Laureles", cp: "59674", city: "Zamora de Hidalgo", state: "Michoacán" },
   plusCode: "XPJ5+C3 Zamora de Hidalgo, Michoacán",
+  // Pin real del negocio en Google Maps (ficha "Luxe Garage").
+  geo: { lat: 19.9810063, lng: -102.2922694 },
+  mapsCid: "16199733039040388882",
   timezone: "America/Mexico_City",
   slotMinutes: 60,
   holdMinutes: 15,
@@ -19,5 +22,5 @@ export function whatsappLink(text: string): string {
 export const SITE_URL = "https://luxegaragee.com";
 
 export const telLink = `tel:+${BUSINESS.phone}`;
-// El Plus Code apunta al lugar exacto (más preciso que buscar por nombre).
-export const mapsLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(BUSINESS.plusCode);
+// Abre la ficha real "Luxe Garage" en Google Maps (con su pin exacto, fotos y reseñas).
+export const mapsLink = `https://maps.google.com/?cid=${BUSINESS.mapsCid}`;

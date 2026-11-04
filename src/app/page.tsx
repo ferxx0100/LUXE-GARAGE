@@ -14,7 +14,7 @@ export const revalidate = 300;
 export default async function Home() {
   const s = await getSettings();
   const horario = hoursLabel(s.hours);
-  const mpKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || null;
+  const mpKey = (process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "").replace(/\s+/g, "") || null;
   const seats = await seatsLeft().catch(() => 1);
   const help = { tel: telLink, whatsapp: whatsappLink("Hola, necesito ayuda con LUXE GARAGE"), phoneDisplay: BUSINESS.phoneDisplay, hours: horario };
 

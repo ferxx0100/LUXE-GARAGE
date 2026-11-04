@@ -5,7 +5,7 @@ import type { NextConfig } from "next";
 const preview = process.env.VERCEL_ENV === "preview";
 const live = preview ? " https://vercel.live" : "";
 // Mercado Pago: SDK, campos seguros de tarjeta (iframes) y antifraude.
-const mp = " https://*.mercadopago.com https://*.mercadolibre.com https://*.mlstatic.com https://*.mercadopago.com.mx https://*.mercadolibre.com.mx";
+const mp = " https://*.mercadopago.com https://*.mercadolibre.com https://*.mlstatic.com https://*.mercadopago.com.mx https://*.mercadolibre.com.mx https://*.mercadolivre.com https://*.mercadopago.com.br";
 const csp = [
   "default-src 'self'",
   "img-src 'self' data: blob:" + mp + (preview ? " https://vercel.live https://vercel.com" : ""),

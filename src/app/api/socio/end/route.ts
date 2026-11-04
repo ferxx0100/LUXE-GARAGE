@@ -1,7 +1,7 @@
 import { sameOrigin } from "@/lib/auth";
 import { json } from "@/lib/http";
 import { cancelSubscription, memberFromRequest } from "@/lib/members";
-import { MpError } from "@/lib/payments/mercadopago";
+import { mpReason } from "@/lib/payments/mercadopago";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const next = await cancelSubscription(m);
     return json({ status: next.status, periodEnd: next.periodEnd ?? null });
   } catch (e) {
-    console.error("cancelar membresía:", e instanceof MpError ? `MP ${e.status}` : "error");
+    console.error("cancelar membresía falló:", mpReason(e));
     return json({ error: "No pudimos cancelar. Intenta de nuevo o toca Ayuda." }, 502);
   }
 }

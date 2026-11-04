@@ -1,6 +1,6 @@
 import { sameOrigin } from "@/lib/auth";
 import { confirmBooking, getBooking, holdStillValid, markPending, setEmail } from "@/lib/bookings";
-import { CardFormSchema, chargeCard, MpError, rejectMessage, type CardForm } from "@/lib/payments/mercadopago";
+import { CardFormSchema, chargeCard, MpError, mpReason, rejectMessage, type CardForm } from "@/lib/payments/mercadopago";
 
 export const dynamic = "force-dynamic";
 const json = (b: unknown, status = 200) => Response.json(b, { status, headers: { "Cache-Control": "no-store" } });
@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return json({ status: "rejected", id, error: rejectMessage(pay.status_detail) }, 402);
   } catch (e) {
     // Sin datos personales en el log.
-    console.error("pago:", e instanceof MpError ? `MP ${e.status}` : "error");
+    console.error("pago falló:", mpReason(e));
     return json({ error: "No pudimos procesar el pago. No se hizo ningún cargo; intenta de nuevo." }, 502);
   }
 }

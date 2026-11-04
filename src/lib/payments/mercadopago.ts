@@ -6,18 +6,18 @@ import { checkoutPreference } from "../booking-core";
 import { SITE_URL } from "../config";
 
 const BASE = process.env.MP_API_BASE ?? "https://api.mercadopago.com"; // MP_API_BASE: solo para pruebas locales
-export const mpConfigured = () => !!process.env.MP_ACCESS_TOKEN;
+// La llave se limpia de espacios y saltos de línea (es fácil que se cuelen al pegarla en Vercel).
+const token = () => (process.env.MP_ACCESS_TOKEN ?? "").replace(/\s+/g, "");
+export const mpConfigured = () => token().length > 0;
 
-export class MpError extends Error { constructor(public status: number, msg: string) { super(msg); } }
-/** Mensaje de Mercado Pago para los logs, sin correos ni números largos (regla B11). */
-export const mpReason = (e: unknown) => (e instanceof MpError ? `MP ${e.status}: ${e.message}` : String((e as Error)?.message ?? e))
-  .replace(/[\w.+-]+@[\w.-]+/g, "<correo>").replace(/\d{6,}/g, "<n>").slice(0, 200);
+export class MpError extends Error { name = "MpError"; constructor(public status: number, msg: string) { super(msg); } }
+export { mpReason } from "../logsafe";
 
 async function mp<T>(path: string, init: RequestInit & { idempotency?: string } = {}): Promise<T> {
   const r = await fetch(BASE + path, {
     ...init,
     headers: {
-      authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+      authorization: `Bearer ${token()}`,
       "content-type": "application/json",
       ...(init.idempotency ? { "x-idempotency-key": init.idempotency } : {}),
     },

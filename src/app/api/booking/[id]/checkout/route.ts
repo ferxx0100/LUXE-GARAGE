@@ -1,7 +1,7 @@
 import { sameOrigin } from "@/lib/auth";
 import { isBookingId } from "@/lib/bookings";
 import { checkoutLink } from "@/lib/payments/checkout";
-import { MpError } from "@/lib/payments/mercadopago";
+import { mpReason } from "@/lib/payments/mercadopago";
 
 export const dynamic = "force-dynamic";
 const json = (b: unknown, status = 200) => Response.json(b, { status, headers: { "Cache-Control": "no-store" } });
@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const r = await checkoutLink(id, req.headers.get("origin") ?? "");
     return r.ok ? json({ url: r.url }) : json({ error: r.error }, r.status);
   } catch (e) {
-    console.error("checkout reserva:", e instanceof MpError ? `MP ${e.status}` : "error");
+    console.error("checkout reserva falló:", mpReason(e));
     return json({ error: "No pudimos abrir Mercado Pago. Intenta con tarjeta o de nuevo en un momento." }, 502);
   }
 }

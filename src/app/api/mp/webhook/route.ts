@@ -1,6 +1,7 @@
 import { verifyMpSignature } from "@/lib/booking-core";
 import { applyPayment } from "@/lib/payments/apply";
-import { getPayment } from "@/lib/payments/mercadopago";
+import { onAuthorizedPayment, onPreapproval } from "@/lib/members";
+import { getAuthorizedPayment, getPayment, getPreapproval } from "@/lib/payments/mercadopago";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,13 @@ export async function POST(req: Request) {
   const secret = process.env.MP_WEBHOOK_SECRET ?? "";
   if (!secret) return new Response(null, { status: 503 });
   if (!verifyMpSignature(req.headers.get("x-signature"), req.headers.get("x-request-id"), dataId, secret)) return new Response(null, { status: 401 });
-  if (type !== "payment" || !/^\d+$/.test(dataId)) return new Response(null, { status: 200 });
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(dataId)) return new Response(null, { status: 200 });
 
   try {
-    await applyPayment(await getPayment(dataId));
+    // Lavada suelta (pago) · suscripción de socio (cambió) · cobro mensual del socio. Siempre se consulta a la API.
+    if (type === "payment" && /^\d+$/.test(dataId)) await applyPayment(await getPayment(dataId));
+    else if (type === "subscription_preapproval") await onPreapproval(await getPreapproval(dataId));
+    else if (type === "subscription_authorized_payment") await onAuthorizedPayment(await getAuthorizedPayment(dataId));
     return new Response(null, { status: 200 });
   } catch {
     console.error("webhook: error al consultar el pago");

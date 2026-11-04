@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type Status = "hold" | "pending" | "confirmed" | "done" | "cancelled" | "conflict";
 interface Booking {
   id: string; code: string; status: Status; date: string; time: string;
-  vehicle?: "carro" | "camioneta"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
+  vehicle: "carro" | "camioneta"; kind: "completo" | "exterior" | "interior"; place: "garage" | "domicilio"; address: string;
   name: string; phone: string; email?: string; plate?: string; notes?: string; amount: number; paymentId?: string;
   duration?: number; membershipId?: string; membershipCode?: string;
 }
@@ -30,14 +30,14 @@ const durOf = (b: Booking) => b.duration ?? (b.kind === "exterior" ? 20 : 30);
 const fosaMin = (d: number): 20 | 30 => (d <= 20 ? 20 : 30);
 
 const CHIP: Record<Status, { t: string; c: string }> = {
-  confirmed: { t: "Pagada", c: "bg-emerald-500/20 text-emerald-300 border-emerald-400/50" },
-  pending: { t: "Pago en revisión", c: "bg-amber-500/20 text-amber-200 border-amber-400/50" },
-  hold: { t: "Sin pagar", c: "bg-zinc-500/20 text-zinc-300 border-zinc-400/40" },
+  confirmed: { t: "Pagada", c: "bg-gold/20 text-gold-hi border-gold/50" },
+  pending: { t: "Pago en revisión", c: "bg-gold/20 text-gold-hi border-gold/50" },
+  hold: { t: "Sin pagar", c: "bg-white/10 text-white/80 border-white/30" },
   done: { t: "Usada", c: "bg-gold/20 text-gold border-gold/50" },
-  cancelled: { t: "Cancelada", c: "bg-zinc-700/40 text-zinc-400 border-zinc-500/40" },
+  cancelled: { t: "Cancelada", c: "bg-white/5 text-white/50 border-white/20" },
   conflict: { t: "⚠ Pagada sin horario", c: "bg-red-500/20 text-red-200 border-red-400/60" },
 };
-const MEMBER = "bg-cyan-500/15 text-cyan-200 border-cyan-400/50";
+const MEMBER = "bg-gold/15 text-gold-hi border-gold/50";
 
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onFosa }: {
@@ -122,7 +122,7 @@ export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onF
       </div>
 
       <div className={`mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 ${found ? "hidden" : ""}`}>
-        {([["Citas", String(dayActive.length), "text-gold"], ["Cobrado", `$${cobrado}`, "text-gold"], ["Domicilio", String(domicilio), "text-sky-300"], ["Miembros", String(miembros), "text-cyan-300"]] as const).map(([k, v, c]) => (
+        {([["Citas", String(dayActive.length), "text-gold"], ["Cobrado", `$${cobrado}`, "text-gold"], ["Domicilio", String(domicilio), "text-gold"], ["Miembros", String(miembros), "text-gold"]] as const).map(([k, v, c]) => (
           <div key={k} className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[.07] to-transparent p-4">
             <p className="text-sm text-white/65">{k}</p>
             <p className={`font-display mt-1 text-3xl font-semibold ${c}`}>{v}</p>
@@ -143,27 +143,27 @@ export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onF
           const wa = `https://wa.me/${tel}?text=${encodeURIComponent(`Hola ${b.name.split(" ")[0]}, te escribimos de LUXE GARAGE por tu cita ${b.code} (${fmt12(b.time)}).`)}`;
           const here = b.date === today && b.place === "garage";
           return (
-            <article key={b.id} className={`overflow-hidden rounded-3xl border bg-white/[.03] ${b.status === "cancelled" ? "border-white/5 opacity-60" : b.membershipId ? "border-cyan-400/30" : "border-white/12"}`}>
+            <article key={b.id} className={`overflow-hidden rounded-3xl border bg-white/[.03] ${b.status === "cancelled" ? "border-white/5 opacity-60" : b.membershipId ? "border-gold/30" : "border-white/12"}`}>
               <div className="flex items-stretch">
-                <div className={`flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-0.5 px-1 py-3 ${b.place === "domicilio" ? "bg-sky-500/15" : b.membershipId ? "bg-cyan-500/10" : "bg-gold/10"}`}>
+                <div className={`flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-0.5 px-1 py-3 ${b.place === "domicilio" ? "bg-gold/15" : b.membershipId ? "bg-gold/10" : "bg-gold/10"}`}>
                   {found && <span className="text-xs font-bold">{DAY[wd(b.date)]} {Number(b.date.slice(8))} {MONTH[Number(b.date.slice(5, 7)) - 1]}</span>}
-                  <span className="num text-[1.7rem] font-semibold leading-none">{start.t}</span>
+                  <span className="font-display text-[1.7rem] font-semibold leading-none">{start.t}</span>
                   <span className="text-sm font-bold uppercase text-white/75">{start.ap}</span>
                   <span className="mt-1 text-[11px] font-bold tracking-wider text-white/60">{b.place === "domicilio" ? "DOMICILIO" : "GARAGE"}</span>
                 </div>
                 <div className="min-w-0 flex-1 p-4">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${chip.c}`}>{chip.t}</span>
-                    {b.membershipId && <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${MEMBER}`}>Membresía {b.membershipCode ?? ""}</span>}
+                    {b.membershipId && <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${MEMBER}`}>Socio {b.membershipCode ?? ""}</span>}
                     {!b.membershipId && <span className="text-sm text-white/55">{b.code}</span>}
                   </div>
                   <p className="mt-1.5 truncate text-xl font-bold">{b.name}</p>
                   <p className="text-base font-semibold text-white/90">🕓 {range12(b.time, dur)} <span className="font-normal text-white/55">· {dur} min</span></p>
                   <p className="text-base text-white/75">
-                    {b.vehicle ? `${b.vehicle === "carro" ? "Carro" : "Camioneta"} · ` : ""}{b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} ·{" "}
-                    {b.membershipId ? <b className="text-cyan-300">Incluido</b> : <b className="text-gold">${b.amount}</b>}
+                    {b.vehicle === "carro" ? "Carro" : "Camioneta"} · {b.kind === "exterior" ? "Solo exterior" : "Ext. e interior"}{b.plate ? ` · ${b.plate}` : ""} ·{" "}
+                    {b.membershipId ? <b className="text-gold">Incluido</b> : <b className="text-gold">${b.amount}</b>}
                   </p>
-                  {b.place === "domicilio" && <p className="mt-1 break-words text-base text-sky-200">📍 {b.address}</p>}
+                  {b.place === "domicilio" && <p className="mt-1 break-words text-base text-gold-hi">📍 {b.address}</p>}
                   {b.notes && <p className="mt-1 break-words text-sm italic text-white/65">“{b.notes}”</p>}
                 </div>
               </div>
@@ -175,11 +175,11 @@ export default function AdminAgenda({ onUnauthorized, onMsg, pub, busyUntil, onF
                 ) : (
                   <>
                     {b.status === "pending" ? (
-                      <Act onClick={() => act(b, "confirm")} icon="✓" t="Confirmar" c="text-emerald-300" />
+                      <Act onClick={() => act(b, "confirm")} icon="✓" t="Confirmar" c="text-gold" />
                     ) : here && pub === "LIBRE" ? (
                       <Act onClick={() => arrived(b)} icon="🚗" t="Llegó" c="bg-gold/10 text-gold" />
                     ) : (
-                      <Act onClick={() => finished(b)} icon="✓" t="Terminado" c="text-emerald-300" />
+                      <Act onClick={() => finished(b)} icon="✓" t="Terminado" c="text-gold" />
                     )}
                     <Act onClick={() => act(b, "cancel")} icon="✕" t="Cancelar" c="text-red-300" />
                   </>
@@ -207,8 +207,8 @@ function Act({ onClick, icon, t, c }: { onClick: () => void; icon: string; t: st
 export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
   pub: Pub | null; busyUntil: string | null; disabled?: boolean; onFosa: (busy: boolean, minutes?: 20 | 30) => Promise<void> | void;
 }) {
-  const tone = pub === "LIBRE" ? "border-emerald-400/50 bg-emerald-500/10" : pub === "OCUPADO" ? "border-red-400/50 bg-red-500/10" : "border-amber-300/40 bg-amber-300/[.07]";
-  const dot = pub === "LIBRE" ? "bg-emerald-400 text-emerald-400" : pub === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-amber-300 text-amber-300";
+  const tone = pub === "LIBRE" ? "border-emerald-400/50 bg-emerald-500/10" : pub === "OCUPADO" ? "border-red-400/50 bg-red-500/10" : "border-gold/40 bg-gold/[.07]";
+  const dot = pub === "LIBRE" ? "bg-emerald-400 text-emerald-400" : pub === "OCUPADO" ? "bg-red-500 text-red-500" : "bg-gold text-gold";
   return (
     <div className={`mb-4 rounded-3xl border p-4 ${tone}`}>
       <div className="flex items-center gap-3">
@@ -234,11 +234,11 @@ export function FosaBar({ pub, busyUntil, onFosa, disabled }: {
       )}
       {pub === "OCUPADO" && (
         <button disabled={disabled} onClick={() => onFosa(false)}
-          className="mt-3 min-h-16 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-xl font-bold text-ink shadow-[0_8px_24px_-10px_rgba(16,185,129,.9)] transition active:scale-[.98] disabled:opacity-50">
+          className="mt-3 min-h-16 w-full rounded-2xl bg-gold px-4 py-3 text-xl font-bold text-ink shadow-[0_8px_24px_-10px_rgba(212,175,55,.9)] transition active:scale-[.98] disabled:opacity-50">
           ✓ Ya está libre
         </button>
       )}
-      {pub === "CERRADO" && <p className="mt-2 text-sm text-white/60">Cerrado. Para cambiar la fosa abre el negocio en la pestaña Garage.</p>}
+      {pub === "CERRADO" && <p className="mt-2 text-sm text-white/60">Cerrado. Para marcar libre u ocupado, primero toca "Abrir hoy" (en Hoy).</p>}
     </div>
   );
 }
@@ -343,7 +343,7 @@ function VerifyReceipt({ onUnauthorized, onMsg, onChanged }: { onUnauthorized: (
           {res.washes && res.washes.length > 0 && (
             <ul className="divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10">
               {res.washes.map((w, i) => (
-                <li key={w.id} className={`flex items-center justify-between gap-3 px-4 py-3 ${w.id === res.id ? "bg-cyan-500/10" : "bg-white/[.02]"}`}>
+                <li key={w.id} className={`flex items-center justify-between gap-3 px-4 py-3 ${w.id === res.id ? "bg-gold/10" : "bg-white/[.02]"}`}>
                   <span className="min-w-0 text-base"><b className="text-white/60">{i + 1}.</b> {dayLabel(w.date)} · {fmt12(w.time)}</span>
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold ${CHIP[w.status].c}`}>{CHIP[w.status].t}</span>
                 </li>
@@ -352,7 +352,7 @@ function VerifyReceipt({ onUnauthorized, onMsg, onChanged }: { onUnauthorized: (
           )}
 
           {usable ? (
-            <button onClick={markUsed} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-xl font-bold text-ink transition active:scale-[.98]">✓ Marcar como usado</button>
+            <button onClick={markUsed} className="min-h-16 w-full rounded-2xl bg-gold text-xl font-bold text-ink transition active:scale-[.98]">✓ Marcar como usado</button>
           ) : (
             <p className={`rounded-2xl border p-3 text-center text-lg font-bold ${res.status === "done" ? "border-gold/50 bg-gold/10 text-gold" : "border-red-400/60 bg-red-500/15 text-red-100"}`}>
               {res.status === "done" ? "Ya se usó · no lo aceptes otra vez" : res.status === "cancelled" ? "Cancelado · no es válido" : "Sin pago confirmado · no es válido"}

@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   if (!isBookingId(id)) return json({ error: "No encontramos tu apartado." }, 404);
   try {
-    const r = await checkoutLink("booking", id, req.headers.get("origin") ?? "");
+    const r = await checkoutLink(id, req.headers.get("origin") ?? "");
     return r.ok ? json({ url: r.url }) : json({ error: r.error }, r.status);
   } catch (e) {
     console.error("checkout reserva:", e instanceof MpError ? `MP ${e.status}` : "error");

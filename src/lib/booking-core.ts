@@ -3,15 +3,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type Vehicle = "carro" | "camioneta";
 export type Kind = "completo" | "exterior"; // "Exterior e interior" | "Solo exterior"
-export type Place = "garage" | "domicilio";
-export interface Prices { carro: number; camioneta: number; domicilio: number; suscripcion: number }
+export type Place = "garage" | "domicilio"; // "domicilio" solo en reservas viejas: ya no se ofrece
+export interface Prices { carro: number; camioneta: number }
 /** Horario semanal: índice 0 = domingo … 6 = sábado; null = cerrado ese día. Horas enteras 0–24. */
 export type DayHours = { open: number; close: number } | null;
 export type Hours = DayHours[];
 
 /** El precio lo calcula SIEMPRE el servidor con la configuración, nunca el navegador. */
-export function priceFor(p: Prices, vehicle: Vehicle, place: Place): number {
-  return p[vehicle] + (place === "domicilio" ? p.domicilio : 0);
+export function priceFor(p: Prices, vehicle: Vehicle): number {
+  return p[vehicle];
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -216,15 +216,17 @@ export function blocksFromCells(cells: { start: number; owner: string | null }[]
  * Valida las lavadas que elige un miembro al comprar su membresía (todas en el servidor).
  * Devuelve el error para el cliente o null si todo cabe.
  */
+
 export function checkWashes(o: {
   hours: Hours; washes: { date: string; time: string }[]; dur: number; count: number; now: Now;
-  blocksByDate: Record<string, Block[]>; busyUntilMin?: number | null; closedToday?: boolean; maxDays?: number;
+  blocksByDate: Record<string, Block[]>; busyUntilMin?: number | null; closedToday?: boolean; maxDays?: number; days?: number[];
 }): string | null {
   if (o.washes.length !== o.count) return `Elige tus ${o.count} lavadas.`;
   if (new Set(o.washes.map((w) => w.date)).size !== o.washes.length) return "Elige un día distinto para cada lavada.";
   for (const w of o.washes) {
     if (!isDateStr(w.date) || !isTimeStr(w.time)) return "Revisa las fechas de tus lavadas.";
     if (!inRange(w.date, o.now.date, o.maxDays ?? MAX_DAYS)) return "Todas tus lavadas deben quedar dentro de tu mes de membresía.";
+    if (o.days && !o.days.includes(weekday(w.date))) return "Ese día no está disponible para tu membresía.";
     const taken = o.closedToday && w.date === o.now.date;
     if (taken || !fits(o.hours, w.date, toMin(w.time), o.dur, o.blocksByDate[w.date] ?? [], o.now, o.busyUntilMin)) {
       return `La lavada del ${fmtDay(w.date)} ${atTime(w.time)} ya no está disponible. Elige otra hora.`;
@@ -237,9 +239,18 @@ export function checkWashes(o: {
  * ¿A qué hora (minutos del día) se desocupa la fosa? `since` = cuándo se marcó OCUPADO, `minutes` = duración marcada.
  * Si ya pasó la hora estimada (o se marcó otro día) y sigue ocupado, estimamos ahora + 5 min.
  */
-export function estimateFreeAt(since: Now | null, minutes: number, now: Now): number {
-  const end = since && since.date === now.date ? since.minutes + minutes : -1;
-  return end > now.minutes ? end : now.minutes + 5;
+export const BUSY_GRACE = 20; // min de tolerancia después de la hora estimada
+/**
+ * Fin estimado del lavado en curso (minutos del día).
+ * - Si ya pasó la hora estimada pero dentro de la tolerancia: "terminando" (= ahora).
+ * - Si pasaron más de 20 min o fue otro día: null → se asume que olvidaron poner Libre y se muestra LIBRE.
+ */
+export function estimateFreeAt(since: Now | null, minutes: number, now: Now): number | null {
+  if (!since) return now.minutes + 5;
+  if (since.date !== now.date) return null;
+  const end = since.minutes + minutes;
+  if (now.minutes > end + BUSY_GRACE) return null;
+  return Math.max(end, now.minutes);
 }
 
 /* ───────── Sello vivo del comprobante ───────── */
@@ -357,18 +368,99 @@ export function bookingTicket(b: {
   };
 }
 
-export function membershipTicket(m: { code: string; washes: { date: string; time: string }[]; duration: number; name: string; amount: number; validTo: string }): TicketData {
-  return {
-    tone: "cyan", kicker: "Membresía", code: m.code,
-    rows: [
-      { label: "A nombre de", value: maskName(m.name) },
-      { label: "Vigencia", value: `Hasta el ${fmtDay(m.validTo)}` },
-    ],
-    washes: [...m.washes].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((w) => ({ day: capFirst(fmtDay(w.date)), time: fmtRange(w.time, m.duration) })),
-    total: `$${m.amount} pagado`,
-  };
-}
 
 /** Enmascara datos personales para logs/vistas públicas: 55****6823, j***@dominio.com. */
 export function maskPhone(p: string) { const d = p.replace(/\D/g, ""); return d.length < 6 ? "****" : `${d.slice(0, 2)}****${d.slice(-4)}`; }
 export function maskName(n: string) { const [first, ...rest] = n.trim().split(/\s+/); return [first, ...rest.map((r) => `${r[0]}.`)].join(" "); }
+
+/* ───────── Socios: suscripción mensual con cuenta (celular + NIP) ───────── */
+/** Turno de los socios (lavado completo). */
+export const MEMBER_DUR = 30;
+/** Cambiar o cancelar una lavada de socio: solo con más de 72 h de anticipación. */
+export const CHANGE_LIMIT_H = 72;
+
+/** "2026-01-31" + 1 mes → "2026-02-28" (si el mes no tiene ese día, el último del mes). */
+export function addMonths(date: string, n: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1 + n, 1, 12));
+  const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0, 12)).getUTCDate();
+  t.setUTCDate(Math.min(d, last));
+  return t.toISOString().slice(0, 10);
+}
+
+/** Minutos que faltan para un turno (negativo si ya empezó). */
+export const minutesUntil = (date: string, time: string, now: Now) => daysBetween(now.date, date) * 1440 + toMin(time) - now.minutes;
+
+/** ¿Todavía se puede cambiar o cancelar? (más de 72 h antes) */
+export const canChange = (date: string, time: string, now: Now) => minutesUntil(date, time, now) > CHANGE_LIMIT_H * 60;
+
+/** Celular de México a 10 dígitos (quita +52, 52, 1, espacios y guiones). null si no es válido. */
+export function normalizePhone(raw: string): string | null {
+  let d = raw.replace(/\D/g, "");
+  if (d.length === 13 && d.startsWith("521")) d = d.slice(3);
+  else if (d.length === 12 && d.startsWith("52")) d = d.slice(2);
+  return /^\d{10}$/.test(d) ? d : null;
+}
+
+/** NIP de 4 dígitos que no sea obvio (0000, 1111, 1234, 4321…). */
+export function nipError(nip: string): string | null {
+  if (!/^\d{4}$/.test(nip)) return "El NIP son 4 números.";
+  if (/^(\d)\1{3}$/.test(nip) || ["1234", "4321", "0123", "9876", "1212", "6789"].includes(nip)) return "Ese NIP es muy fácil de adivinar. Elige otro.";
+  return null;
+}
+
+/** Código del socio: "LG-S" + 5 caracteres (sin 0/O/1/I). */
+export function memberCode(id: string): string {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = Buffer.from(id, "base64url");
+  let s = "";
+  for (let i = 0; i < 5; i++) s += abc[bytes[(i + 3) % bytes.length] % abc.length];
+  return `LG-S${s}`;
+}
+
+export type MemberStatus = "pending" | "active" | "cancelled" | "expired";
+/** ¿Está vigente hoy? Activo (o cancelado pero con su mes ya pagado) y hoy dentro del periodo. */
+export const memberValid = (m: { status: MemberStatus; periodStart?: string; periodEnd?: string }, today: string) =>
+  (m.status === "active" || m.status === "cancelled") && !!m.periodStart && !!m.periodEnd && today >= m.periodStart && today < m.periodEnd;
+
+/**
+ * ¿Puede el socio apartar esa fecha? Solo dentro de su mes pagado (desde hoy) y si le quedan lavadas.
+ * `used` = lavadas apartadas o usadas en el periodo actual (las canceladas a tiempo no cuentan).
+ */
+export function memberBookingError(m: { status: MemberStatus; periodStart?: string; periodEnd?: string; perPeriod: number; used: number }, date: string, today: string): string | null {
+  if (!memberValid(m, today)) return "Tu membresía no está vigente. Renueva para apartar.";
+  if (!isDateStr(date) || date < today) return "Elige una fecha de hoy en adelante.";
+  if (date >= m.periodEnd!) return `Tu mes pagado termina el ${fmtDay(addDays(m.periodEnd!, -1))}. Esa fecha ya no entra.`;
+  if (m.used >= m.perPeriod) return `Ya apartaste tus ${m.perPeriod} lavadas de este mes.`;
+  return null;
+}
+
+/** "16:00", 30 → "4:00–4:30" (corto, para el letrero y los botones). */
+export function rangeShort(time: string, dur: number): string {
+  const a = toMin(time), b = a + dur;
+  const f = (x: number) => `${Math.floor(x / 60) % 12 || 12}:${pad(x % 60)}`;
+  return `${f(a)}–${f(b)}`;
+}
+
+/* ───────── Cobro automático (Mercado Pago "preapproval") → meses pagados ───────── */
+/** Cuántos meses ha cobrado Mercado Pago de esa suscripción (null si no lo informa). */
+export function chargedMonths(pre: { summarized?: { charged_quantity?: number | null } | null }): number | null {
+  const q = pre.summarized?.charged_quantity;
+  return typeof q === "number" && Number.isFinite(q) && q >= 0 ? Math.floor(q) : null;
+}
+
+/** Mes vigente según lo cobrado: cada cobro aprobado = 1 mes desde el día del primer cobro (anchor). */
+export function periodFromCharges(anchor: string, charged: number): { periodStart: string; periodEnd: string } | null {
+  if (charged < 1) return null;
+  return { periodStart: addMonths(anchor, charged - 1), periodEnd: addMonths(anchor, charged) };
+}
+
+/**
+ * Estado del socio a partir de la suscripción de Mercado Pago y de lo cobrado.
+ * - Sin ningún cobro aprobado: "pending" (aún no entra, aunque haya autorizado la tarjeta).
+ * - Suscripción activa en MP: "active". Pausada o cancelada: "cancelled" (puede usar lo ya pagado).
+ */
+export function memberStatusFrom(preStatus: string | undefined, charged: number): MemberStatus {
+  if (charged < 1) return "pending";
+  return preStatus === "authorized" ? "active" : "cancelled";
+}

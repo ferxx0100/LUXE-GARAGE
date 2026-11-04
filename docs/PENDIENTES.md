@@ -1,35 +1,32 @@
 # LUXE GARAGE — Lo que falta
 
-Estado: producción sale de la rama `claude/busy-noether-my8mwr`. La entrega de membresía (4 lavadas) y tipografía está en `claude/happy-volta-ptpo2f` (vista previa en Vercel) hasta que se junte.
-Sitio: https://luxegaragee.com · Panel: https://luxegaragee.com/admin
+Estado: la versión con socios (cuenta con celular + NIP y cobro mensual) está en `claude/happy-volta-ptpo2f`. Ya incluye lo que había en producción (`claude/busy-noether-my8mwr`). Se publica cuando lo autorices.
+Sitio: https://luxegaragee.com · Cuenta de socio: https://luxegaragee.com/socio · Panel: https://luxegaragee.com/admin
 
 ---
 
-## 1. Revisar en tu iPhone (sin verificar todavía)
-La última entrega pasa las 17 pruebas automáticas; no se pudo compilar ni ver en pantalla en la sesión (sin acceso a npm), así que la vista previa de Vercel es la primera compilación. Revisa y manda captura de lo que se vea mal:
-- [ ] Hero blanco en 3D: estados LIBRE / OCUPADO / CERRADO (con hora actual y "se desocupa a las…").
-- [ ] Tarjeta "Próximo lugar" → botón "Apartar este lugar".
-- [ ] Reserva en 3 pasos (solo nombre y teléfono).
-- [ ] Hero nuevo: neón gigante LIBRE/OCUPADO/CERRADO, "EN VIVO" con la hora, botones Reservar y Llegar.
-- [ ] Membresía: ficha con título y precio, video con sonido; ventana a pantalla completa con 4 casillas → día → hora → datos → pago.
-- [ ] Recibos: botón "Guardar ticket en mi celular" (imagen) y calendario.
-- [ ] Sección del video sobre mosaico gris/crema.
-- [ ] Comprobante `/reserva/...` y `/membresia/...` (sello que cambia cada 30 s y reloj con segundos).
-- [ ] Panel: Agenda, Verificar recibo, Ocupado 30/20 min, Ajustes.
+## 1. Revisar en tu iPhone
+Probado en local de punta a punta con un Mercado Pago simulado. Falta probarlo contra el Mercado Pago real.
+- [ ] Portada: LIBRE / OCUPADO / CERRADO con rangos ("Ocupado 4:00–4:30"), botones "Apartar 4:30–5:00" y "Otro día u hora".
+- [ ] Hazte socio: carro $399 / camioneta $519 → nombre, celular, NIP → pago → entra solo a su cuenta.
+- [ ] Cuenta de socio: tarjeta con sello vivo, 4 casillas, apartar, "Estoy aquí: lavar ahora", cancelar con más de 72 h.
+- [ ] Lavada suelta: carro $120 / camioneta $250, pago con tarjeta o "Pagar con Mercado Pago".
+- [ ] Panel del empleado (`STAFF_PASSWORD`): solo "Hoy" con sello, abrir/cerrar, libre/ocupado.
+- [ ] Panel del dueño: Hoy, Agenda, Socios (nuevo NIP) y Ajustes (precios, tope de 45, lavadas, horario).
 
-## 2. Mercado Pago (para poder cobrar)
-1. mercadopago.com.mx/developers → **Tus integraciones** → **Crear aplicación**.
-2. Credenciales **de prueba** primero. En Vercel → luxe-garage → Settings → Environment Variables:
+## 2. Mercado Pago (cobros reales)
+Variables en Vercel → Settings → Environment Variables (solo **Production**):
 
 | Variable | De dónde | Tipo |
 |---|---|---|
 | `NEXT_PUBLIC_MP_PUBLIC_KEY` | Public Key | Config |
-| `MP_ACCESS_TOKEN` | Access Token | Secret |
-| `MP_WEBHOOK_SECRET` | Webhooks → URL `https://luxegaragee.com/api/mp/webhook`, evento **Pagos** → clave secreta | Secret |
+| `MP_ACCESS_TOKEN` | Access Token | Sensitive |
+| `MP_WEBHOOK_SECRET` | Webhooks → URL `https://luxegaragee.com/api/mp/webhook` → clave secreta | Sensitive |
+| `STAFF_PASSWORD` | Contraseña del empleado (mínimo 8, distinta a la tuya) | Sensitive |
 
-3. **Redeploy**.
-4. Haz una reserva y una membresía con las **tarjetas de prueba** de Mercado Pago.
-5. Si todo sale bien, cambia a credenciales de **producción** y vuelve a hacer Redeploy.
+En **Webhooks** marca los eventos **Pagos** y **Planes y suscripciones** (cobro mensual de los socios). Sin la clave del webhook, los socios igual se activan al pagar (la cuenta consulta a Mercado Pago), pero las renovaciones se ven hasta que el socio abre su cuenta.
+
+**Primera prueba real:** hazte socio tú con tu tarjeta ($399), revisa tu cuenta y el panel, y cancela la membresía desde tu cuenta. Revisa en Mercado Pago que se canceló la suscripción y devuelve el cobro si quieres.
 
 ## 3. Correos de confirmación (Resend)
 1. Cuenta en **resend.com** (gratis, 3,000 correos al mes).

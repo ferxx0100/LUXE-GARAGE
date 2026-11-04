@@ -1,25 +1,22 @@
-// Aplica un pago de Mercado Pago a su reserva o membresía. Lo usan el webhook y el regreso de Checkout Pro.
+// Aplica un pago de Mercado Pago a su reserva (lavada suelta). Lo usan el webhook y el regreso de Checkout Pro.
 // Regla: el estado y el monto se leen SIEMPRE de la API (getPayment), nunca de la URL ni del aviso.
 import { paymentDecision } from "../booking-core";
 import { confirmBooking, getBooking, markPending } from "../bookings";
-import { confirmMembership, getMembership, markMembershipPending } from "../memberships";
 import { redis } from "../store";
 import { getPayment, type MpPayment } from "./mercadopago";
 
 export async function applyPayment(pay: MpPayment): Promise<"confirm" | "pending" | "mismatch" | "ignore"> {
   const ref = pay.external_reference ?? "";
-  const b = await getBooking(ref);
-  const m = b ? null : await getMembership(ref);
-  const target = b ?? m;
+  const target = await getBooking(ref);
   const decision = paymentDecision(pay, target);
   const pid = String(pay.id);
   if (!target) return decision;
   if (decision === "mismatch") console.error("pago: monto no coincide", target.code);
   if (decision === "confirm") {
     const first = (await redis("SET", `lg:paid:${pid}`, target.id, "NX", "EX", 30 * 24 * 3600)) === "OK";
-    if (first || target.status !== "confirmed") await (b ? confirmBooking(target.id, pid) : confirmMembership(target.id, pid));
+    if (first || target.status !== "confirmed") await confirmBooking(target.id, pid);
   }
-  if (decision === "pending") await (b ? markPending(target.id, pid, pay.status) : markMembershipPending(target.id, pid, pay.status));
+  if (decision === "pending") await markPending(target.id, pid, pay.status);
   return decision;
 }
 

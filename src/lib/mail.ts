@@ -3,8 +3,8 @@
 // MAIL_TO_ADMIN (correo del negocio). Sin RESEND_API_KEY no se envía nada y la reserva sigue normal.
 import { fmtDay, fmtRange, fromMin, serviceText, toMin } from "./booking-core";
 import type { Booking } from "./bookings";
-import { BUSINESS, SITE_URL } from "./config";
-import type { Membership } from "./memberships";
+import { BUSINESS, SITE_URL, mapsLink } from "./config";
+import type { Member } from "./members";
 
 const BASE = process.env.MAIL_API_BASE ?? "https://api.resend.com"; // MAIL_API_BASE: solo pruebas locales
 export const mailConfigured = () => !!process.env.RESEND_API_KEY;
@@ -44,15 +44,6 @@ export function icsFor(b: Booking): string {
     location: b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location,
     description: `Reserva ${b.code}. Ver: ${site()}/reserva/${b.id} · Ayuda: +${BUSINESS.phone}`,
   }]);
-}
-
-export function icsForMembership(m: Membership): string {
-  return icsCalendar(m.washes.map((w, i) => ({
-    uid: `${m.code}-${i + 1}`, date: w.date, time: w.time, duration: m.duration,
-    summary: `Lavado ${i + 1} de ${m.washes.length} · Membresía LUXE GARAGE`,
-    location: BUSINESS.location,
-    description: `Membresía ${m.code}. Ver: ${site()}/membresia/${m.id} · Ayuda: +${BUSINESS.phone}`,
-  })));
 }
 
 /* ───────── Plantilla ───────── */
@@ -99,7 +90,7 @@ async function send(msg: { to: string; subject: string; html: string; text: stri
 /** Confirmación al cliente (con la cita adjunta) + aviso al negocio. Nunca rompe la reserva si falla. */
 export async function sendBookingConfirmed(b: Booking): Promise<void> {
   const link = `${site()}/reserva/${b.id}`;
-  const maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("LUXE GARAGE Las Palomas Zamora Michoacán");
+  const maps = mapsLink;
   const html = layout("¡Tu lavado está reservado!", `
 <tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(b.name.split(" ")[0])}, tu pago fue aprobado. Muestra tu código al llegar.</td></tr>
 ${rows(b)}
@@ -129,34 +120,18 @@ export async function sendBookingCancelled(b: Booking): Promise<void> {
   await send({ to: b.email, subject: `Reserva cancelada ${b.code}`, html, text: `Tu reserva ${b.code} fue cancelada.` }).catch(() => console.error("correo: cancelación no enviada", b.code));
 }
 
-/** Membresía pagada: todas sus citas al cliente (un .ics con un evento por lavada) + aviso al negocio. */
-export async function sendMembershipConfirmed(m: Membership): Promise<void> {
-  const link = `${site()}/membresia/${m.id}`;
-  const list = m.washes.map((w, i) =>
-    `<tr><td style="padding:8px 0;color:#22d3ee;font-weight:bold;width:34px;font-size:16px">${i + 1}.</td><td style="padding:8px 0;font-size:16px;font-weight:bold;color:#fff">${esc(when(w.date, w.time, m.duration))}</td></tr>`).join("");
-  const block = `<tr><td style="padding:16px 28px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px dashed #155e75;border-bottom:1px dashed #155e75">
-<tr><td colspan="2" style="padding:12px 0 4px;font-family:Georgia,serif;font-size:22px;letter-spacing:2px;color:#22d3ee">${esc(m.code)}</td></tr>
-<tr><td colspan="2" style="padding:0 0 8px;color:#9a978f;font-size:14px">${esc(service(m))} · vigente hasta el ${esc(fmtDay(m.validTo))}</td></tr>
-${list}
-<tr><td colspan="2" style="padding:10px 0;font-size:16px;color:#fff">Total pagado: <span style="color:#22d3ee;font-size:20px;font-weight:bold">$${m.amount} MXN</span></td></tr>
-</table></td></tr>`;
-  const html = layout("¡Tu membresía está activa!", `
-<tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(m.name.split(" ")[0])}, tu pago fue aprobado. Estas son tus ${m.washes.length} lavadas; muestra tu código al llegar.</td></tr>
-${block}
-<tr><td align="center" style="padding:4px 20px">${button(link, "Ver mi membresía")}${button(`${site()}/api/membership/${m.id}/ticket`, "Guardar ticket", false)}</td></tr>
-<tr><td style="padding:12px 28px 0;font-size:13px;color:#9a978f">Adjuntamos tus ${m.washes.length} citas: ábrelas para agregarlas a tu calendario (te avisa 1 hora antes de cada una).</td></tr>`);
-  const text = `¡Tu membresía está activa! Código ${m.code}. ${m.washes.map((w, i) => `${i + 1}) ${when(w.date, w.time, m.duration)}`).join(" ")}. Ver: ${link}`;
-  const ics = Buffer.from(icsForMembership(m)).toString("base64");
-  const jobs: Promise<void>[] = m.email
-    ? [send({ to: m.email, subject: `Membresía activa ${m.code} · ${m.washes.length} lavadas`, html, text, attachments: [{ filename: `${m.code}.ics`, content: ics }] })]
-    : [];
+/** Socio nuevo: bienvenida (nunca el NIP) + aviso al negocio. Nunca rompe el alta si falla. */
+export async function sendMemberWelcome(m: Member): Promise<void> {
+  const link = `${site()}/socio`;
+  const html = layout("¡Ya eres socio!", `
+<tr><td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#e9e6dd">Hola ${esc(m.name.split(" ")[0])}. Tu membresía está activa: ${m.perPeriod} lavadas completas cada mes. Entra con tu celular y tu NIP para apartar tus lavadas.</td></tr>
+<tr><td style="padding:16px 28px"><span style="font-family:Georgia,serif;font-size:22px;letter-spacing:2px;color:#d4af37">${esc(m.code)}</span>${m.periodEnd ? `<br><span style="color:#9a978f;font-size:14px">Tu mes pagado termina el ${esc(fmtDay(m.periodEnd))}. Se renueva solo.</span>` : ""}</td></tr>
+<tr><td align="center" style="padding:4px 20px">${button(link, "Entrar a mi cuenta")}</td></tr>`);
+  const jobs: Promise<void>[] = m.email ? [send({ to: m.email, subject: `Bienvenido a LUXE GARAGE · Socio ${m.code}`, html, text: `Ya eres socio de LUXE GARAGE (${m.code}). Entra: ${link}` })] : [];
   const admin = process.env.MAIL_TO_ADMIN;
   if (admin) {
-    const ahtml = layout(`Nueva membresía pagada · $${m.amount}`, `${block}
-<tr><td style="padding:0 28px;font-size:16px;line-height:1.6;color:#e9e6dd">👤 ${esc(m.name)}<br>📞 ${esc(m.phone)}${m.email ? `<br>✉️ ${esc(m.email)}` : ""}</td></tr>
-<tr><td align="center" style="padding:12px 20px">${button(`${site()}/admin`, "Abrir agenda")}</td></tr>`);
-    jobs.push(send({ to: admin, subject: `🔵 Nueva membresía ${m.code} · ${m.washes.length} lavadas · $${m.amount}`, html: ahtml, text: `Nueva membresía ${m.code}`, ...(m.email ? { reply_to: m.email } : {}) }));
+    jobs.push(send({ to: admin, subject: `Nuevo socio ${m.code} · ${m.vehicle} · $${m.price}/mes`, html: layout(`Nuevo socio · $${m.price} al mes`, `<tr><td style="padding:8px 28px;font-size:16px;line-height:1.6;color:#e9e6dd">${esc(m.name)}<br>${esc(m.phone)}<br>${m.vehicle === "carro" ? "Carro" : "Camioneta"}</td></tr>`), text: `Nuevo socio ${m.code}` }));
   }
   const res = await Promise.allSettled(jobs);
-  if (res.some((x) => x.status === "rejected")) console.error("correo: membresía no enviada", m.code);
+  if (res.some((x) => x.status === "rejected")) console.error("correo: bienvenida de socio no enviada", m.code);
 }

@@ -53,7 +53,7 @@ export default function ReceiptSeal({ endpoint, initial, tone = "gold" }: Props)
   const fresh = now ? now.getTime() <= until.current + 1500 : true;
   const left = now ? Math.max(0, Math.min(30, (until.current - now.getTime()) / 1000)) : initial.secondsLeft;
   const c = now ? clock(now) : null;
-  const accent = tone === "cyan" ? "#22d3ee" : "#d4af37";
+  const accent = tone === "cyan" ? "#d4af37" : "#d4af37";
   const stamp = seal.status === "done" ? "USADO" : seal.status === "cancelled" ? "CANCELADO" : null;
   const R = 82, C = 2 * Math.PI * R;
 
@@ -86,7 +86,7 @@ export default function ReceiptSeal({ endpoint, initial, tone = "gold" }: Props)
 
       {stamp && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-label={stamp}>
-          <span className={`rs-stamp ${stamp === "USADO" ? "text-[#ff3b30] border-[#ff3b30]" : "text-zinc-300 border-zinc-300"} ${stamp === "USADO" ? "text-6xl" : "text-5xl"}`}>{stamp}</span>
+          <span className={`rs-stamp ${stamp === "USADO" ? "text-[#ff3b30] border-[#ff3b30]" : "text-white/80 border-white/80"} ${stamp === "USADO" ? "text-6xl" : "text-5xl"}`}>{stamp}</span>
         </div>
       )}
     </div>

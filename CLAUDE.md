@@ -1,26 +1,20 @@
 # LUXE GARAGE — contexto del proyecto
 
-## Concepto de operación (léelo primero)
-- Un solo espacio de lavado. Se opera "cuando no hay gente": la pregunta central del cliente es **¿está libre ahorita?**
-- Estados públicos: `LIBRE` (semáforo verde, flecha "pasa"), `OCUPADO` (rojo ✕, el Accord gris en la fosa) y `CERRADO` (cortina abajo).
-- En `/admin` → Garage: **Negocio** (Automático = sigue el horario / Abierto hoy / Cerrado hoy; lo manual dura solo ese día) y **Fosa** (Libre/Ocupado). En el futuro las cámaras moverán el de Fosa.
-- La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y fosa de rejillas de acero negro. Nada de imágenes generadas por IA.
-- Hero = ROJO / VERDE a primera vista: neón gigante colgado del techo con el estado (LIBRE verde, OCUPADO rojo, CERRADO ámbar) y UNA línea ("Pasa, no hay fila", "Libre a las 4:30 pm", "Abre mañana 12 pm"); etiqueta "EN VIVO" con la hora; marco del color del estado; botones "Reservar" (con el próximo lugar) y "Llegar" encima del piso, siempre a la vista. Casi nada de texto fuera de eso.
-- Membresía en la página: la ficha solo dice "Membresía" y el precio; debajo, el video real con sonido opcional y efectos de agua DETRÁS (nunca encima). La ventana de compra se abre con portal al `body` (si va dentro de un elemento con `backdrop-filter`, `position: fixed` queda atrapado): arriba 4 casillas fijas (Lavada 1–4), en medio día → hora, abajo un solo botón; luego nombre/teléfono y pago.
-- Ticket para el celular: imagen PNG en `/api/booking/[id]/ticket` y `/api/membership/[id]/ticket` (next/og), sin teléfono, correo ni dirección; botón "Guardar ticket en mi celular" en el recibo y en el correo. Apple Wallet requiere certificado de Apple Developer (pendiente).
-- Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en el botón "Ayuda" (urgente, mensaje, quejas).
-- Tipografía: Cinzel (romana) SOLO en la marca, el letrero LIBRE/OCUPADO/CERRADO y los títulos de sección; Manrope en todo lo demás, incluidas horas, precios y códigos (utilidad `num`). Discreta: pocas negritas, sin texto con degradado, sin rótulos de relleno ni secciones que repitan información. Servidas desde el propio sitio (@fontsource).
-- **Reserva pagada** = la única que aparta un horario del calendario. Horario lleno = no se puede reservar.
-- **Membresía**: $555, 4 lavadas completas (exterior e interior, turnos de 30 min) dentro de 30 días. Las 4 fechas y turnos se eligen TODOS al comprar y apartan su lugar como una reserva. Va a nombre de la persona, no de un auto: trae el carro que quiera. Sin opción "solo exterior" en la membresía.
-- Servicios (solo 2): **Exterior e interior** (deja el auto) y **Solo exterior** (sin bajarse). Mismo precio por vehículo.
-- Horario: lunes a jueves 12 pm–7 pm; viernes y sábado 1 pm–6 pm; domingo cerrado (editable por día en /admin → Ajustes).
-- Datos que pide la reserva: SOLO nombre y teléfono (y dirección si es a domicilio). El correo lo pide Mercado Pago al pagar.
-- Agenda en celdas de 10 min: completo 30 min, solo exterior 20 min; "próximo lugar" en vivo; el panel marca Ocupado 30/20 min.
-- Membresía en código: `src/lib/memberships.ts`, `/membresia/[id]`; precio en `prices.suscripcion` y número de lavadas en `membershipWashes` (editables en /admin → Ajustes).
-- Recibo anti-falsificación: sello de 3 dígitos que cambia cada 30 s (HMAC) + reloj con segundos; verificar en panel con el código.
-- Domicilio: +$100 por cada ida (editable en /admin → Ajustes).
-- Solo existe **lavado normal**: carro $180, camioneta $220. No hay paquetes, VIP ni detailing.
-- Reserva = pago completo en línea (Mercado Pago, Apple Pay en Safari).
+## Concepto de operación (léelo primero) — acordado con el dueño el 4-nov-2026
+- Un solo lugar de lavado (al cliente se le dice "lugar", nunca "fosa"). La pregunta central es **¿está libre ahorita?** El semáforo en vivo es para TODOS (socios y clientes de lavada suelta).
+- Estados: `LIBRE` (verde), `OCUPADO` (rojo), `CERRADO` (cortina). El letrero usa rangos: **"Ocupado 4:00–4:30"**. Botones: **"Apartar 4:30–5:00"** (siguiente turno) y **"Otro día u hora"**: el cliente escoge, nunca se le obliga al siguiente. Sin explicar colores. Muy poco texto, pocos botones, grandes.
+- En `/admin` → Garage: **Negocio** (Automático / Abierto hoy / Cerrado hoy; lo manual dura solo ese día) y **Lugar** (Libre/Ocupado). Ocupado se libera solo si pasan 20 min después de la hora estimada (`BUSY_GRACE`).
+- **Negocio principal: suscripción mensual** con cobro automático de Mercado Pago. Carro **$399**, camioneta **$519** (+30%). **4 lavadas completas** (exterior e interior) por periodo pagado; las que sobran se pierden. **Tope: 45 socios** (ajustable en /admin); lleno = "Lugares de socio agotados".
+- **Cuenta del socio:** entra con **celular + NIP de 4 dígitos** (scrypt, bloqueo por intentos; si lo olvida, el dueño lo restablece en el panel). Ve su tarjeta de socio (sello vivo de 3 dígitos que cambia cada 30 s + reloj con segundos), sus 4 casillas y el calendario. Aparta día y hora cuando quiera **dentro de su periodo pagado**, lunes a sábado, mismo horario que todos, turnos de **30 min**. **Cambiar o cancelar solo con más de 72 h**; si no llega, pierde la lavada. Si llega sin reservar y está LIBRE: "Estoy aquí: lavar ahora" (aparta el turno actual y descuenta).
+- **Nadie es dueño de un horario:** cada lavada es un turno de una fecha exacta. Si no paga el mes siguiente, la cuenta queda **vencida**: no puede apartar y no aparece en "Hoy".
+- **Lavada suelta** (secundaria, al final de la página): carro **$120**, camioneta **$250**, pago completo en línea al apartar. **Sin servicio a domicilio.**
+- **Panel del dueño:** todo. **Panel del empleado** (contraseña aparte): solo "Hoy" (hora, nombre abreviado, socio o suelta, carro o camioneta, sello vivo para comparar con el celular del cliente), abrir/cerrar y libre/ocupado. Sin teléfonos, correos, precios ni ajustes. El empleado no da de alta, no cobra, no descuenta.
+- Horario: lunes a jueves 12 pm–7 pm; viernes y sábado 1 pm–6 pm; domingo cerrado (editable por día en /admin → Ajustes). 76 turnos de 30 min por semana (~245 útiles al mes).
+- La escena del hero (`src/components/GarageScene.tsx`) recrea el lugar real: azulejo blanco y rejillas de acero negro. Nada de imágenes generadas por IA.
+- Paleta: negro #0b0b0c · crema/azulejo #f2f0eb · oro #d4af37; verde y rojo SOLO para el estado. Tipografía: Cinzel solo en la marca, el letrero de estado y los títulos; Manrope en todo lo demás (horas, precios y códigos con la utilidad `num`). Pocas negritas, sin texto con degradado, sin secciones de relleno.
+- Sin WhatsApp para reservar: todo se reserva y paga en la web. WhatsApp/llamada solo en "Ayuda".
+- Ticket para el celular: imagen PNG (next/og) sin teléfono, correo ni dirección. Apple Pay y Apple Wallet: pendientes de la cuenta Apple Developer del negocio (Merchant ID / Pass Type ID).
+- Dirección y Plus Code en `src/lib/config.ts`.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind v4. Vercel.
@@ -28,7 +22,9 @@
 - Estado del garage + ajustes (precios, horario, aviso): Upstash Redis vía `src/lib/store.ts` (memoria si no hay variables KV_*). Editables en `/admin`.
 - Reservas: también en Upstash (`src/lib/bookings.ts`). Un horario = una clave `lg:slot:fecha:hora` apartada con SET NX (15 min) y fijada al aprobarse el pago: imposible vender dos veces la misma hora.
 - Pagos: `src/lib/payments/mercadopago.ts` (Card Payment Brick + /v1/payments). Webhook en `/api/mp/webhook` (firma, consulta a la API, monto, idempotencia).
-- "Pagar con Mercado Pago" (Checkout Pro): `/api/booking/[id]/checkout` y `/api/membership/[id]/checkout` crean la preferencia con el monto guardado, vence con el apartado, sin OXXO/efectivo y `binary_mode`. Regresa al recibo, que consulta el pago a la API (`syncReturn` en `src/lib/payments/apply.ts`, la misma lógica que el webhook). Nunca confirmar por lo que diga la URL.
+- **Socios** (`src/lib/members.ts`): cuenta con celular + NIP (scrypt, 5 intentos → 15 min de bloqueo), cookie `lg_socio` firmada (se invalida al restablecer el NIP). Suscripción mensual con `POST /preapproval` y el token del Card Payment Brick (`status: authorized`): **los meses vigentes salen solo de lo que Mercado Pago ya cobró** (`summarized.charged_quantity` o los avisos `subscription_authorized_payment`), nunca de que la tarjeta se autorizó. Lavadas en la misma agenda de celdas (`claimCells`, atómico). Rutas en `src/app/api/socio/*`; cuenta en `/socio`. Webhook: eventos `payment`, `subscription_preapproval` y `subscription_authorized_payment`.
+- **Panel con dos accesos** (`src/lib/auth.ts`): dueño (`ADMIN_PASSWORD`) y empleado (`STAFF_PASSWORD`). `guard(req, mut, "staff")` solo en `/api/admin/garage` y `/api/admin/today`; todo lo demás es solo del dueño, verificado en el servidor.
+- "Pagar con Mercado Pago" (Checkout Pro), solo lavada suelta: `/api/booking/[id]/checkout` crea la preferencia con el monto guardado, vence con el apartado, sin OXXO/efectivo y `binary_mode`. Regresa al recibo, que consulta el pago a la API (`syncReturn` en `src/lib/payments/apply.ts`, la misma lógica que el webhook). Nunca confirmar por lo que diga la URL.
 - Apple Pay: Mercado Pago México lo ofrece para sitios web con su SDK de JavaScript (Orders API), pero exige cuenta Apple Developer del negocio, Merchant ID y certificados cargados en Mercado Pago, y verificar el dominio. Pendiente de esos datos del dueño.
 - Comprobante del cliente: `/reserva/[id]` (enlace secreto) + archivo de calendario `.ics`. Agenda del equipo: `/admin` → Agenda.
 - Correos: `src/lib/mail.ts` (Resend). Confirmación al cliente con `.ics` adjunto + aviso al negocio; cancelación. Sin `RESEND_API_KEY` no envía.

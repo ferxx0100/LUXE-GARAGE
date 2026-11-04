@@ -4,7 +4,9 @@ export const BUSINESS = {
   tagline: "Auto Detailing & Car Care",
   phone: "525665006823", // +52 56 6500 6823
   phoneDisplay: "56 6500 6823",
-  location: "Las Palomas, Zamora, Michoacán",
+  location: "Dr. Verduzco Sur 1084, Los Laureles, 59674 Zamora de Hidalgo, Mich.",
+  address: { street: "Dr. Verduzco Sur 1084", colonia: "Los Laureles", cp: "59674", city: "Zamora de Hidalgo", state: "Michoacán" },
+  plusCode: "XPJ5+C3 Zamora de Hidalgo, Michoacán",
   timezone: "America/Mexico_City",
   slotMinutes: 60,
   holdMinutes: 15,
@@ -17,4 +19,5 @@ export function whatsappLink(text: string): string {
 export const SITE_URL = "https://luxegaragee.com";
 
 export const telLink = `tel:+${BUSINESS.phone}`;
-export const mapsLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("LUXE GARAGE Las Palomas Zamora Michoacán");
+// El Plus Code apunta al lugar exacto (más preciso que buscar por nombre).
+export const mapsLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(BUSINESS.plusCode);

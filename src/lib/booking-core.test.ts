@@ -4,10 +4,11 @@ import { createHmac } from "node:crypto";
 import {
   addDays, blocksFromCells, candidateStarts, cellsFor, checkWashes, dayWindow, estimateFreeAt, fits, fmtRange, fmtTime, fromMin,
   hoursText, isDateStr, isOpenAt, localNow, maskName, maskPhone, membershipCode, nextFree, nextOpening, normalizeCode, priceFor,
-  bookingTicket, capFirst, checkoutPreference, membershipTicket, paymentDecision, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
+  addMonths, canChange, chargedMonths, memberBookingError, memberStatusFrom, periodFromCharges, memberCode, memberValid, minutesUntil, nipError, normalizePhone, rangeShort,
+  bookingTicket, capFirst, checkoutPreference, paymentDecision, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, serviceText, shortCode, spotLabel, toMin, verifyMpSignature,
 } from "./booking-core.ts";
 
-const prices = { carro: 180, camioneta: 220, domicilio: 100, suscripcion: 555 };
+const prices = { carro: 120, camioneta: 250 };
 // Horario real: lun–jue 12–19, vie–sáb 13–18, domingo cerrado.
 const L = { open: 12, close: 19 }, V = { open: 13, close: 18 };
 const hours = [null, L, L, L, L, V, V];
@@ -16,10 +17,8 @@ const hm = (t: string) => toMin(t);
 const times = (xs: number[]) => xs.map(fromMin);
 
 test("precio: lo calcula el servidor con domicilio +100", () => {
-  assert.equal(priceFor(prices, "carro", "garage"), 180);
-  assert.equal(priceFor(prices, "camioneta", "garage"), 220);
-  assert.equal(priceFor(prices, "carro", "domicilio"), 280);
-  assert.equal(priceFor(prices, "camioneta", "domicilio"), 320);
+  assert.equal(priceFor(prices, "carro"), 120);
+  assert.equal(priceFor(prices, "camioneta"), 250);
 });
 
 test("ventana del día: lunes 12–19, viernes 13–18, domingo cerrado, fecha inválida", () => {
@@ -131,11 +130,6 @@ test("ticket para el celular: sin teléfono ni correo, nombre abreviado", () => 
   assert.equal(bookingTicket({ ...b, place: "domicilio" }, "x").rows[3].value, "A domicilio"); // nunca la dirección
   assert.match(bookingTicket({ ...b, membershipCode: "LG-MABCDE" }, "x").total, /membresía LG-MABCDE/);
 
-  const m = membershipTicket({ code: "LG-MABCDE", duration: 30, name: "Juan Prueba", amount: 555, validTo: "2026-12-03",
-    washes: [{ date: "2026-11-18", time: "12:00" }, { date: "2026-11-04", time: "13:00" }, { date: "2026-11-09", time: "12:30" }, { date: "2026-11-13", time: "14:00" }] });
-  assert.equal(m.washes.length, 4);
-  assert.deepEqual(m.washes[0], { day: "Miércoles 4 de noviembre", time: "1:00 pm – 1:30 pm" }); // en orden
-  assert.equal(m.rows[0].value, "Juan P.");
   assert.equal(capFirst("martes 3 de noviembre"), "Martes 3 de noviembre");
 });
 
@@ -158,8 +152,9 @@ test("abierto ahora, próxima apertura, textos y etiquetas", () => {
 test("fosa ocupada: hora estimada en que se desocupa", () => {
   const now = { date: MON, minutes: hm("15:10") };
   assert.equal(estimateFreeAt({ date: MON, minutes: hm("15:00") }, 30, now), hm("15:30"));
-  assert.equal(estimateFreeAt({ date: MON, minutes: hm("14:00") }, 30, now), hm("15:15")); // ya pasó: ahora + 5
-  assert.equal(estimateFreeAt({ date: "2026-10-31", minutes: hm("18:00") }, 30, now), hm("15:15"));
+  assert.equal(estimateFreeAt({ date: MON, minutes: hm("14:30") }, 30, now), hm("15:10")); // pasó hace 10 min: "terminando"
+  assert.equal(estimateFreeAt({ date: MON, minutes: hm("14:00") }, 30, now), null); // pasó hace >20 min: se libera solo
+  assert.equal(estimateFreeAt({ date: "2026-10-31", minutes: hm("18:00") }, 30, now), null); // otro día
   assert.equal(estimateFreeAt(null, 30, now), hm("15:15"));
 });
 
@@ -203,4 +198,59 @@ test("códigos y máscaras", () => {
   assert.equal(normalizeCode("LG-AB"), null);
   assert.equal(maskPhone("55 0000 0000"), "55****0000");
   assert.equal(maskName("Juan Prueba López"), "Juan P. L.");
+});
+
+test("socios: mes pagado, 4 lavadas, cambios solo con más de 72 h", () => {
+  assert.equal(addMonths("2026-11-04", 1), "2026-12-04");
+  assert.equal(addMonths("2026-01-31", 1), "2026-02-28");
+  assert.equal(addMonths("2026-12-15", 1), "2027-01-15");
+
+  const m = { status: "active" as const, periodStart: "2026-11-04", periodEnd: "2026-12-04", perPeriod: 4, used: 0 };
+  assert.equal(memberValid(m, "2026-11-04"), true);
+  assert.equal(memberValid(m, "2026-12-04"), false); // el día que vence ya no
+  assert.equal(memberValid({ ...m, status: "pending" }, "2026-11-10"), false); // sin pagar
+  assert.equal(memberValid({ ...m, status: "cancelled" }, "2026-11-10"), true); // canceló, pero su mes ya está pagado
+  assert.equal(memberValid({ ...m, status: "expired" }, "2026-11-10"), false);
+
+  assert.equal(memberBookingError(m, "2026-11-20", "2026-11-04"), null);
+  assert.match(memberBookingError(m, "2026-12-04", "2026-11-04")!, /termina el jueves 3 de diciembre/); // fuera de su mes
+  assert.match(memberBookingError(m, "2026-11-03", "2026-11-04")!, /hoy en adelante/);
+  assert.match(memberBookingError({ ...m, used: 4 }, "2026-11-20", "2026-11-04")!, /4 lavadas/); // la quinta no
+  assert.match(memberBookingError({ ...m, periodEnd: "2026-11-04" }, "2026-11-20", "2026-12-10")!, /no está vigente/); // no pagó el segundo mes
+
+  const now = { date: "2026-11-04", minutes: toMin("12:00") };
+  assert.equal(minutesUntil("2026-11-07", "12:00", now), 72 * 60);
+  assert.equal(canChange("2026-11-07", "12:00", now), false); // justo 72 h: ya no
+  assert.equal(canChange("2026-11-07", "12:10", now), true);
+  assert.equal(canChange("2026-11-05", "16:00", now), false);
+});
+
+test("socios: celular, NIP y código", () => {
+  assert.equal(normalizePhone("55 0000 0000"), "5500000000");
+  assert.equal(normalizePhone("+52 1 55 0000 0000"), "5500000000");
+  assert.equal(normalizePhone("+52 55-0000-0000"), "5500000000");
+  assert.equal(normalizePhone("550000"), null);
+  assert.equal(nipError("4826"), null);
+  assert.match(nipError("12a4")!, /4 números/);
+  assert.match(nipError("0000")!, /fácil/);
+  assert.match(nipError("1234")!, /fácil/);
+  assert.match(memberCode("abcdefghijklmnopqrstuv"), /^LG-S[A-Z2-9]{5}$/);
+  assert.equal(rangeShort("16:00", 30), "4:00–4:30");
+  assert.equal(rangeShort("12:30", 30), "12:30–1:00");
+});
+
+test("cobro automático: solo se usa lo que Mercado Pago ya cobró", () => {
+  assert.equal(chargedMonths({ summarized: { charged_quantity: 2 } }), 2);
+  assert.equal(chargedMonths({ summarized: null }), null);
+  assert.equal(chargedMonths({}), null);
+  assert.equal(periodFromCharges("2026-11-04", 0), null); // autorizó la tarjeta pero aún no se cobra
+  assert.deepEqual(periodFromCharges("2026-11-04", 1), { periodStart: "2026-11-04", periodEnd: "2026-12-04" });
+  assert.deepEqual(periodFromCharges("2026-11-04", 2), { periodStart: "2026-12-04", periodEnd: "2027-01-04" });
+  assert.equal(memberStatusFrom("authorized", 0), "pending");
+  assert.equal(memberStatusFrom("authorized", 1), "active");
+  assert.equal(memberStatusFrom("paused", 1), "cancelled"); // falló el cobro: no se renueva, usa lo pagado
+  assert.equal(memberStatusFrom("cancelled", 2), "cancelled");
+  // No pagó el segundo mes: su mes 1 termina y ya no está vigente aunque la cuenta exista.
+  const p = periodFromCharges("2026-11-04", 1)!;
+  assert.equal(memberValid({ status: "cancelled", ...p }, "2026-12-05"), false);
 });

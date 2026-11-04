@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "LUXE GARAGE | Autolavado en Zamora — míralo libre en vivo",
-  description: "Mira en tiempo real si el garage está libre. Reserva y paga en línea. Las Palomas, Zamora, Michoacán.",
+  description: "Mira en tiempo real si el garage está libre. Reserva y paga en línea. Dr. Verduzco Sur 1084, Los Laureles, Zamora, Michoacán.",
   metadataBase: new URL("https://luxegaragee.com"),
   openGraph: {
     title: "LUXE GARAGE · Zamora",

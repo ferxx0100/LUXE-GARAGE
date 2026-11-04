@@ -9,7 +9,7 @@ export default function Privacidad() {
     <main className="mx-auto max-w-2xl px-5 py-12 text-lg leading-relaxed text-white/85">
       <a href="/" className="font-display text-sm tracking-[.25em] text-gold">← LUXE GARAGE</a>
       <h1 className="font-display mt-6 text-4xl font-semibold text-white">Aviso de privacidad</h1>
-      <p className="mt-2 text-sm text-amber-300">Versión preliminar: pendiente de revisión legal.</p>
+      <p className="mt-2 text-sm text-gold">Versión preliminar: pendiente de revisión legal.</p>
       <h2 className="mt-8 text-xl font-bold text-white">Responsable</h2>
       <p>{BUSINESS.name}, {BUSINESS.location}. Contacto: +{BUSINESS.phone}.</p>
       <h2 className="mt-8 text-xl font-bold text-white">Datos que recabamos</h2>

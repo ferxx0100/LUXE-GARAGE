@@ -90,3 +90,34 @@ export function rejectMessage(detail?: string): string {
   };
   return m[detail ?? ""] ?? "El pago fue rechazado. Intenta con otra tarjeta.";
 }
+
+/* ───────── Suscripción mensual (preapproval): cobro automático con la tarjeta del Brick ───────── */
+export interface MpPreapproval {
+  id: string; status: string; external_reference?: string; payer_email?: string;
+  summarized?: { charged_quantity?: number | null } | null;
+  auto_recurring?: { transaction_amount?: number } | null;
+}
+export interface MpAuthorizedPayment { id: number | string; preapproval_id?: string; status?: string; transaction_amount?: number; payment?: { id?: number | string; status?: string } | null }
+
+/**
+ * Crea la suscripción ya autorizada con el token de tarjeta del Brick: Mercado Pago cobra hoy el primer mes
+ * y después cada mes solo. El monto lo pone el servidor (ajustes), nunca el navegador.
+ */
+export async function createSubscription(o: { memberId: string; email: string; amount: number; reason: string; cardToken: string }) {
+  const site = process.env.SITE_URL ?? SITE_URL;
+  const body = {
+    reason: o.reason.slice(0, 120),
+    external_reference: o.memberId,
+    payer_email: o.email,
+    card_token_id: o.cardToken,
+    auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: o.amount, currency_id: "MXN" },
+    back_url: `${site}/socio`,
+    status: "authorized",
+  };
+  const idem = `sub-${o.memberId}-${createHash("sha256").update(o.cardToken).digest("hex").slice(0, 16)}`;
+  return mp<MpPreapproval>("/preapproval", { method: "POST", body: JSON.stringify(body), idempotency: idem });
+}
+
+export const getPreapproval = (id: string) => mp<MpPreapproval>(`/preapproval/${encodeURIComponent(id)}`);
+export const cancelPreapproval = (id: string) => mp<MpPreapproval>(`/preapproval/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
+export const getAuthorizedPayment = (id: string) => mp<MpAuthorizedPayment>(`/authorized_payments/${encodeURIComponent(id)}`);

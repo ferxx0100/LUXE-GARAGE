@@ -72,7 +72,7 @@ export async function todayCtx(d = new Date()): Promise<Ctx> {
 }
 
 /** Bloques ocupados de un día, leyendo sus celdas (una sola lectura MGET). */
-async function dayBlocks(date: string, w: { open: number; close: number }): Promise<Block[]> {
+export async function dayBlocks(date: string, w: { open: number; close: number }): Promise<Block[]> {
   const owners = await readCells(cellsFor(date, w.open, w.close - w.open));
   return blocksFromCells(owners.map((owner, i) => ({ start: w.open + i * CELL, owner })));
 }
@@ -114,10 +114,20 @@ export async function nextSpots(c: Ctx): Promise<PublicGarage["next"]> {
   return out;
 }
 
+/** Hora (hoy) en que empieza el siguiente turno apartado, para decir "Libre hasta las 5:00". */
+async function freeUntil(c: Ctx): Promise<string | null> {
+  const w = dayWindow(c.s.hours, c.now.date);
+  if (!w || c.closed) return null;
+  const blocks = await dayBlocks(c.now.date, w);
+  const nx = blocks.find((b) => b.start >= c.now.minutes);
+  return nx ? fromMin(nx.start) : null;
+}
+
 /** Todo lo que necesita GET /api/garage. */
 export async function publicGarage(d = new Date()): Promise<PublicGarage> {
   const c = await todayCtx(d);
-  return toPublic(c.g, c.s.hours, d, await nextSpots(c));
+  const [next, until] = await Promise.all([nextSpots(c), freeUntil(c)]);
+  return { ...toPublic(c.g, c.s.hours, d, next), freeUntil: until, busySince: c.g.busy && c.g.busySince ? fromMin(localNow(new Date(c.g.busySince)).minutes) : null };
 }
 
 /** Valida una hora para hoy/futuro (estructura, horario, 10 min de anticipación, fosa ocupada). */
@@ -136,9 +146,10 @@ export async function createHold(input: z.infer<typeof BookingInput>): Promise<R
   }
   const now = new Date().toISOString();
   const { privacy: _accepted, ...data } = input;
+  // Sin domicilio: siempre en el lugar. El precio sale de los ajustes (lavada suelta), nunca del navegador.
   const b: Booking = {
-    ...data, address: input.place === "domicilio" ? input.address : "", duration, owner: id,
-    id, code: shortCode(id), status: "hold", amount: priceFor(c.s.prices, input.vehicle, input.place), createdAt: now, updatedAt: now,
+    ...data, place: "garage", address: "", duration, owner: id,
+    id, code: shortCode(id), status: "hold", amount: priceFor(c.s.single, input.vehicle), createdAt: now, updatedAt: now,
   };
   await kvSet(bk(id), b, 2 * 24 * 3600); // si nunca se paga, se borra sola
   return { ok: true, value: b };

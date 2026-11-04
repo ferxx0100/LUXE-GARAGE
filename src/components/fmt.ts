@@ -48,7 +48,3 @@ export function mxNow(d = new Date()) {
   return { date: `${g("year")}-${pad(g("month"))}-${pad(g("day"))}`, h, m, s, minutes: h * 60 + m };
 }
 /** "Son las 4:10 pm" / "Es la 1:05 pm" */
-export function clockPhrase(h: number, m: number): { lead: string; time: string; ap: string } {
-  const n = h % 12 || 12;
-  return { lead: n === 1 ? "Es la" : "Son las", time: `${n}:${pad(m)}`, ap: h < 12 ? "am" : "pm" };
-}

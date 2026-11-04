@@ -11,7 +11,7 @@ const Body = z.object({
 }).refine((b) => b.mode !== undefined || b.busy !== undefined);
 
 export async function POST(req: Request) {
-  const blocked = guard(req, true);
+  const blocked = guard(req, true, "staff"); // el empleado también abre/cierra y marca libre/ocupado
   if (blocked) return blocked;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return deny.bad();

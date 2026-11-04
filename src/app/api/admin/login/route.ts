@@ -12,9 +12,10 @@ export async function POST(req: Request) {
     return deny.down();
   }
   const parsed = Body.safeParse(await req.json().catch(() => null));
-  if (!parsed.success || !checkPassword(parsed.data.password)) {
+  const role = parsed.success ? checkPassword(parsed.data.password) : null;
+  if (!role) {
     await recordFail(req).catch(() => {});
     return Response.json({ error: "Contraseña incorrecta" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
-  return Response.json({ ok: true }, { headers: { "Set-Cookie": sessionCookie(), "Cache-Control": "no-store" } });
+  return Response.json({ ok: true, role }, { headers: { "Set-Cookie": sessionCookie(role), "Cache-Control": "no-store" } });
 }

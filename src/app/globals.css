@@ -5,7 +5,7 @@
   --color-ink-2: #121214;
   --color-gold: #d4af37;
   --color-gold-hi: #f1d77a;
-  --color-tile: #f1f0eb;
+  --color-tile: #f2f0eb;
   --color-go: #2ee87f;
   --color-stop: #ff3b30;
   /* Romana (Cinzel) para títulos: combina con el azulejo y el letrero. Manrope para leer. */
@@ -15,26 +15,20 @@
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; font-size: 17px; }
 @media (min-width: 768px) { html { font-size: 18px; } }
-body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-
-/* ——— Tipografía ———
-   Cinzel (romana) SOLO en la marca, el letrero de estado (LIBRE / OCUPADO / CERRADO) y los títulos.
-   Manrope en todo lo demás: texto, horas, precios y códigos. Pocas negritas; nada de texto con degradado. */
+body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 .font-display { font-family: var(--font-display); }
 @layer base {
   h1, h2, h3 { text-wrap: balance; }
-  p, li, dd { text-wrap: pretty; }
+  p, li { text-wrap: pretty; }
 }
-/* Cifras: horas, precios, códigos y cuentas regresivas. Tabulares para que no "bailen" al cambiar. */
+/* Cifras (horas, precios, códigos): tabulares para que no "bailen". */
 @utility num { font-family: var(--font-sans); font-variant-numeric: tabular-nums lining-nums; letter-spacing: -.01em; }
-/* Etiqueta pequeña en mayúsculas: solo para rótulos que orientan (En vivo, Próximo lugar, Código). */
-@utility kicker { font-size: .72rem; line-height: 1rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
 .text-gold-grad { background: linear-gradient(180deg, #fff1b8, #d4af37 55%, #8a6d1a); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 /* Botones (área táctil ≥ 48 px) */
 .btn-gold, .btn-line {
   display: inline-flex; align-items: center; justify-content: center; min-height: 3.25rem; padding: 0 1.5rem;
-  border-radius: 999px; font-weight: 650; letter-spacing: .01em; transition: transform .15s, background .2s, border-color .2s;
+  border-radius: 999px; font-weight: 700; letter-spacing: .02em; transition: transform .15s, background .2s, border-color .2s;
 }
 .btn-gold { background: var(--color-gold); color: #0b0b0b; }
 .btn-gold:hover { background: var(--color-gold-hi); }
@@ -42,6 +36,19 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .btn-line:hover { background: color-mix(in oklab, var(--color-gold) 10%, transparent); }
 .btn-gold:active, .btn-line:active { transform: scale(.97); }
 
+/* Azulejo blanco del lugar */
+.tile-bg {
+  background-color: var(--color-tile);
+  background-image:
+    linear-gradient(115deg, rgba(255,255,255,.55), rgba(255,255,255,0) 40%, rgba(255,255,255,.35) 60%, rgba(255,255,255,0) 75%),
+    linear-gradient(#cfcbc1 1px, transparent 1px),
+    linear-gradient(90deg, #cfcbc1 1px, transparent 1px);
+  background-size: 100% 100%, 46px 46px, 46px 46px;
+  color: #141414;
+}
+/* Reflejo del video sobre el piso mojado (Safari/iPhone y Chrome) */
+.video-reflect { -webkit-box-reflect: below 10px linear-gradient(transparent 72%, rgba(255,255,255,.22)); }
+.hairline { height: 1px; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-gold) 70%, transparent), transparent); }
 
 /* Indicador "en vivo" */
 .live-dot { width: .55rem; height: .55rem; border-radius: 999px; box-shadow: 0 0 0 0 currentColor; animation: live 1.8s ease-out infinite; }
@@ -55,6 +62,8 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 @keyframes lgPower { from { opacity: .35; } }
 .lg-chevron { animation: lgChevron 1.6s ease-in-out infinite; }
 @keyframes lgChevron { 0%,100% { opacity: .18; } 35% { opacity: 1; } 60% { opacity: .3; } }
+.lg-neon { animation: lgNeon 4s ease-in-out infinite; }
+@keyframes lgNeon { 0%,100% { opacity: 1; } 48% { opacity: 1; } 50% { opacity: .55; } 52% { opacity: 1; } 54% { opacity: .7; } 56% { opacity: 1; } }
 .lg-shutter { transition: transform 1.9s cubic-bezier(.6,.05,.3,1); }
 .lg-foam { opacity: 0; transition: opacity 1.2s ease 1.2s; }
 .lg-foam.on { opacity: 1; }
@@ -62,84 +71,41 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
 .sheet-in { animation: sheetIn .28s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes sheetIn { from { transform: translateY(24px); opacity: 0; } }
 
-/* ——— Hero claro: azulejo crema ——— */
-.tile-hero {
-  background-color: #efece6;
+/* ——— Sección del video: mosaico gris/crema plano ——— */
+.tile-mosaic {
+  background-color: #f2f0eb;
   background-image:
-    radial-gradient(120% 70% at 20% 0%, rgba(255,255,255,.75), rgba(255,255,255,0) 60%),
-    linear-gradient(#d3cec4 1px, transparent 1px),
-    linear-gradient(90deg, #d3cec4 1px, transparent 1px);
-  background-size: 100% 100%, 44px 44px, 44px 44px;
+    linear-gradient(160deg, rgba(255,255,255,.35), rgba(255,255,255,0) 35%, rgba(255,255,255,.18) 55%, rgba(255,255,255,0) 70%),
+    linear-gradient(#d3cec4 1.5px, transparent 1.5px),
+    linear-gradient(90deg, #d3cec4 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 26px 26px, 26px 26px;
+  color: #141414;
 }
 
-
-/* ——— Membresía: tema agua ——— */
-.water-bg {
-  background:
-    radial-gradient(90% 50% at 50% 0%, rgba(34,211,238,.22), transparent 70%),
-    linear-gradient(180deg, #031b2e 0%, #063a5b 100%);
+/* ——— Membresía: azul marino y vino ——— */
+.water-bg { /* membresía: azul marino que se funde suave en vino */
+  background: linear-gradient(180deg, #0f1f3d 0%, #142449 55%, #3a1736 100%);
 }
 .btn-water {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; border-radius: 999px;
-  font-weight: 650; color: #031b2e; letter-spacing: .01em;
-  background: linear-gradient(180deg, #a5f3fc, #22d3ee 60%, #0ea5c6);
-  box-shadow: 0 10px 30px rgba(34,211,238,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  font-weight: 800; color: #fff; letter-spacing: .02em;
+  background: linear-gradient(180deg, #b23a63, #8e2348 55%, #6d1a36);
+  box-shadow: 0 10px 30px rgba(142,35,72,.5), inset 0 1px 0 rgba(255,255,255,.35);
   transition: transform .15s, filter .2s;
 }
-.btn-water:hover { filter: brightness(1.06); }
+.btn-water:hover { filter: brightness(1.08); }
 .btn-water:active { transform: scale(.97); }
+.text-water-grad { background: linear-gradient(180deg, #ffffff, #d6e2ff 45%, #e79ab2); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-.lg-bubbles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.lg-bubble {
-  position: absolute; bottom: -60px; left: var(--x); width: var(--s); height: var(--s); border-radius: 999px;
-  background: radial-gradient(circle at 32% 30%, rgba(255,255,255,.95) 0 9%, rgba(165,243,252,.35) 22%, rgba(34,211,238,.08) 60%, rgba(103,232,249,.45) 100%);
-  box-shadow: inset 0 0 6px rgba(255,255,255,.35), 0 0 12px rgba(34,211,238,.25);
-  animation: lgRise var(--d) linear var(--w) infinite;
-  opacity: 0;
-}
-@keyframes lgRise {
-  0% { transform: translate3d(0,0,0) scale(.7); opacity: 0; }
-  10% { opacity: .9; }
-  50% { transform: translate3d(var(--sway), -55vh, 0) scale(1); }
-  90% { opacity: .85; }
-  100% { transform: translate3d(calc(var(--sway) * -1), -120vh, 0) scale(1.08); opacity: 0; }
-}
-.lg-wave { position: absolute; left: 0; width: 200%; height: 70px; animation: lgWave var(--d, 14s) linear infinite; }
-@keyframes lgWave { to { transform: translateX(-50%); } }
-.lg-caustic {
-  position: absolute; inset: 0; pointer-events: none; opacity: .25; mix-blend-mode: screen;
-  background:
-    radial-gradient(40% 25% at 20% 30%, rgba(103,232,249,.35), transparent 70%),
-    radial-gradient(35% 20% at 80% 60%, rgba(103,232,249,.3), transparent 70%);
-  animation: lgCaustic 9s ease-in-out infinite alternate;
-}
-@keyframes lgCaustic { to { transform: translate3d(4%, -3%, 0) scale(1.08); opacity: .4; } }
-
-/* Detrás del video de la membresía: ondas que se expanden y rayos de luz bajo el agua (nunca encima del video). */
-.lg-ripples { position: absolute; left: 50%; top: 44%; width: 0; height: 0; pointer-events: none; }
-.lg-ripples span {
-  position: absolute; left: -9rem; top: -9rem; width: 18rem; height: 18rem; border-radius: 999px;
-  border: 2px solid rgba(103,232,249,.5); opacity: 0; animation: lgRipple 4.5s ease-out infinite;
-}
-.lg-ripples span:nth-child(2) { animation-delay: 1.5s; }
-.lg-ripples span:nth-child(3) { animation-delay: 3s; }
-@keyframes lgRipple { 0% { transform: scale(.45); opacity: 0; } 15% { opacity: .75; } 100% { transform: scale(1.7); opacity: 0; } }
-.lg-rays {
-  position: absolute; inset: -25% -70%; pointer-events: none;
-  background: conic-gradient(from 0deg, transparent 0 8%, rgba(165,243,252,.16) 10% 13%, transparent 15% 30%, rgba(165,243,252,.11) 32% 34%,
-    transparent 36% 55%, rgba(165,243,252,.14) 57% 60%, transparent 62% 80%, rgba(165,243,252,.1) 82% 84%, transparent 86%);
-  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 75%); mask: radial-gradient(closest-side, #000 25%, transparent 75%);
-  animation: lgRays 40s linear infinite;
-}
-@keyframes lgRays { to { transform: rotate(360deg); } }
-
+.mb-fade { animation: mbFade .2s ease both; }
+@keyframes mbFade { from { opacity: 0; } }
+.mb-up { animation: mbUp .25s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes mbUp { from { transform: translateY(40px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .lg-bubble, .lg-wave, .lg-caustic, .lg-ripples span, .lg-rays { animation: none; }
-  .lg-ripples span { opacity: .25; }
-  .lg-bubble { opacity: .5; bottom: auto; top: var(--y, 50%); }
+  .mb-fade, .mb-up { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in { animation: none; }
+  .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in, .lg-neon { animation: none; }
   .lg-shutter, .lg-foam { transition: none; }
 }

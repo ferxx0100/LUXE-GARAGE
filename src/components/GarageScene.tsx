@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type Status = "LIBRE" | "OCUPADO" | "CERRADO";
 
@@ -78,15 +78,12 @@ for (const [xa, xb] of [[-FX + 0.05, -0.035], [0.035, FX - 0.05]]) {
 }
 
 /* ───────── Piezas montadas en la pared del fondo ───────── */
-const SEM_K = 1; // semáforo (44×124 a escala 1) a la izquierda de la entrada, lado del conductor
-const SEM = { x: X(-2.1, 0) - 22 * SEM_K, y: Y(2.52, 0) };
+const SEM_K = 0.88; // semáforo (44×124 a escala 1) a la izquierda de la entrada, lado del conductor
+const SEM = { x: X(-2.1, 0) - 22 * SEM_K, y: Y(2.42, 0) };
 const SEM_CX = X(-2.1, 0), SEM_BOTTOM = SEM.y + 124 * SEM_K;
 const LAMP_Y = { OCUPADO: SEM.y + 34 * SEM_K, LIBRE: SEM.y + 90 * SEM_K };
 const SIGN = face(-1.75, 2.7, 1.75, 3.38, -0.12); // letrero LUXE GARAGE sobre la entrada
 const HOUSING = face(-1.74, 2.5, 1.74, 2.64, -0.16); // caja de la cortina
-// Letrero de neón colgado del techo del pasillo, cerca de la cámara: el estado en letras gigantes.
-const NEON = face(-1.42, 2.62, 1.42, 3.42, -4.5);
-const NEON_ROD_Y = Y(CH, -4.5);
 const RAIL_L = face(-W - 0.08, 0, -W, H, -0.02), RAIL_R = face(W, 0, W + 0.08, H, -0.02);
 
 /* ───────── Semáforo LED de matriz de puntos (7×7) ───────── */
@@ -94,13 +91,6 @@ const GRID = range(-3, 3, 6);
 const X_MARK = (i: number, j: number) => i === j || i === -j;
 const ARROW = (i: number, j: number) => (j <= 0 ? Math.abs(i) <= j + 3 : Math.abs(i) <= 1);
 const SIG = { LIBRE: "#2ee87f", OCUPADO: "#ff3b30" } as const;
-/** Color del tubo de neón y de su núcleo (casi blanco, como un neón real). */
-const NEON_TONE = {
-  LIBRE: { tube: "#2ee87f", core: "#e6fff0" },
-  OCUPADO: { tube: "#ff3b30", core: "#ffe3df" },
-  CERRADO: { tube: "#ffb547", core: "#fff1d6" },
-  NONE: { tube: "#8d8b85", core: "#d6d4ce" },
-} as const;
 
 function Lamp({ cx, cy, on, color, shape, dim }: { cx: number; cy: number; on: boolean; color: string; shape: (i: number, j: number) => boolean; dim: string }) {
   return (
@@ -219,11 +209,131 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const SANS = { fontFamily: "var(--font-sans)" };
 const DISPLAY = { fontFamily: "var(--font-display)" };
 
-/**
- * status: lo que dice el letrero gigante. sub: la segunda línea del neón ("PASA, NO HAY FILA",
- * "LIBRE A LAS 4:30 PM", "ABRE HOY 12 PM"). La escena no tiene más texto que eso.
- */
-export default function GarageScene({ status, sub }: { status: Status | null; sub?: string }) {
+/* ───────── Marcador colgante de neón (dígitos de 7 segmentos) ───────── */
+const SB = face(-1.1, 2.72, 1.1, 3.42, -3); // caja del marcador, colgada del techo del pasillo
+const SB_CEIL = Y(CH, -3);
+const SEGS: Record<string, string> = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", " ": "" };
+function Digit({ x, y, w, h, ch, on }: { x: number; y: number; w: number; h: number; ch: string; on: string }) {
+  const t = w * 0.2, hh = h / 2;
+  const r: Record<string, [number, number, number, number]> = {
+    a: [x + t, y, w - 2 * t, t], b: [x + w - t, y + t, t, hh - 1.5 * t], c: [x + w - t, y + hh + 0.5 * t, t, hh - 1.5 * t],
+    d: [x + t, y + h - t, w - 2 * t, t], e: [x, y + hh + 0.5 * t, t, hh - 1.5 * t], f: [x, y + t, t, hh - 1.5 * t], g: [x + t, y + hh - t / 2, w - 2 * t, t],
+  };
+  const lit = SEGS[ch] ?? "";
+  return (
+    <g>
+      {Object.entries(r).map(([k, [rx, ry, rw, rh]]) => (
+        <rect key={k} x={rx} y={ry} width={rw} height={rh} rx={t / 2} fill={lit.includes(k) ? on : "#2a2410"} opacity={lit.includes(k) ? 1 : 0.85} />
+      ))}
+    </g>
+  );
+}
+function useMxClock() {
+  const [c, setC] = useState<{ h: number; m: number; s: number } | null>(null);
+  useEffect(() => {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: false });
+    const tick = () => {
+      const p = f.formatToParts(new Date());
+      const g = (t: string) => Number(p.find((x) => x.type === t)?.value ?? 0);
+      setC({ h: g("hour") % 24, m: g("minute"), s: g("second") });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return c;
+}
+function useReducedMotion() {
+  const [r, setR] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const f = () => setR(m.matches); f();
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return r;
+}
+
+// Franja de color con letras que corren (como el marcador de un estadio): una sola idea por color.
+const TICK: Record<Status | "NONE", { bg: string; fg: string }> = {
+  LIBRE: { bg: "#0b8a43", fg: "#ffffff" },
+  OCUPADO: { bg: "#c8231a", fg: "#ffffff" },
+  CERRADO: { bg: "#2a2410", fg: "#f6d36b" },
+  NONE: { bg: "#1a1a1c", fg: "#f6e2a0" },
+};
+
+function Ticker({ x, y, w, h, msgs, bg, fg, still }: { x: number; y: number; w: number; h: number; msgs: string[]; bg: string; fg: string; still: boolean }) {
+  const fs = h * 0.6, cw = fs * 0.66, base = y + h * 0.72;
+  const NB = "\u00a0";
+  const unit = msgs.join(`${NB}${NB}•${NB}${NB}`) + `${NB}${NB}•${NB}${NB}`;
+  const L = unit.length * cw;
+  const copies = Math.ceil(w / L) + 1;
+  const first = msgs[0];
+  return (
+    <g>
+      <defs><clipPath id="lg-tick"><rect x={x} y={y} width={w} height={h} rx={h * 0.22} /></clipPath></defs>
+      <rect x={x} y={y} width={w} height={h} rx={h * 0.22} fill={bg} />
+      <g clipPath="url(#lg-tick)">
+        {still ? (
+          <text x={x + w / 2} y={base} textAnchor="middle" fontSize={fs} fontWeight="800" letterSpacing=".4" fill={fg} style={SANS}
+            {...(first.length * cw > w - 8 ? { textLength: w - 8, lengthAdjust: "spacingAndGlyphs" as const } : {})}>{first}</text>
+        ) : (
+          <g key={unit}>
+            <animateTransform attributeName="transform" type="translate" from="0 0" to={`${-L} 0`} dur={`${(L / 26).toFixed(1)}s`} repeatCount="indefinite" />
+            {Array.from({ length: copies }, (_, i) => (
+              <text key={i} x={x + 6 + i * L} y={base} fontSize={fs} fontWeight="800" fill={fg} style={SANS} textLength={L} lengthAdjust="spacingAndGlyphs">{unit}</text>
+            ))}
+          </g>
+        )}
+      </g>
+    </g>
+  );
+}
+
+function Scoreboard({ status, busy, opens, free }: { status: Status | null; busy: string | null; opens?: string; free?: string }) {
+  const c = useMxClock();
+  const still = useReducedMotion();
+  const neon = "#f6d36b"; // neón oro (paleta: negro · crema · oro)
+  const h12 = c ? String(c.h % 12 || 12).padStart(2, " ") : "  ";
+  const mm = c ? String(c.m).padStart(2, "0") : "  ";
+  const ap = c ? (c.h < 12 ? "AM" : "PM") : "";
+  // Mensajes claros: "OCUPADO HASTA LAS 8:20 AM", nunca "ocupado · libre".
+  // Una sola idea por estado, con rangos de hora: "OCUPADO 4:00–4:30", "LIBRE HASTA LAS 5:00".
+  const msgs = status === "LIBRE" ? [free ? `LIBRE HASTA ${/^1[:\s]/.test(free) ? "LA" : "LAS"} ${free}` : "LIBRE · PASA"]
+    : status === "OCUPADO" ? [busy ? `OCUPADO ${busy}` : "OCUPADO"]
+    : status === "CERRADO" ? [opens ? `CERRADO · ${opens}` : "CERRADO"]
+    : ["EN VIVO"];
+  const col = TICK[status ?? "NONE"];
+  const pad = SB.w * 0.07, dh = SB.h * 0.44, dw = dh * 0.56, gap = dw * 0.28;
+  const x0 = SB.x + pad, y0 = SB.y + SB.h * 0.1;
+  const xs = [x0, x0 + dw + gap, x0 + 2 * dw + gap * 3.2, x0 + 3 * dw + gap * 4.2];
+  const colon = x0 + 2 * dw + gap * 1.6;
+  const tb = { x: SB.x + 5, y: SB.y + SB.h * 0.62, w: SB.w - 10, h: SB.h * 0.29 };
+  return (
+    <g aria-hidden>
+      {/* cables al techo */}
+      <path d={`M${SB.x + SB.w * 0.18} ${SB_CEIL} V${SB.y} M${SB.x + SB.w * 0.82} ${SB_CEIL} V${SB.y}`} stroke="#3a3a3d" strokeWidth="1.1" />
+      <rect x={SB.x + 3} y={SB.y + 6} width={SB.w} height={SB.h} rx="5" fill="#000" opacity=".25" filter="url(#lg-soft)" />
+      <rect x={SB.x} y={SB.y} width={SB.w} height={SB.h} rx="5" fill="#0b0b0c" stroke="#2c2c2f" strokeWidth="1.5" />
+      <rect x={SB.x + 2.5} y={SB.y + 2.5} width={SB.w - 5} height={SB.h - 5} rx="3.5" fill="none" stroke="#c9a54a" strokeOpacity=".45" strokeWidth=".7" />
+      <g filter="url(#lg-glow-sm)">
+        <Digit x={xs[0]} y={y0} w={dw} h={dh} ch={h12[0]} on={neon} />
+        <Digit x={xs[1]} y={y0} w={dw} h={dh} ch={h12[1]} on={neon} />
+        <g className="lg-colon">
+          <circle cx={colon} cy={y0 + dh * 0.3} r={dw * 0.11} fill={neon} />
+          <circle cx={colon} cy={y0 + dh * 0.72} r={dw * 0.11} fill={neon} />
+        </g>
+        <Digit x={xs[2]} y={y0} w={dw} h={dh} ch={mm[0]} on={neon} />
+        <Digit x={xs[3]} y={y0} w={dw} h={dh} ch={mm[1]} on={neon} />
+        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.42} textAnchor="end" fontSize={dh * 0.32} fontWeight="800" fill={neon} style={SANS}>{ap}</text>
+        <text x={SB.x + SB.w - pad * 0.7} y={y0 + dh * 0.92} textAnchor="end" fontSize={dh * 0.22} fontWeight="700" letterSpacing=".6" fill="#c9a54a" style={SANS}>ZAMORA</text>
+      </g>
+      <Ticker {...tb} msgs={msgs} bg={col.bg} fg={col.fg} still={still} />
+    </g>
+  );
+}
+
+export default function GarageScene({ status, opensShort, busyShort, freeShort }: { status: Status | null; opensShort?: string; busyShort?: string; freeShort?: string }) {
   const carRef = useRef<SVGGElement>(null);
   const brakeRef = useRef<SVGGElement>(null);
   const revRef = useRef<SVGGElement>(null);
@@ -280,34 +390,33 @@ export default function GarageScene({ status, sub }: { status: Status | null; su
 
   const sig = status === "LIBRE" || status === "OCUPADO" ? SIG[status] : null;
   const closed = status === "CERRADO";
+  const busy = status === "OCUPADO" && busyShort ? busyShort.toUpperCase() : null;
+  const opensFit = opensShort && opensShort.length * 7.4 > 150 ? { textLength: 150, lengthAdjust: "spacingAndGlyphs" as const } : {};
   const shutterY = closed ? 0 : -DH - 4;
-  const tone = NEON_TONE[status ?? "NONE"];
-  const word = status ?? "···";
-  const line = (sub ?? "").toUpperCase();
-  // Letras gigantes: se ajustan al ancho del letrero solo si no caben.
-  const wordMax = NEON.w - 34, lineMax = NEON.w - 30;
-  const wordFit = word.length * 41 > wordMax ? { textLength: wordMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
-  const lineFit = line.length * 13.6 > lineMax ? { textLength: lineMax, lengthAdjust: "spacingAndGlyphs" as const } : {};
-  const label = `Garage en vivo: ${status ? status.toLowerCase() : "conectando"}${sub ? `. ${sub.toLowerCase()}` : ""}`;
+  const label = !status
+    ? "Garage en vivo: conectando"
+    : status === "LIBRE"
+      ? "Garage en vivo: libre, puedes pasar"
+      : status === "OCUPADO"
+        ? `Garage en vivo: ocupado${busyShort ? ` ${busyShort.toLowerCase()}` : ""}`
+        : `Garage en vivo: cerrado${opensShort ? `, ${opensShort.toLowerCase()}` : ""}`;
 
   return (
     <svg viewBox="0 0 400 600" className="block h-auto w-full select-none" role="img" aria-label={label}>
       <style>{`
         .lg-halo{animation:lgHalo 2.8s ease-in-out infinite}
         @keyframes lgHalo{0%,100%{opacity:.6}50%{opacity:.95}}
-        .lg-neon-on{animation:lgNeonOn 1.2s steps(1) both}
-        @keyframes lgNeonOn{0%{opacity:.08}8%{opacity:1}13%{opacity:.15}22%{opacity:1}27%{opacity:.35}36%,100%{opacity:1}}
-        .lg-buzz{animation:lgBuzz 6s ease-in-out 1.4s infinite}
-        @keyframes lgBuzz{0%,100%{opacity:1}46%{opacity:1}48%{opacity:.82}50%{opacity:1}53%{opacity:.9}55%{opacity:1}}
-        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-neon-on,.lg-buzz{animation:none}}
+        .lg-dm{animation:lgDm 3.4s ease-in-out infinite}
+        @keyframes lgDm{0%,100%{opacity:1}50%{opacity:.8}}
+        .lg-colon{animation:lgColon 1s steps(1) infinite}
+        @keyframes lgColon{50%{opacity:.15}}
+        @media (prefers-reduced-motion: reduce){.lg-halo,.lg-dm,.lg-colon{animation:none}}
       `}</style>
       <defs>
         <filter id="lg-blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="4" /></filter>
         <filter id="lg-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.8" /></filter>
         <filter id="lg-glow-sm" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         <filter id="lg-glow-lg" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" /></filter>
-        <filter id="lg-neon-halo" x="-15%" y="-80%" width="130%" height="260%"><feGaussianBlur stdDeviation="6" /></filter>
-        <filter id="lg-neon-tube" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="1.3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         {/* pasillo */}
         <linearGradient id="lg-c-ceil" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={END.y0}><stop offset="0" stopColor="#e2e0da" /><stop offset="1" stopColor="#f1f0eb" /></linearGradient>
         <linearGradient id="lg-c-wallL" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={END.x0} y2="0"><stop offset="0" stopColor="#e0ded7" /><stop offset="1" stopColor="#f7f6f2" /></linearGradient>
@@ -329,12 +438,13 @@ export default function GarageScene({ status, sub }: { status: Status | null; su
         <linearGradient id="lg-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3a424b" /><stop offset="1" stopColor="#0b0d10" /></linearGradient>
         <linearGradient id="lg-shutter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8d9095" /><stop offset=".5" stopColor="#74777c" /><stop offset="1" stopColor="#5a5d61" /></linearGradient>
         <pattern id="lg-slats" width="8" height="7" patternUnits="userSpaceOnUse"><rect width="8" height="7" fill="url(#lg-shutter)" /><rect y="5.6" width="8" height="1.4" fill="#3c3e41" /><rect y="0" width="8" height=".7" fill="#c4c7cb" opacity=".6" /></pattern>
+        <pattern id="lg-led" width="2.6" height="2.6" patternUnits="userSpaceOnUse"><path fillRule="evenodd" fill="#070707" opacity=".72" d="M0 0H2.6V2.6H0Z M1.3 .35 A.95 .95 0 1 0 1.301 .35Z" /></pattern>
         <linearGradient id="lg-goldv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6e2a0" /><stop offset=".55" stopColor="#d4af37" /><stop offset="1" stopColor="#8a6d1a" /></linearGradient>
         {/* luz */}
         <radialGradient id="lg-spill"><stop offset="0" stopColor={sig ?? "#fff"} stopOpacity=".5" /><stop offset="1" stopColor={sig ?? "#fff"} stopOpacity="0" /></radialGradient>
-        <radialGradient id="lg-amber"><stop offset="0" stopColor="#ffb547" stopOpacity=".55" /><stop offset="1" stopColor="#ffb547" stopOpacity="0" /></radialGradient>
+        <radialGradient id="lg-amber"><stop offset="0" stopColor="#e8c25a" stopOpacity=".55" /><stop offset="1" stopColor="#e8c25a" stopOpacity="0" /></radialGradient>
         <radialGradient id="lg-vig" cx=".5" cy=".5" r=".72"><stop offset=".6" stopColor="#1a1712" stopOpacity="0" /><stop offset="1" stopColor="#1a1712" stopOpacity=".2" /></radialGradient>
-        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e2a55" /><stop offset="1" stopColor="#2b3a6b" /></linearGradient>
+        <linearGradient id="lg-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1a1712" /><stop offset="1" stopColor="#0b0b0c" /></linearGradient>
         <clipPath id="lg-door"><rect x={DOOR.x0} y={DOOR.y0} width={DW} height={DH} /></clipPath>
       </defs>
 
@@ -437,7 +547,7 @@ export default function GarageScene({ status, sub }: { status: Status | null; su
       <path d={AO_TOP} stroke="#8a867d" strokeWidth="3" opacity=".22" filter="url(#lg-soft)" fill="none" />
 
       {/* luz de color del estado que baña el pasillo */}
-      <rect width="400" height="600" fill={sig ?? "#fff"} opacity={sig ? 0.08 : 0} className="lg-fade" />
+      <rect width="400" height="600" fill={sig ?? "#fff"} opacity={sig ? 0.05 : 0} className="lg-fade" />
       <ellipse cx={CX} cy={DOOR.y1 + 12} rx="230" ry="88" fill="url(#lg-spill)" opacity={sig ? 0.85 : 0} className="lg-fade" />
       <ellipse cx={SEM_CX} cy={(SEM.y + SEM_BOTTOM) / 2} rx="52" ry="78" fill="url(#lg-spill)" opacity={sig ? 0.75 : 0} className={sig ? "lg-fade lg-halo" : "lg-fade"} />
 
@@ -454,6 +564,9 @@ export default function GarageScene({ status, sub }: { status: Status | null; su
       <rect x={SEM.x + 3} y={SEM.y + 4} width={44 * SEM_K} height={124 * SEM_K} rx="8" fill="#2a2620" opacity=".28" filter="url(#lg-soft)" />
       <g className="lg-power" transform={`translate(${SEM.x.toFixed(1)} ${SEM.y.toFixed(1)}) scale(${SEM_K})`}><Semaforo status={status} /></g>
 
+      {/* marcador de neón tipo hockey colgando del techo: la hora y el estado */}
+      <Scoreboard status={status} busy={busy} opens={opensShort} free={freeShort} />
+
       {/* sombra del letrero sobre el azulejo */}
       <rect x={SIGN.x + 2} y={SIGN.y + 4} width={SIGN.w} height={SIGN.h} rx="3" fill="#2a2620" opacity=".3" filter="url(#lg-soft)" />
 
@@ -464,6 +577,20 @@ export default function GarageScene({ status, sub }: { status: Status | null; su
       <ellipse cx={CX} cy={DOOR.y1 + 16} rx="175" ry="46" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 1 : 0} />
       <ellipse cx={CX} cy={SIGN.y + SIGN.h / 2} rx="150" ry="42" fill="url(#lg-amber)" className="lg-fade" opacity={closed ? 0.45 : 0} />
 
+      {/* letrero LED ámbar de la cortina */}
+      <g clipPath="url(#lg-door)">
+        <g className="lg-shutter" style={{ transform: `translateY(${shutterY}px)` }}>
+          <g transform={`translate(${CX} ${(DOOR.y0 + DOOR.y1) / 2 - 6})`}>
+            <rect x="-82" y="-32" width="164" height="60" rx="6" fill="#070707" stroke="#2d2d30" strokeWidth="1.5" />
+            <g filter="url(#lg-glow-sm)" className={closed ? "lg-neon" : ""}>
+              <text x="0" y="1" textAnchor="middle" fontSize="23" fontWeight="800" letterSpacing="3.6" fill="#e8c25a" style={SANS}>CERRADO</text>
+              {opensShort && <text x="0" y="19" textAnchor="middle" fontSize="9.5" fontWeight="700" letterSpacing="1.6" fill="#f6e2a0" style={SANS} {...opensFit}>{opensShort}</text>}
+            </g>
+            <rect x="-80" y="-30" width="160" height="56" rx="5" fill="url(#lg-led)" />
+          </g>
+        </g>
+      </g>
+
       {/* letrero negro y oro sobre la entrada (iluminado) */}
       <g>
         <rect x={SIGN.x} y={SIGN.y} width={SIGN.w} height={SIGN.h} rx="2.5" fill="#060606" stroke="#3b331d" />
@@ -472,28 +599,6 @@ export default function GarageScene({ status, sub }: { status: Status | null; su
         <text x={SIGN.x + 37 + (SIGN.w - 43) / 2} y={SIGN.y + SIGN.h / 2 + 2.6} textAnchor="middle" fontSize="14.5" fontWeight="600" letterSpacing="1.6" fill="url(#lg-goldv)" style={DISPLAY}>LUXE GARAGE</text>
         <text x={SIGN.x + 37 + (SIGN.w - 43) / 2} y={SIGN.y + SIGN.h - 6.5} textAnchor="middle" fontSize="5.2" letterSpacing="1.5" fill="#c9ad62" style={SANS}>AUTO DETAILING &amp; CAR CARE</text>
         <rect x={SIGN.x + 1} y={SIGN.y + 1} width={SIGN.w - 2} height={SIGN.h * 0.42} rx="2" fill="#fff" opacity=".05" />
-      </g>
-
-      {/* ─── Neón colgado: el estado en letras gigantes ─── */}
-      <g aria-hidden>
-        {[NEON.x + 40, NEON.x + NEON.w - 40].map((x) => (
-          <line key={x} x1={x} y1={NEON_ROD_Y} x2={x} y2={NEON.y} stroke="#3a3a3d" strokeWidth="1.6" />
-        ))}
-        {/* luz del neón sobre el techo y las paredes */}
-        <ellipse cx={CX} cy={NEON.y + NEON.h / 2} rx={NEON.w * 0.62} ry={NEON.h * 0.95} fill={tone.tube} opacity={status ? 0.22 : 0.06} filter="url(#lg-blur)" className="lg-fade" />
-        <rect x={NEON.x} y={NEON.y} width={NEON.w} height={NEON.h} rx="9" fill="#0a0a0b" stroke="#2b2b2e" strokeWidth="1.5" />
-        <rect x={NEON.x + 4} y={NEON.y + 4} width={NEON.w - 8} height={NEON.h - 8} rx="6" fill="none" stroke={tone.tube} strokeOpacity=".22" strokeWidth="1" className="lg-fade" />
-        <g key={status ?? "none"} className={status ? "lg-neon-on" : ""}>
-          <g className={status ? "lg-buzz" : ""}>
-            {/* halo de color */}
-            <text x={CX} y={NEON.y + 58} textAnchor="middle" fontSize="56" fontWeight="800" letterSpacing="4" fill={tone.tube} filter="url(#lg-neon-halo)" style={SANS} {...wordFit}>{word}</text>
-            {/* tubo: núcleo casi blanco con borde de color */}
-            <text x={CX} y={NEON.y + 58} textAnchor="middle" fontSize="56" fontWeight="800" letterSpacing="4" fill={tone.core} stroke={tone.tube} strokeWidth="1.6" paintOrder="stroke" filter="url(#lg-neon-tube)" style={SANS} {...wordFit}>{word}</text>
-            {line && (
-              <text x={CX} y={NEON.y + NEON.h - 14} textAnchor="middle" fontSize="18" fontWeight="700" letterSpacing="2.4" fill={tone.core} stroke={tone.tube} strokeWidth=".6" paintOrder="stroke" filter="url(#lg-neon-tube)" style={SANS} {...lineFit}>{line}</text>
-            )}
-          </g>
-        </g>
       </g>
 
       {/* el auto */}

@@ -38,33 +38,44 @@ export function adminConfigured(): boolean {
   return !!secret();
 }
 
-/** Acepta la contraseña del panel (huella scrypt) o la de ADMIN_PASSWORD. Ignora espacios al inicio/fin. */
-export function checkPassword(raw: string): boolean {
+/** Dueño: todo el panel. Empleado: solo "Hoy" (quién viene, sello) y abrir/cerrar, libre/ocupado. */
+export type Role = "owner" | "staff";
+
+/**
+ * Dueño: contraseña del panel (huella scrypt) o ADMIN_PASSWORD. Empleado: STAFF_PASSWORD (variable en Vercel).
+ * Ignora espacios al inicio/fin. Devuelve el rol o null.
+ */
+export function checkPassword(raw: string): Role | null {
   const given = raw.trim();
   const [salt, hex] = PANEL_HASH.split(":");
   const panelOk = timingSafeEqual(scryptSync(given, salt, 32, { N: 16384, r: 8, p: 1 }), Buffer.from(hex, "hex"));
   const p = envPass();
   const envOk = p.length >= 8 && timingSafeEqual(sha(given), sha(p)); // hash = misma longitud, sin filtrar el tamaño
-  return panelOk || envOk;
+  if (panelOk || envOk) return "owner";
+  const st = (process.env.STAFF_PASSWORD ?? "").trim();
+  if (st.length >= 8 && st !== p && timingSafeEqual(sha(given), sha(st))) return "staff";
+  return null;
 }
 
 const cookieAttrs = "Path=/api/admin; HttpOnly; Secure; SameSite=Strict";
 
-export function sessionCookie(): string {
+export function sessionCookie(role: Role): string {
   const s = secret()!;
-  const exp = String(Math.floor(Date.now() / 1000) + TTL);
-  return `${COOKIE}=${exp}.${sign(exp, s)}; ${cookieAttrs}; Max-Age=${TTL}`;
+  const v = `${Math.floor(Date.now() / 1000) + TTL}.${role}`;
+  return `${COOKIE}=${v}.${sign(v, s)}; ${cookieAttrs}; Max-Age=${TTL}`;
 }
 export const clearCookie = `${COOKIE}=; ${cookieAttrs}; Max-Age=0`;
 
-export function isAuthed(req: Request): boolean {
+/** Rol de la sesión del panel (firma y vigencia), o null. */
+export function roleOf(req: Request): Role | null {
   const s = secret();
-  if (!s) return false;
+  if (!s) return null;
   const raw = (req.headers.get("cookie") ?? "").split(/;\s*/).find((c) => c.startsWith(`${COOKIE}=`));
-  const [exp, mac] = (raw?.slice(COOKIE.length + 1) ?? "").split(".");
-  if (!exp || !mac || Number(exp) < Date.now() / 1000) return false;
-  return timingSafeEqual(sha(mac), sha(sign(exp, s)));
+  const [exp, role, mac] = (raw?.slice(COOKIE.length + 1) ?? "").split(".");
+  if (!exp || !mac || (role !== "owner" && role !== "staff") || Number(exp) < Date.now() / 1000) return null;
+  return timingSafeEqual(sha(mac), sha(sign(`${exp}.${role}`, s))) ? role : null;
 }
+export const isAuthed = (req: Request) => roleOf(req) !== null;
 
 /** Protección CSRF básica: las mutaciones deben venir de nuestro propio sitio. */
 export function sameOrigin(req: Request): boolean {
@@ -91,9 +102,14 @@ export const deny = {
   down: () => json({ error: "Servicio no disponible, intenta de nuevo" }, 503),
 };
 
-/** Guardia para rutas de admin: sesión válida y, si muta, mismo origen. */
-export function guard(req: Request, mutating: boolean): Response | null {
+/**
+ * Guardia para rutas de admin: sesión válida, rol suficiente y, si muta, mismo origen.
+ * Por defecto solo el dueño; pasar "staff" en las rutas que también usa el empleado.
+ */
+export function guard(req: Request, mutating: boolean, need: Role = "owner"): Response | null {
   if (mutating && !sameOrigin(req)) return deny.origin();
-  if (!isAuthed(req)) return deny.auth();
+  const role = roleOf(req);
+  if (!role) return deny.auth();
+  if (need === "owner" && role !== "owner") return json({ error: "Solo el dueño puede hacer esto" }, 403);
   return null;
 }

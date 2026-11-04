@@ -19,19 +19,25 @@ function loadMp(): Promise<void> {
 interface Props {
   publicKey: string;
   amount: number;          // solo para mostrar en el formulario; el servidor cobra su propio monto
-  payUrl: string;          // /api/booking/{id}/pay o /api/membership/{id}/pay
+  payUrl: string;          // /api/booking/{id}/pay
   doneUrl: string;         // comprobante al que se va al aprobar
   onError: (msg: string) => void;
   accent?: string;
   id?: string;
-  checkoutUrl?: string;    // /api/booking/{id}/checkout o /api/membership/{id}/checkout (Pagar con Mercado Pago)
+  checkoutUrl?: string;    // /api/booking/{id}/checkout (Pagar con Mercado Pago)
+  /** Cuerpo que se manda a payUrl (por defecto, el formulario del Brick tal cual). */
+  wrap?: (form: unknown) => unknown;
+  /** Estados de respuesta que cuentan como éxito (reserva: approved/pending/conflict; socio: active/pending). */
+  okStatuses?: string[];
 }
 
 /**
  * Card Payment Brick de Mercado Pago: la tarjeta y el correo se capturan en campos de Mercado Pago
  * y nunca pasan por nuestro servidor (solo el token que genera el Brick).
  */
-export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, accent = "#d4af37", id = "mp-brick", checkoutUrl }: Props) {
+const OK = ["approved", "pending", "conflict"];
+
+export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, accent = "#d4af37", id = "mp-brick", checkoutUrl, wrap, okStatuses = OK }: Props) {
   const brickRef = useRef<{ unmount: () => void } | null>(null);
   const errRef = useRef(onError);
   useEffect(() => { errRef.current = onError; }, [onError]);
@@ -51,10 +57,10 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
             onError: () => errRef.current("Hubo un problema con el formulario de pago. Recarga la página."),
             onSubmit: (form: unknown) => new Promise<void>((resolve, reject) => {
               errRef.current("");
-              fetch(payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(form) })
+              fetch(payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(wrap ? wrap(form) : form) })
                 .then(async (r) => {
                   const d = await r.json().catch(() => ({}));
-                  if (["approved", "pending", "conflict"].includes(d.status)) { resolve(); window.location.href = doneUrl; }
+                  if (okStatuses.includes(d.status)) { resolve(); window.location.href = doneUrl; }
                   else { errRef.current(d.error ?? "Pago rechazado. Revisa los datos de tu tarjeta."); reject(); }
                 })
                 .catch(() => { errRef.current("Sin conexión. No se hizo ningún cargo."); reject(); });

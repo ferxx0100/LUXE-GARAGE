@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import PayBrick from "./PayBrick";
+import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
 import { DAY, MONTH, toMin, wd, type DayHours, type Vehicle } from "./fmt";
 
@@ -138,7 +138,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
               {left === 0 || !mpPublicKey ? (
                 <button type="button" onClick={() => { setHold(null); setStep("pick"); setSlot(null); }} className="btn-gold min-h-16 w-full text-lg">Elegir otra vez</button>
               ) : (
-                <PayBrick publicKey={mpPublicKey} amount={hold.amount} payUrl={`/api/booking/${hold.id}/pay`} checkoutUrl={`/api/booking/${hold.id}/checkout`} doneUrl={`/reserva/${hold.id}`} onError={setError} />
+                <MpButton checkoutUrl={`/api/booking/${hold.id}/checkout`} onError={setError} label={`Pagar $${hold.amount} con Mercado Pago`} />
               )}
             </div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import PayBrick from "./PayBrick";
+import { MpButton } from "./PayBrick";
 import type { Vehicle } from "./fmt";
 
 const field = "w-full min-h-16 rounded-2xl border-2 border-white/15 bg-black/30 px-5 text-lg text-white outline-none placeholder:text-white/40 focus:border-gold";
@@ -24,6 +24,7 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
   const [phone, setPhone] = useState("");
   const [nip, setNip] = useState("");
   const [nip2, setNip2] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [member, setMember] = useState<{ id: string; amount: number } | null>(null);
@@ -105,8 +106,13 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
                 <p className="mt-2 text-sm text-white/65">Se cobra solo cada mes. Cancelas cuando quieras.</p>
               </div>
               {mpPublicKey ? (
-                <PayBrick id="mp-brick-socio" publicKey={mpPublicKey} amount={member.amount} payUrl="/api/socio/subscribe" doneUrl="/socio"
-                  wrap={(form) => ({ id: member.id, form })} okStatuses={["active", "pending"]} onError={setError} />
+                <>
+                  <label className="grid gap-1.5 text-sm font-semibold text-white/70">Tu correo (ahí te llega el comprobante)
+                    <input className={field} value={email} onChange={(e) => setEmail(e.target.value.trim())} placeholder="tucorreo@ejemplo.com" inputMode="email" autoComplete="email" maxLength={120} />
+                  </label>
+                  <MpButton checkoutUrl="/api/socio/checkout" body={{ id: member.id, email }} disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)} onError={setError} label={`Pagar $${member.amount} con Mercado Pago`} />
+                  <p className="text-center text-xs text-white/50">En Mercado Pago pones tu tarjeta y autorizas el cobro mensual. Al terminar regresas a tu cuenta.</p>
+                </>
               ) : <p className="text-center text-white/70">Los pagos en línea se están activando.</p>}
             </div>
           )}

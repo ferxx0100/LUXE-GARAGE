@@ -103,24 +103,26 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
 }
 
 /** Pagar dentro de Mercado Pago (su cuenta, tarjetas guardadas o saldo). El link lo crea el servidor con su monto. */
-function MpButton({ checkoutUrl, onError }: { checkoutUrl: string; onError: (m: string) => void }) {
+export function MpButton({ checkoutUrl, onError, body, disabled, label = "Pagar con Mercado Pago" }: {
+  checkoutUrl: string; onError: (m: string) => void; body?: unknown; disabled?: boolean; label?: string;
+}) {
   const [busy, setBusy] = useState(false);
   async function go() {
-    if (busy) return;
+    if (busy || disabled) return;
     setBusy(true); onError("");
     try {
-      const r = await fetch(checkoutUrl, { method: "POST" });
+      const r = await fetch(checkoutUrl, body === undefined ? { method: "POST" } : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const d = await r.json().catch(() => ({}));
-      if (r.ok && typeof d.url === "string" && d.url.startsWith("https://")) { window.location.assign(d.url); return; }
-      onError(d.error ?? "No pudimos abrir Mercado Pago. Intenta con tarjeta.");
+      if (r.ok && typeof d.url === "string" && (d.url.startsWith("https://") || d.url.startsWith("/"))) { window.location.assign(d.url); return; }
+      onError(d.error ?? "No pudimos abrir Mercado Pago. Intenta de nuevo.");
     } catch { onError("Sin conexión. Intenta de nuevo."); }
     setBusy(false);
   }
   return (
-    <button type="button" onClick={go} disabled={busy}
-      className="flex min-h-16 w-full flex-col items-center justify-center rounded-full bg-[#009ee3] px-6 text-white shadow-[0_12px_30px_rgba(0,158,227,.35)] transition active:scale-[.97] disabled:opacity-60">
-      <span className="text-lg font-semibold">{busy ? "Abriendo Mercado Pago…" : "Pagar con Mercado Pago"}</span>
-      {!busy && <span className="text-[13px] text-white/85">Con tu cuenta: tarjetas guardadas o saldo</span>}
+    <button type="button" onClick={go} disabled={busy || disabled}
+      className="flex min-h-16 w-full flex-col items-center justify-center rounded-2xl bg-[#009ee3] px-6 text-white shadow-[0_12px_30px_rgba(0,158,227,.35)] transition active:scale-[.97] disabled:opacity-50">
+      <span className="text-lg font-semibold">{busy ? "Abriendo Mercado Pago…" : label}</span>
+      {!busy && <span className="text-[13px] text-white/85">Tarjeta de crédito o débito, o tu cuenta Mercado Pago</span>}
     </button>
   );
 }

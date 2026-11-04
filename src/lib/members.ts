@@ -10,7 +10,7 @@ import {
 import { serverKey } from "./auth";
 import { getBooking, getBookings, indexCode, saveIndexed, startAllowed, todayCtx, type Booking } from "./bookings";
 import { toPublic } from "./garage-state";
-import { cancelPreapproval, createSubscription, getPreapproval, type MpAuthorizedPayment, type MpPreapproval } from "./payments/mercadopago";
+import { cancelPreapproval, createSubscription, createSubscriptionLink, getPreapproval, type MpAuthorizedPayment, type MpPreapproval } from "./payments/mercadopago";
 import { getSettings } from "./settings";
 import { claimCells, kvGet, kvIncr, kvSet, redis, releaseCells } from "./store";
 
@@ -156,6 +156,30 @@ export async function startSignup(input: z.infer<typeof SignupInput>): Promise<R
     bookingIds: existing?.bookingIds ?? [], createdAt: existing?.createdAt ?? now, updatedAt: now,
   };
   return { ok: true, value: await save(m) };
+}
+
+/**
+ * Paso 3 (alta o renovar): link de Mercado Pago para autorizar el cobro mensual.
+ * Nunca dos suscripciones: si ya hay una autorizada se aplica; si hay una pendiente del mismo monto se reutiliza su link.
+ */
+export async function subscribeLink(m: Member, email: string): Promise<Result<{ url: string | null; member: Member }>> {
+  const today = (await todayCtx()).now.date;
+  if (memberValid(m, today) && m.status === "active") return { ok: true, value: { url: null, member: m } };
+  const s = await getSettings();
+  const amount = s.socio[m.vehicle]; // el precio de hoy, del servidor
+  if (m.preapprovalId) {
+    const prev = await getPreapproval(m.preapprovalId).catch(() => null);
+    if (prev?.status === "authorized") return { ok: true, value: { url: null, member: await applyPreapproval(m, prev) } };
+    if (prev?.status === "pending" && prev.init_point && prev.auto_recurring?.transaction_amount === amount && prev.payer_email === email) {
+      return { ok: true, value: { url: prev.init_point, member: m } };
+    }
+    if (prev && prev.status !== "cancelled") await cancelPreapproval(m.preapprovalId).catch(() => {});
+  }
+  const pre = await createSubscriptionLink({ memberId: m.id, email, amount, reason: `LUXE GARAGE · Socio ${m.vehicle === "carro" ? "carro" : "camioneta"} · ${s.membershipWashes} lavadas al mes` });
+  if (!pre.init_point?.startsWith("https://")) return fail(502, "Mercado Pago no regresó el link de pago. Intenta de nuevo.");
+  const fresh = pre.id !== m.preapprovalId ? { anchor: undefined, charges: 0, paidLog: 0, periodStart: undefined, periodEnd: undefined } : {};
+  const next = await save({ ...m, ...fresh, email, price: amount, perPeriod: s.membershipWashes, preapprovalId: pre.id });
+  return { ok: true, value: { url: pre.init_point, member: next } };
 }
 
 /** Paso 2: con el token de tarjeta del Brick, crea el cobro automático mensual en Mercado Pago. */

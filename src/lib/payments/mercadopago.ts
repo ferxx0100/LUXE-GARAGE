@@ -101,11 +101,28 @@ export function rejectMessage(detail?: string): string {
 
 /* ───────── Suscripción mensual (preapproval): cobro automático con la tarjeta del Brick ───────── */
 export interface MpPreapproval {
-  id: string; status: string; external_reference?: string; payer_email?: string;
+  id: string; status: string; external_reference?: string; payer_email?: string; init_point?: string;
   summarized?: { charged_quantity?: number | null } | null;
   auto_recurring?: { transaction_amount?: number } | null;
 }
 export interface MpAuthorizedPayment { id: number | string; preapproval_id?: string; status?: string; transaction_amount?: number; payment?: { id?: number | string; status?: string } | null }
+
+/**
+ * Suscripción por link: Mercado Pago muestra su propia pantalla para que el cliente ponga su tarjeta y autorice
+ * el cobro mensual (funciona igual en iPhone). Queda "pending" hasta que autoriza; regresa a /socio.
+ */
+export async function createSubscriptionLink(o: { memberId: string; email: string; amount: number; reason: string }) {
+  const site = process.env.SITE_URL ?? SITE_URL;
+  const body = {
+    reason: o.reason.slice(0, 120),
+    external_reference: o.memberId,
+    payer_email: o.email,
+    auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: o.amount, currency_id: "MXN" },
+    back_url: `${site}/socio`,
+    status: "pending",
+  };
+  return mp<MpPreapproval>("/preapproval", { method: "POST", body: JSON.stringify(body), idempotency: `sublink-${o.memberId}-${o.amount}-${createHash("sha256").update(o.email).digest("hex").slice(0, 12)}` });
+}
 
 /**
  * Crea la suscripción ya autorizada con el token de tarjeta del Brick: Mercado Pago cobra hoy el primer mes

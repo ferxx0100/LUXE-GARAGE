@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import ReceiptSeal from "@/app/reserva/[id]/ReceiptSeal";
 import JoinFlow from "./JoinFlow";
-import PayBrick from "./PayBrick";
+import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
 import { addDays, DAY, MONTH, toMin, wd, type DayHours, type Vehicle } from "./fmt";
 
@@ -100,7 +100,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
   }
 
   // Siempre claro: activa (hasta cuándo), falta pagar o vencida. Nunca "cancelado" sin explicar.
-  const statusLine = m.status === "pending" ? { c: "text-gold", t: m.processing ? "Procesando tu primer cobro (puede tardar hasta 1 hora)" : "Falta tu primer pago" }
+  const statusLine = m.status === "pending" ? { c: "text-gold", t: m.processing ? "Si ya pagaste en Mercado Pago, se activa en unos minutos" : "Falta tu primer pago" }
     : m.valid ? { c: "text-go", t: `Activa hasta el ${lastDay ? longDay(lastDay) : ""}${m.status === "cancelled" ? " · no se renueva" : ""}` }
     : { c: "text-stop", t: "Vencida · renueva para apartar" };
 
@@ -185,7 +185,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
         </section>
       )}
 
-      {!m.valid && !m.processing && (
+      {!m.valid && (
         <JoinRenew prices={prices} vehicle={m.vehicle} mpPublicKey={mpPublicKey} pending={m.status === "pending"} />
       )}
 
@@ -243,6 +243,7 @@ function Login({ onDone, help, prices, washes, mpPublicKey }: { onDone: () => vo
 function JoinRenew({ prices, vehicle, mpPublicKey, pending }: { prices: Record<Vehicle, number>; vehicle: Vehicle; mpPublicKey: string | null; pending?: boolean }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
   return (
     <section className="rounded-3xl border border-gold/40 bg-white/[.03] p-5 text-center">
       <p className="text-lg font-bold">{pending ? "Activa tu membresía" : "Renueva tu membresía"}</p>
@@ -251,8 +252,14 @@ function JoinRenew({ prices, vehicle, mpPublicKey, pending }: { prices: Record<V
       {!open ? <button type="button" onClick={() => setOpen(true)} className="btn-gold mt-4 min-h-16 w-full text-lg">{pending ? "Pagar y activar" : "Renovar"}</button> : (
         <div className="mt-4 text-left">
           {error && <p role="alert" className="mb-3 rounded-2xl bg-stop/15 p-4 text-base font-semibold text-red-200">{error}</p>}
-          {mpPublicKey ? <PayBrick id="mp-brick-renew" publicKey={mpPublicKey} amount={prices[vehicle]} payUrl="/api/socio/subscribe" doneUrl="/socio" wrap={(form: unknown) => ({ form })} okStatuses={["active", "pending"]} onError={setError} />
-            : <p className="text-center text-white/70">Los pagos en línea se están activando.</p>}
+          {mpPublicKey ? (
+            <div className="grid gap-3">
+              <label className="grid gap-1.5 text-sm font-semibold text-white/70">Tu correo
+                <input className="min-h-14 w-full rounded-2xl border-2 border-white/15 bg-black/30 px-4 text-lg text-white outline-none placeholder:text-white/40 focus:border-gold" value={email} onChange={(e) => setEmail(e.target.value.trim())} placeholder="tucorreo@ejemplo.com" inputMode="email" autoComplete="email" maxLength={120} />
+              </label>
+              <MpButton checkoutUrl="/api/socio/checkout" body={{ email }} disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)} onError={setError} label={`Pagar $${prices[vehicle]} con Mercado Pago`} />
+            </div>
+          ) : <p className="text-center text-white/70">Los pagos en línea se están activando.</p>}
         </div>
       )}
     </section>

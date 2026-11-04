@@ -96,15 +96,16 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
     load();
   }
 
-  const statusLine = m.status === "pending" ? { c: "text-gold", t: "Confirmando tu primer cobro con Mercado Pago…" }
-    : m.valid ? { c: "text-go", t: `Vigente hasta el ${lastDay ? longDay(lastDay) : ""}${m.status === "cancelled" ? " · no se renueva" : ""}` }
+  // Siempre claro: activa (hasta cuándo), falta pagar o vencida. Nunca "cancelado" sin explicar.
+  const statusLine = m.status === "pending" ? { c: "text-gold", t: "Falta tu primer pago" }
+    : m.valid ? { c: "text-go", t: `Activa hasta el ${lastDay ? longDay(lastDay) : ""}${m.status === "cancelled" ? " · no se renueva" : ""}` }
     : { c: "text-stop", t: "Vencida · renueva para apartar" };
 
   return (
     <div className="grid min-w-0 gap-6 [&>*]:min-w-0">
       <div className="flex items-center justify-between">
         <p className="text-xl font-bold">Hola, {m.name.split(" ")[0]}</p>
-        <button type="button" onClick={async () => { await post("/api/socio/logout"); setMe("out"); }} className="min-h-12 rounded-full border border-white/20 px-5 text-sm font-semibold">Salir</button>
+        <button type="button" onClick={async () => { await post("/api/socio/logout"); setMe("out"); }} className="min-h-12 rounded-xl border border-white/20 px-5 text-sm font-semibold">Salir</button>
       </div>
 
       {msg && <p role="status" className={`rounded-2xl p-4 text-base font-semibold ${msg.ok ? "bg-go/15 text-[#bff5d3]" : "bg-stop/15 text-red-200"}`}>{msg.t}</p>}
@@ -123,14 +124,14 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
       {/* Tus 4 lavadas del mes */}
       {m.valid && (
         <section>
-          <p className="text-lg font-bold">Tus lavadas de este mes <span className="num text-gold">{me.used} de {m.perPeriod}</span></p>
+          <p className="text-lg font-bold">Te quedan <span className="num text-gold">{Math.max(0, m.perPeriod - me.used)} de {m.perPeriod}</span> lavadas este mes</p>
           <div className="mt-3 grid grid-cols-4 gap-2" aria-label="Lavadas del mes">
             {Array.from({ length: m.perPeriod }, (_, i) => {
               const w = me.washes[i];
               return (
                 <div key={i} className={`flex h-20 flex-col items-center justify-center rounded-2xl border-2 text-center leading-tight ${w ? (w.past ? "border-white/15 bg-white/[.05] text-white/60" : "border-gold bg-gold/10") : "border-dashed border-white/20"}`}>
                   {w ? (<><span className="text-sm font-bold">{w.past ? "✓ " : ""}{shortDay(w.date).split(" ").slice(0, 2).join(" ")}</span><span className="num text-xs">{range(w.time, w.duration)}</span></>)
-                    : <span className="text-sm text-white/50">Libre</span>}
+                    : <span className="text-sm text-white/55">Disponible</span>}
                 </div>
               );
             })}
@@ -141,7 +142,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
       {/* Acciones: apartar, o "estoy aquí" si está libre ahorita */}
       {canBook && (
         <div className="grid gap-3">
-          {libre && <button type="button" disabled={busy} onClick={() => book({ now: true })} className="min-h-16 rounded-full bg-go text-lg font-bold text-ink active:scale-[.98] disabled:opacity-50">Estoy aquí: lavar ahora</button>}
+          {libre && <button type="button" disabled={busy} onClick={() => book({ now: true })} className="min-h-16 rounded-2xl bg-go text-lg font-bold text-ink active:scale-[.98] disabled:opacity-50">Estoy aquí: lavar ahora</button>}
           {pick ? (
             <div className="rounded-3xl border border-gold/40 bg-white/[.04] p-5 text-center">
               <p className="text-sm text-white/60">Apartar</p>
@@ -172,7 +173,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
             {upcoming.map((w) => (
               <li key={w.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white/[.05] px-4 py-3">
                 <span><span className="block font-bold first-letter:uppercase">{longDay(w.date)}</span><span className="num block text-gold">{range(w.time, w.duration)}</span></span>
-                {w.canChange ? <button type="button" disabled={busy} onClick={() => cancel(w)} className="min-h-12 rounded-full border border-white/20 px-4 text-sm font-semibold">Cancelar</button>
+                {w.canChange ? <button type="button" disabled={busy} onClick={() => cancel(w)} className="min-h-12 rounded-xl border border-white/20 px-4 text-sm font-semibold">Cancelar</button>
                   : <span className="max-w-28 text-right text-xs text-white/50">Ya no se puede cambiar</span>}
               </li>
             ))}
@@ -181,8 +182,8 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
         </section>
       )}
 
-      {!m.valid && m.status !== "pending" && (
-        <JoinRenew prices={prices} vehicle={m.vehicle} mpPublicKey={mpPublicKey} />
+      {!m.valid && (
+        <JoinRenew prices={prices} vehicle={m.vehicle} mpPublicKey={mpPublicKey} pending={m.status === "pending"} />
       )}
 
       <div className="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/55">
@@ -236,14 +237,15 @@ function Login({ onDone, help, prices, washes, mpPublicKey }: { onDone: () => vo
 }
 
 /** Renovar después de vencer: nuevo cobro automático con la sesión del socio. */
-function JoinRenew({ prices, vehicle, mpPublicKey }: { prices: Record<Vehicle, number>; vehicle: Vehicle; mpPublicKey: string | null }) {
+function JoinRenew({ prices, vehicle, mpPublicKey, pending }: { prices: Record<Vehicle, number>; vehicle: Vehicle; mpPublicKey: string | null; pending?: boolean }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   return (
     <section className="rounded-3xl border border-gold/40 bg-white/[.03] p-5 text-center">
-      <p className="text-lg font-bold">Renueva tu membresía</p>
+      <p className="text-lg font-bold">{pending ? "Activa tu membresía" : "Renueva tu membresía"}</p>
+      {pending && <p className="mt-1 text-sm text-white/65">Tu cuenta ya está creada. Paga para usar tus lavadas.</p>}
       <p className="num mt-1 text-3xl font-bold text-gold">${prices[vehicle]} <span className="text-base font-semibold text-white/60">al mes</span></p>
-      {!open ? <button type="button" onClick={() => setOpen(true)} className="btn-gold mt-4 min-h-16 w-full text-lg">Renovar</button> : (
+      {!open ? <button type="button" onClick={() => setOpen(true)} className="btn-gold mt-4 min-h-16 w-full text-lg">{pending ? "Pagar y activar" : "Renovar"}</button> : (
         <div className="mt-4 text-left">
           {error && <p role="alert" className="mb-3 rounded-2xl bg-stop/15 p-4 text-base font-semibold text-red-200">{error}</p>}
           {mpPublicKey ? <PayBrick id="mp-brick-renew" publicKey={mpPublicKey} amount={prices[vehicle]} payUrl="/api/socio/subscribe" doneUrl="/socio" wrap={(form: unknown) => ({ form })} okStatuses={["active", "pending"]} onError={setError} />

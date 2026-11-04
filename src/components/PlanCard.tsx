@@ -25,10 +25,10 @@ export default function PlanCard({ prices, washes, mpPublicKey, seats }: {
         {!soldOut && seats <= 10 && <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-gold">Quedan {seats}</span>}
       </div>
 
-      <div className="relative mt-5 grid grid-cols-2 rounded-full bg-white/[.06] p-1" role="radiogroup" aria-label="Vehículo">
+      <div className="relative mt-5 grid grid-cols-2 rounded-2xl bg-white/[.06] p-1" role="radiogroup" aria-label="Vehículo">
         {(["carro", "camioneta"] as const).map((k) => (
           <button key={k} type="button" role="radio" aria-checked={v === k} onClick={() => setV(k)}
-            className={`min-h-12 rounded-full text-base font-semibold transition ${v === k ? "bg-gold text-ink shadow" : "text-white/70"}`}>
+            className={`min-h-12 rounded-xl text-base font-semibold transition ${v === k ? "bg-gold text-ink shadow" : "text-white/70"}`}>
             {k === "carro" ? "Carro" : "Camioneta"}
           </button>
         ))}

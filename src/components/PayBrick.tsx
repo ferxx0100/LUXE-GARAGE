@@ -5,6 +5,13 @@ declare global {
   interface Window { MercadoPago?: new (key: string, o?: { locale?: string }) => { bricks: () => { create: (t: string, el: string, s: unknown) => Promise<{ unmount: () => void }> } } }
 }
 
+/** Avisa al servidor (logs de Vercel) por qué falló el formulario de pago. Sin datos personales. */
+function report(where: string, err: unknown) {
+  const e = err as { type?: string; message?: string; cause?: unknown } | undefined;
+  const msg = [e?.type, e?.message, typeof e?.cause === "string" ? e.cause : e?.cause ? JSON.stringify(e.cause).slice(0, 120) : ""].filter(Boolean).join(" · ") || String(err);
+  try { navigator.sendBeacon?.("/api/log", new Blob([JSON.stringify({ where, msg })], { type: "application/json" })); } catch { /* nada */ }
+}
+
 function loadMp(): Promise<void> {
   if (window.MercadoPago) return Promise.resolve();
   return new Promise((res, rej) => {
@@ -53,8 +60,8 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
           initialization: { amount },
           customization: { visual: { style: { theme: "dark", customVariables: { baseColor: accent } } }, paymentMethods: { maxInstallments: 1 } },
           callbacks: {
-            onReady: () => {},
-            onError: () => errRef.current("Hubo un problema con el formulario de pago. Recarga la página."),
+            onReady: () => report("listo", "formulario visible"),
+            onError: (err: unknown) => { report("brick", err); errRef.current("Hubo un problema con el formulario de pago. Recarga la página."); },
             onSubmit: (form: unknown) => new Promise<void>((resolve, reject) => {
               errRef.current("");
               fetch(payUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(wrap ? wrap(form) : form) })
@@ -68,7 +75,7 @@ export default function PayBrick({ publicKey, amount, payUrl, doneUrl, onError, 
           },
         });
         if (cancelled) b.unmount(); else brickRef.current = b;
-      } catch { errRef.current("No se pudo cargar el pago. Revisa tu conexión y recarga."); }
+      } catch (err) { report("carga", err); errRef.current("No se pudo cargar el pago. Revisa tu conexión y recarga."); }
     })();
     return () => { cancelled = true; brickRef.current?.unmount(); brickRef.current = null; };
   }, [publicKey, amount, payUrl, doneUrl, accent, id]);

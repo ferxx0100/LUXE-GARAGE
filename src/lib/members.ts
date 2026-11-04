@@ -280,6 +280,46 @@ export async function bookWash(m: Member, date: string, time: string, walkIn = f
   }
 }
 
+/**
+ * Registrar la lavada de un socio que está en el lugar (panel, con su celular + NIP tecleado por el cliente).
+ * Si tenía turno hoy, se sella ese; si no, se registra una lavada hecha ahora. Cuenta para su mes.
+ */
+export async function recordVisit(m: Member, by: string): Promise<Result<{ booking: Booking; number: number; of: number }>> {
+  const lock = `lg:mem:lock:${m.id}`;
+  if ((await redis("SET", lock, "1", "NX", "EX", 15)) !== "OK") return fail(409, "Espera un momento e intenta de nuevo.");
+  try {
+    const c = await todayCtx();
+    if (!memberValid(m, c.now.date)) return fail(409, m.status === "pending" ? "Este socio no ha pagado: no tiene lavadas." : "Membresía vencida: no tiene lavadas.");
+    const list = await memberWashes(m);
+    const now = new Date().toISOString();
+    const todayOpen = list.find((b) => b.date === c.now.date && b.status === "confirmed");
+    let b: Booking;
+    if (todayOpen) {
+      b = { ...todayOpen, status: "done", doneBy: by, doneAt: now, updatedAt: now };
+      await kvSet(`lg:bk:${b.id}`, b);
+    } else {
+      const used = usedThisPeriod(m, list);
+      if (used >= m.perPeriod) return fail(409, `Ya usó sus ${m.perPeriod} lavadas de este mes.`);
+      const id = randomBytes(16).toString("base64url");
+      const start = Math.floor(c.now.minutes / CELL) * CELL;
+      b = {
+        id, code: shortCode(id), status: "done", date: c.now.date, time: fromMin(start), duration: MEMBER_DUR,
+        kind: "completo", place: "garage", address: "", vehicle: m.vehicle, name: m.name, phone: m.phone, email: m.email,
+        plate: "", notes: "Registrada en el lugar", amount: 0, owner: id,
+        membershipId: m.id, membershipCode: m.code, paymentStatus: "socio", doneBy: by, doneAt: now, createdAt: now, updatedAt: now,
+      };
+      await saveIndexed(b);
+      await indexCode(b.code, `b:${id}`);
+      m = await save({ ...m, bookingIds: [...m.bookingIds, id] });
+    }
+    const all = await memberWashes(m);
+    const number = all.filter((x) => x.status === "done" && !!m.periodStart && x.date >= m.periodStart! && x.date < m.periodEnd!).length;
+    return { ok: true, value: { booking: b, number, of: m.perPeriod } };
+  } finally {
+    await redis("DEL", lock);
+  }
+}
+
 /** Cancela una lavada del socio: solo con más de 72 h; la lavada regresa a su mes. */
 export async function cancelWash(m: Member, bookingId: string): Promise<Result<Booking>> {
   const b = await getBooking(bookingId);

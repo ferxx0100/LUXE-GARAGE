@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { FosaBar } from "./AdminAgenda";
+import AdminVisit from "./AdminVisit";
 
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busyUntil?: string | null; public: Pub };
@@ -68,6 +69,8 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
         </div>
       </section>
 
+      <AdminVisit onUnauthorized={onUnauthorized} onDone={load} />
+
       <section>
         <h2 className="text-lg font-bold">Hoy vienen <span className="num text-gold">{items?.length ?? 0}</span></h2>
         {items === null ? <p className="mt-3 text-white/60">Cargando…</p> : items.length === 0 ? <p className="mt-3 rounded-2xl bg-white/[.04] p-4 text-white/70">Nadie ha apartado para hoy.</p> : (
@@ -80,7 +83,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
                   <span className="min-w-0">
                     <span className="block truncate text-lg font-bold">{b.name}</span>
                     <span className="block text-sm text-white/65">
-                      <span className={`mr-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${b.socio ? "bg-gold/20 text-gold" : "bg-white/10 text-white/80"}`}>{b.socio ? "Socio" : b.status === "confirmed" ? "Pagada" : b.status === "pending" ? "Pago en revisión" : "Individual"}</span>
+                      <span className={`mr-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${b.socio ? "bg-gold/20 text-gold" : "bg-white/10 text-white/80"}`}>{b.socio ? "Socio" : b.status === "confirmed" ? "Pagada" : b.status === "pending" ? "Pago en revisión" : "Normal"}</span>
                       {b.vehicle === "camioneta" ? "Camioneta" : b.vehicle === "carro" ? "Carro" : ""}
                     </span>
                   </span>

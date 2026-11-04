@@ -20,8 +20,8 @@ type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "mem
 const PRICE_FIELDS: { group: "socio" | "single"; key: keyof Money; label: string }[] = [
   { group: "socio", key: "carro", label: "Suscripción · carro (al mes)" },
   { group: "socio", key: "camioneta", label: "Suscripción · camioneta (al mes)" },
-  { group: "single", key: "carro", label: "Lavado individual · carro" },
-  { group: "single", key: "camioneta", label: "Lavado individual · camioneta" },
+  { group: "single", key: "carro", label: "Lavada normal · carro" },
+  { group: "single", key: "camioneta", label: "Lavada normal · camioneta" },
 ];
 
 async function api(path: string, method = "GET", body?: unknown) {

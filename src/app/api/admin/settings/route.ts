@@ -32,8 +32,8 @@ export async function PUT(req: Request) {
     const changes = [
       money("suscripción carro", before.socio.carro, d.socio.carro),
       money("suscripción camioneta", before.socio.camioneta, d.socio.camioneta),
-      money("individual carro", before.single.carro, d.single.carro),
-      money("individual camioneta", before.single.camioneta, d.single.camioneta),
+      money("lavada normal carro", before.single.carro, d.single.carro),
+      money("lavada normal camioneta", before.single.camioneta, d.single.camioneta),
       before.memberCap !== d.memberCap ? `tope ${before.memberCap}→${d.memberCap}` : "",
       JSON.stringify(before.hours) !== JSON.stringify(d.hours) ? "horario" : "",
     ].filter(Boolean).join(" · ");

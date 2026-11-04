@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     if (b.status === "done") return json({ error: `Ya se selló${b.doneBy ? ` (${b.doneBy})` : ""}.` }, 409);
     if (b.status !== "confirmed") return json({ error: "Sin pago confirmado: no se puede sellar." }, 409);
     const next = await kvSave({ ...b, status: "done", doneBy: g.actor.name, doneAt: new Date().toISOString() });
-    await audit(g.actor.name, "Selló lavada", `${b.code} · ${b.membershipId ? "socio" : "individual"} · ${b.time}`);
+    await audit(g.actor.name, "Selló lavada", `${b.code} · ${b.membershipId ? "socio" : "normal"} · ${b.time}`);
     return json({ ok: true, status: next.status, doneBy: next.doneBy });
   } catch {
     return deny.down();

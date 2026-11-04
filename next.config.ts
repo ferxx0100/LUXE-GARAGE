@@ -15,9 +15,11 @@ const csp = [
   "script-src 'self' 'unsafe-inline'" + mp + live + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""),
   "connect-src 'self'" + mp + (preview ? " https://vercel.live wss://ws-us3.pusher.com" : ""),
   "frame-src" + mp + (preview ? " https://vercel.live" : ""),
+  "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "report-uri /api/csp",
 ].join("; ");
 
 const config: NextConfig = {

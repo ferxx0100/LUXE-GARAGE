@@ -71,7 +71,7 @@ export default function AdminTeam({ onUnauthorized }: { onUnauthorized: () => vo
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-white/15 bg-black/30 px-4 text-base" aria-label="Mes" />
           <a href={`/api/admin/export?mes=${month}`} className="grid min-h-12 shrink-0 place-items-center rounded-xl bg-gold px-4 font-bold text-ink">Descargar Excel</a>
         </div>
-        <p className="mt-2 text-sm text-white/55">Fecha, cliente, socio o individual, monto, pago de Mercado Pago y quién selló.</p>
+        <p className="mt-2 text-sm text-white/55">Fecha, cliente, socio o lavada normal, monto, pago de Mercado Pago y quién selló.</p>
       </section>
 
       <section>

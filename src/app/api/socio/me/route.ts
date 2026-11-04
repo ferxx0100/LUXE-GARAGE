@@ -18,7 +18,8 @@ export async function GET(req: Request) {
       used: usedThisPeriod(m, list),
       washes: inPeriod.map((b) => ({
         id: b.id, date: b.date, time: b.time, duration: b.duration,
-        past: b.date < now.date || (b.date === now.date && Number(b.time.slice(0, 2)) * 60 + Number(b.time.slice(3)) + b.duration <= now.minutes),
+        // Sellada en el lugar = ya usada, aunque su turno no haya terminado.
+        past: b.status === "done" || b.date < now.date || (b.date === now.date && Number(b.time.slice(0, 2)) * 60 + Number(b.time.slice(3)) + b.duration <= now.minutes),
         canChange: canChange(b.date, b.time, now),
       })),
     });

@@ -63,6 +63,8 @@ export default function LiveGarage({ mapsUrl }: { mapsUrl: string }) {
   const opensShort = opens ? `ABRE ${opens.replace(/^el /, "").replace(/^mañana \S+/, "mañana").replace(/ a las? /, " ")}`.toUpperCase() : undefined;
 
   const spot = g?.next?.completo ?? null;
+  // Si está libre y el turno empieza en menos de 10 min, es "ahora" (no "1:20" cuando son la 1:10).
+  const soon = status === "LIBRE" && !!spot && !!now && spot.date === now.date && spot.inMinutes - elapsed <= 10;
   const spotDay = spot && now ? (spot.date === now.date ? "" : wd(spot.date) === (wd(now.date) + 1) % 7 && spot.inMinutes < 2 * 1440 ? "mañana " : `${DAY[wd(spot.date)].toLowerCase()} `) : "";
 
   return (
@@ -93,7 +95,7 @@ export default function LiveGarage({ mapsUrl }: { mapsUrl: string }) {
             <div className="mt-4 grid gap-2.5">
               <button type="button" disabled={!spot} onClick={() => spot && openReserve({ date: spot.date, time: spot.time })}
                 className="btn-gold min-h-16 w-full text-lg disabled:opacity-50">
-                <span className="whitespace-nowrap">{spot ? <>Apartar {spotDay}<span className="num">{hm(spot.time)}–{hm(plus30(spot.time))}</span></> : "Buscando turno…"}</span>
+                <span className="whitespace-nowrap">{spot ? (soon ? <>Apartar ahora · <span className="num">hasta {hm(plus30(spot.time))}</span></> : <>Apartar {spotDay}<span className="num">{hm(spot.time)}–{hm(plus30(spot.time))}</span></>) : "Buscando turno…"}</span>
               </button>
               <button type="button" onClick={() => openReserve()} className="min-h-14 w-full rounded-full border-2 border-black/80 text-lg font-bold active:scale-[.98]">Otro día u hora</button>
             </div>

@@ -74,11 +74,11 @@ export default async function Home() {
           <div className="mx-auto max-w-md"><RealVideo /></div>
         </section>
 
-        {/* Secundario: lavado individual */}
+        {/* Secundario: lavada normal */}
         <section id="suelta" className="scroll-mt-14 px-5 pb-16">
           <div className="mx-auto max-w-md rounded-[28px] border border-white/10 bg-white/[.03] p-6">
-            <h2 className="text-xl font-semibold text-white">Lavado individual</h2>
-            <p className="mt-1 text-base text-white/60">Interior y exterior · pagas al reservar</p>
+            <h2 className="text-xl font-semibold text-white">Lavada normal</h2>
+            <p className="mt-1 text-base text-white/60">Exterior y aspirado de interior</p>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {(["carro", "camioneta"] as const).map((v) => (
                 <div key={v} className="rounded-2xl bg-white/[.04] px-4 py-3">

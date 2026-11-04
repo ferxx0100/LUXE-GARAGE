@@ -73,10 +73,16 @@ export async function todayCtx(d = new Date()): Promise<Ctx> {
   return { s, g, now: localNow(d), busyMin: busyUntilMin(g, d), closed: closedToday(g, s.hours, d) };
 }
 
-/** Bloques ocupados de un día, leyendo sus celdas (una sola lectura MGET). */
+/**
+ * Bloques ocupados de un día: sus celdas (una lectura MGET) + las reservas vivas del día.
+ * Las reservas hechas con celdas de 10 min siguen bloqueando su horario completo.
+ */
 export async function dayBlocks(date: string, w: { open: number; close: number }): Promise<Block[]> {
-  const owners = await readCells(cellsFor(date, w.open, w.close - w.open));
-  return blocksFromCells(owners.map((owner, i) => ({ start: w.open + i * CELL, owner })));
+  const [owners, list] = await Promise.all([readCells(cellsFor(date, w.open, w.close - w.open)), listBookings([date])]);
+  const fromCells = blocksFromCells(owners.map((owner, i) => ({ start: w.open + i * CELL, owner })));
+  const fromBookings = list.filter((b) => ["hold", "pending", "confirmed", "conflict"].includes(b.status))
+    .map((b) => ({ start: toMin(b.time), end: toMin(b.time) + durationOf(b) }));
+  return [...fromCells, ...fromBookings].sort((a, b) => a.start - b.start);
 }
 
 /** ¿Se puede ofrecer ese día? (dentro de los 30 días y no cerrado a mano hoy) */

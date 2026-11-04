@@ -127,8 +127,9 @@ export function spotLabel(date: string, time: string, now: { date: string }): st
 /* ───────── Agenda de UNA sola fosa, en celdas de 10 minutos ───────── */
 /** Duración del servicio en minutos: con interior deja el auto 30 min; solo exterior, 20 min sin bajarse. */
 export const SERVICE_MIN = { completo: 30, exterior: 20 } as const satisfies Record<Kind, number>;
-export const CELL = 10;        // tamaño de la celda de agenda (min)
-export const LEAD_MIN = 10;    // hoy: la cita empieza al menos 10 min después de "ahora"
+export const CELL = 5;         // tamaño de la celda de agenda (min): si está libre, se aparta ~5 min después de ahora
+export const LEAD_MIN = 4;     // hoy: la cita empieza al menos 4 min después de "ahora" (redondeado a 5 → entre 4 y 8 min)
+export const BUSY_BUFFER = 5;  // si está OCUPADO: 5 min de margen después de que se desocupe, para no juntar trabajo
 export const MAX_DAYS = 30;    // se reserva hasta 30 días adelante
 
 export type Block = { start: number; end: number }; // minutos del día, [start, end)
@@ -152,8 +153,8 @@ export const inRange = (date: string, today: string, maxDays = MAX_DAYS) => isDa
 
 /**
  * ¿Cabe un servicio de `dur` minutos que empieza en `start`?
- * Rejilla de 10 min, dentro del horario, sin pasarse del cierre y sin traslaparse con otros bloques.
- * Si `now` es del mismo día: al menos LEAD_MIN después de ahora y después de que se desocupe la fosa (busyUntilMin).
+ * Rejilla de 5 min, dentro del horario, sin pasarse del cierre y sin traslaparse con otros bloques.
+ * Si `now` es del mismo día: al menos LEAD_MIN después de ahora y BUSY_BUFFER después de que se desocupe el lugar (busyUntilMin).
  */
 export function fits(h: Hours, date: string, start: number, dur: number, blocks: Block[], now?: Now, busyUntilMin?: number | null): boolean {
   const w = dayWindow(h, date);
@@ -163,13 +164,13 @@ export function fits(h: Hours, date: string, start: number, dur: number, blocks:
     if (date < now.date) return false;
     if (date === now.date) {
       if (start < now.minutes + LEAD_MIN) return false;
-      if (busyUntilMin != null && start < busyUntilMin) return false;
+      if (busyUntilMin != null && start < busyUntilMin + BUSY_BUFFER) return false;
     }
   }
   return blocks.every((b) => start + dur <= b.start || start >= b.end);
 }
 
-/** Primer inicio factible del día (rejilla de 10 min), o null si ya no cabe nada. */
+/** Primer inicio factible del día (rejilla de 5 min), o null si ya no cabe nada. */
 export function nextFree(h: Hours, date: string, dur: number, blocks: Block[], now?: Now, busyUntilMin?: number | null): number | null {
   const w = dayWindow(h, date);
   if (!w) return null;
@@ -178,7 +179,7 @@ export function nextFree(h: Hours, date: string, dur: number, blocks: Block[], n
 }
 
 /**
- * Horas que ofrecemos al cliente (ascendentes, múltiplos de 10):
+ * Horas que ofrecemos al cliente (ascendentes, múltiplos de 5):
  * rejilla de su duración desde la apertura (cada 30 o cada 20 min)
  * ∪ horas en que terminan citas existentes (para pegar la siguiente) ∪ el inicio libre más próximo.
  */

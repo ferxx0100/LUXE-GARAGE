@@ -45,7 +45,8 @@ test("traslapes: una sola fosa", () => {
   assert.equal(fits(hours, MON, hm("14:20"), 20, blocks), false);
   assert.equal(fits(hours, MON, hm("13:30"), 30, blocks), true); // termina justo cuando empieza
   assert.equal(fits(hours, MON, hm("14:30"), 20, blocks), true);
-  assert.equal(fits(hours, MON, hm("14:05"), 20, []), false); // fuera de la rejilla de 10
+  assert.equal(fits(hours, MON, hm("14:03"), 20, []), false); // fuera de la rejilla de 5
+  assert.equal(fits(hours, MON, hm("14:35"), 20, blocks), true); // la rejilla de 5 permite 14:35
 });
 
 test("pegar citas: se ofrece la hora en que termina un bloque", () => {
@@ -57,9 +58,10 @@ test("pegar citas: se ofrece la hora en que termina un bloque", () => {
   assert.ok(c.includes("13:00"));
 });
 
-test("hoy: al menos 10 min después de ahora y después de que se desocupa la fosa", () => {
+test("hoy: libre = unos 5 min después de ahora; ocupado = 5 min después de que se desocupa", () => {
   const now = { date: MON, minutes: hm("15:07") };
-  assert.equal(nextFree(hours, MON, 20, [], now), hm("15:20"));
+  assert.equal(nextFree(hours, MON, 20, [], now), hm("15:15")); // 15:07 + 4 → 15:15, no 15:20 ni 15:30
+  assert.equal(nextFree(hours, MON, 30, [], { date: MON, minutes: hm("16:41") }), hm("16:45")); // a las 4:41, 4:45
   assert.equal(fits(hours, MON, hm("15:10"), 20, [], now), false);
   assert.equal(nextFree(hours, MON, 30, [], now, hm("15:45")), hm("15:50"));
   const c = times(candidateStarts(hours, MON, 30, [], now, hm("15:45")));
@@ -69,11 +71,11 @@ test("hoy: al menos 10 min después de ahora y después de que se desocupa la fo
   assert.equal(nextFree(hours, TUE, 30, [], now, hm("15:45")), hm("12:00")); // busyUntil solo cuenta hoy
 });
 
-test("celdas de 10 min y bloques", () => {
-  assert.deepEqual(cellsFor(MON, hm("16:00"), 30), ["lg:cell:2026-11-02:1600", "lg:cell:2026-11-02:1610", "lg:cell:2026-11-02:1620"]);
-  assert.equal(cellsFor(MON, hm("16:00"), 20).length, 2);
-  const cells = [720, 730, 740, 750, 760].map((start, i) => ({ start, owner: ["a", "a", "b", "b", null][i] }));
-  assert.deepEqual(blocksFromCells(cells), [{ start: 720, end: 740 }, { start: 740, end: 760 }]);
+test("celdas de 5 min y bloques", () => {
+  assert.deepEqual(cellsFor(MON, hm("16:00"), 30), ["1600", "1605", "1610", "1615", "1620", "1625"].map((t) => `lg:cell:2026-11-02:${t}`));
+  assert.equal(cellsFor(MON, hm("16:00"), 20).length, 4);
+  const cells = [720, 725, 730, 735, 740].map((start, i) => ({ start, owner: ["a", "a", "b", "b", null][i] }));
+  assert.deepEqual(blocksFromCells(cells), [{ start: 720, end: 730 }, { start: 730, end: 740 }]);
 });
 
 test("membresía: 4 lavadas completas en días distintos, dentro del mes y que quepan", () => {

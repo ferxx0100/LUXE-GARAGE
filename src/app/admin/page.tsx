@@ -19,16 +19,16 @@ type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "mem
 
 const PRICE_FIELDS: { group: "socio" | "single" | "deep" | "detail"; key: keyof Money; label: string }[] = [
   { group: "socio", key: "carro", label: "Suscripción · carro (al mes)" },
-  { group: "socio", key: "camioneta", label: "Suscripción · camioneta mediana (al mes)" },
+  { group: "socio", key: "camioneta", label: "Suscripción · camioneta (al mes)" },
   { group: "socio", key: "suv", label: "Suscripción · SUV o pick up (al mes)" },
   { group: "single", key: "carro", label: "Lavado sencillo · carro" },
-  { group: "single", key: "camioneta", label: "Lavado sencillo · camioneta mediana" },
+  { group: "single", key: "camioneta", label: "Lavado sencillo · camioneta" },
   { group: "single", key: "suv", label: "Lavado sencillo · SUV o pick up" },
   { group: "deep", key: "carro", label: "Lavado profundo · carro" },
-  { group: "deep", key: "camioneta", label: "Lavado profundo · camioneta mediana" },
+  { group: "deep", key: "camioneta", label: "Lavado profundo · camioneta" },
   { group: "deep", key: "suv", label: "Lavado profundo · SUV o pick up" },
   { group: "detail", key: "carro", label: "Detallado premium · carro" },
-  { group: "detail", key: "camioneta", label: "Detallado premium · camioneta mediana" },
+  { group: "detail", key: "camioneta", label: "Detallado premium · camioneta" },
   { group: "detail", key: "suv", label: "Detallado premium · SUV o pick up" },
 ];
 

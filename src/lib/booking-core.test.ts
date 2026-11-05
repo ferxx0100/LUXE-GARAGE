@@ -97,7 +97,7 @@ test("membresía: 4 lavadas completas en días distintos, dentro del mes y que q
 
 test("servicio: la lavada de membresía no se liga a un auto", () => {
   assert.equal(serviceText({ kind: "completo" }), "Exterior e interior");
-  assert.equal(serviceText({ kind: "completo", vehicle: "camioneta", plate: "AAA-000-A" }), "Exterior e interior · Camioneta mediana · AAA-000-A");
+  assert.equal(serviceText({ kind: "completo", vehicle: "camioneta", plate: "AAA-000-A" }), "Exterior e interior · Camioneta · AAA-000-A");
   assert.equal(serviceText({ kind: "exterior", vehicle: "carro", plate: "" }), "Solo exterior · Carro");
 });
 

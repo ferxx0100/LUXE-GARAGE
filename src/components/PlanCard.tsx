@@ -24,10 +24,9 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
     <div className="relative overflow-hidden rounded-[27px] bg-[linear-gradient(160deg,#211a08_0%,#100e0a_50%,#0b0b0c_100%)] p-6">
       <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
       <div className="relative flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[.28em] text-gold">Suscripción mensual</p>
+        <h2 className="text-sm font-semibold uppercase tracking-[.22em] text-gold">Suscripción mensual</h2>
         {!soldOut && seats <= 10 && <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-gold">Quedan {seats}</span>}
       </div>
-      <h2 className="font-display relative mt-2 text-[2rem] font-semibold leading-tight text-white">Membresía LUXE</h2>
 
       <div className="relative mt-5 grid grid-cols-3 rounded-2xl bg-white/[.06] p-1" role="radiogroup" aria-label="Vehículo">
         {VEHICLES.map((k) => (

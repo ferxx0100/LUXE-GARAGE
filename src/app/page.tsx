@@ -97,7 +97,7 @@ export default async function Home() {
               <div className="relative mt-5 grid grid-cols-3 gap-2">
                 {(["carro", "camioneta", "suv"] as const).map((v) => (
                   <div key={v} className="rounded-2xl border border-gold/25 bg-black/30 px-3 py-3">
-                    <p className="text-[13px] leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta mediana" : "SUV / pick up"}</p>
+                    <p className="text-[13px] leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : "SUV / pick up"}</p>
                     <p className="num mt-1 text-xl font-bold text-gold">${s.detail[v].toLocaleString("es-MX")}</p>
                   </div>
                 ))}
@@ -117,7 +117,7 @@ export default async function Home() {
               <div className="mt-5 grid grid-cols-3 gap-2">
                 {(["carro", "camioneta", "suv"] as const).map((v) => (
                   <div key={v} className="rounded-2xl bg-white/[.05] px-3 py-3">
-                    <p className="text-[13px] leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta mediana" : "SUV / pick up"}</p>
+                    <p className="text-[13px] leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : "SUV / pick up"}</p>
                     <p className="num mt-1 text-xl font-bold text-white">${s.deep[v]}</p>
                   </div>
                 ))}
@@ -132,7 +132,7 @@ export default async function Home() {
                 <p className="num text-base text-white/70">desde ${s.single.carro}</p>
               </div>
               <p className="mt-1 text-sm text-white/60">Exterior y aspirado de interior.</p>
-              <p className="num mt-3 text-sm text-white/55">Carro ${s.single.carro} · Camioneta mediana ${s.single.camioneta} · SUV / pick up ${s.single.suv}</p>
+              <p className="num mt-3 text-sm text-white/55">Carro ${s.single.carro} · Camioneta ${s.single.camioneta} · SUV / pick up ${s.single.suv}</p>
               <div className="mt-4"><SingleWashButton service="sencillo" className="btn-line min-h-12 w-full text-base" label="Reservar sencillo" /></div>
             </article>
           </div>

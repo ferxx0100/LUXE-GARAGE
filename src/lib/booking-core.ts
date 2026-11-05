@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type Vehicle = "carro" | "camioneta" | "suv";
 export const VEHICLES: Vehicle[] = ["carro", "camioneta", "suv"];
-export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta mediana" : v === "suv" ? "SUV o pick up" : "");
+export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : v === "suv" ? "SUV o pick up" : "");
 export type Kind = "completo" | "exterior"; // "Exterior e interior" | "Solo exterior"
 export type Place = "garage" | "domicilio"; // "domicilio" solo en reservas viejas: ya no se ofrece
 export interface Prices { carro: number; camioneta: number; suv: number }

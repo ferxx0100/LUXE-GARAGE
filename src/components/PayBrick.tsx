@@ -119,11 +119,20 @@ export function MpButton({ checkoutUrl, onError, body, disabled, label = "Pagar 
     setBusy(false);
   }
   return (
-    <button type="button" onClick={go} disabled={busy || disabled}
-      className="flex min-h-16 w-full flex-col items-center justify-center rounded-2xl bg-[#009ee3] px-6 text-white shadow-[0_12px_30px_rgba(0,158,227,.35)] transition active:scale-[.97] disabled:opacity-50">
-      <span className="text-lg font-semibold">{busy ? "Abriendo Mercado Pago…" : label}</span>
-      {!busy && <span className="text-[13px] text-white/85">Tarjeta de crédito o débito, o tu cuenta Mercado Pago</span>}
-    </button>
+    <div className="grid gap-2">
+      <button type="button" onClick={go} disabled={busy || disabled}
+        className="flex min-h-16 w-full flex-col items-center justify-center rounded-2xl bg-[#009ee3] px-6 text-white shadow-[0_12px_30px_rgba(0,158,227,.35)] transition active:scale-[.97] disabled:opacity-50">
+        <span className="text-lg font-semibold">{busy ? "Abriendo Mercado Pago…" : label}</span>
+        {!busy && <span className="text-[13px] text-white/85">Tarjeta de crédito o débito, o tu cuenta Mercado Pago</span>}
+      </button>
+      {/* Confianza: el cliente sabe dónde escribe su tarjeta. */}
+      <p className="flex items-center justify-center gap-1.5 text-center text-xs text-white/55">
+        <svg viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+        </svg>
+        Pago seguro en Mercado Pago. Tu tarjeta nunca pasa por nuestro sitio.
+      </p>
+    </div>
   );
 }
 

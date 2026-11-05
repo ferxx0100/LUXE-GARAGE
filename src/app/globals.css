@@ -14,6 +14,9 @@
 }
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; font-size: 17px; }
+/* Toques repetidos por error (dos o tres veces) no hacen zoom ni se ven lentos; el pellizco para acercar sigue funcionando. */
+html, body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+a, button, [role="radio"], [role="button"], label, summary { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 @media (min-width: 768px) { html { font-size: 18px; } }
 body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 .font-display { font-family: var(--font-display); }

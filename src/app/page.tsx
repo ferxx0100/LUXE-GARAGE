@@ -69,10 +69,14 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* El lugar real: solo el video, grande. */}
-        <section id="video" aria-label="Video del lugar" className="px-4 pb-14">
-          <div className="mx-auto max-w-md"><RealVideo /></div>
-        </section>
+        {/* Franja que separa la suscripción (lo principal) de los lavados sin membresía. */}
+        <div className="px-5 pb-12" aria-hidden>
+          <div className="mx-auto flex max-w-md items-center gap-4">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/50" />
+            <span className="size-1.5 rotate-45 bg-gold/70" />
+            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/50" />
+          </div>
+        </div>
 
         {/* Lavados sin membresía: tres opciones chicas, tamaño S/M/XL. */}
         <section id="suelta" className="scroll-mt-14 px-5 pb-16" aria-labelledby="lavados">
@@ -81,6 +85,11 @@ export default async function Home() {
             <p className="mb-4 mt-1 text-center text-sm text-white/55">Sin membresía · pagas al reservar</p>
             <WashMenu prices={{ sencillo: s.single, profundo: s.deep, detallado: s.detail }} />
           </div>
+        </section>
+
+        {/* El lugar real: el video, al final, mismo formato. */}
+        <section id="video" aria-label="Video del lugar" className="px-4 pb-14">
+          <div className="mx-auto max-w-md"><RealVideo /></div>
         </section>
 
         <section id="visitanos" className="border-t border-white/10 px-5 py-12 text-center">

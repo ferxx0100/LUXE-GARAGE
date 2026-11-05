@@ -418,10 +418,10 @@ export default function GarageScene({ status, opensShort, busyShort, freeShort }
         <filter id="lg-glow-sm" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         <filter id="lg-glow-lg" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" /></filter>
         {/* pasillo */}
-        <linearGradient id="lg-c-ceil" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={END.y0}><stop offset="0" stopColor="#e2e0da" /><stop offset="1" stopColor="#f1f0eb" /></linearGradient>
-        <linearGradient id="lg-c-wallL" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={END.x0} y2="0"><stop offset="0" stopColor="#e0ded7" /><stop offset="1" stopColor="#f7f6f2" /></linearGradient>
-        <linearGradient id="lg-c-wallR" gradientUnits="userSpaceOnUse" x1="400" y1="0" x2={END.x1} y2="0"><stop offset="0" stopColor="#dddbd4" /><stop offset="1" stopColor="#f5f4f0" /></linearGradient>
-        <linearGradient id="lg-c-end" gradientUnits="userSpaceOnUse" x1="0" y1={END.y0} x2="0" y2={END.y1}><stop offset="0" stopColor="#fbfaf7" /><stop offset="1" stopColor="#ebe9e3" /></linearGradient>
+        <linearGradient id="lg-c-ceil" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={END.y0}><stop offset="0" stopColor="#0a0a0b" /><stop offset="1" stopColor="#1a1a1c" /></linearGradient>
+        <linearGradient id="lg-c-wallL" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={END.x0} y2="0"><stop offset="0" stopColor="#0b0b0c" /><stop offset="1" stopColor="#1e1e20" /></linearGradient>
+        <linearGradient id="lg-c-wallR" gradientUnits="userSpaceOnUse" x1="400" y1="0" x2={END.x1} y2="0"><stop offset="0" stopColor="#0b0b0c" /><stop offset="1" stopColor="#1c1c1e" /></linearGradient>
+        <linearGradient id="lg-c-end" gradientUnits="userSpaceOnUse" x1="0" y1={END.y0} x2="0" y2={END.y1}><stop offset="0" stopColor="#1d1d1f" /><stop offset="1" stopColor="#121213" /></linearGradient>
         <linearGradient id="lg-c-floor" gradientUnits="userSpaceOnUse" x1="0" y1={END.y1} x2="0" y2="600"><stop offset="0" stopColor="#d9d8d3" /><stop offset=".45" stopColor="#c6c5c0" /><stop offset="1" stopColor="#a7a6a1" /></linearGradient>
         <linearGradient id="lg-refl" gradientUnits="userSpaceOnUse" x1="0" y1={DOOR.y1} x2="0" y2={DOOR.y1 + DH * 0.7}><stop offset="0" stopColor="#fffdf4" stopOpacity=".85" /><stop offset="1" stopColor="#fffdf4" stopOpacity="0" /></linearGradient>
         <linearGradient id="lg-box" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a3a6ab" /><stop offset="1" stopColor="#6d7075" /></linearGradient>
@@ -450,15 +450,15 @@ export default function GarageScene({ status, opensShort, busyShort, freeShort }
 
       {/* ─── Pasillo: techo, paredes y piso ─── */}
       <polygon points={poly([-CW, CH, ZN], [CW, CH, ZN], [CW, CH, 0], [-CW, CH, 0])} fill="url(#lg-c-ceil)" />
-      <path d={CEIL_GRID} stroke="#cfcdc6" strokeWidth=".7" fill="none" />
+      <path d={CEIL_GRID} stroke="#2a2a2d" strokeWidth=".7" fill="none" />
       <polygon points={poly([-CW, 0, ZN], [-CW, CH, ZN], [-CW, CH, 0], [-CW, 0, 0])} fill="url(#lg-c-wallL)" />
       <polygon points={poly([CW, 0, ZN], [CW, CH, ZN], [CW, CH, 0], [CW, 0, 0])} fill="url(#lg-c-wallR)" />
-      <polygon points={poly([-CW, 0, ZN], [-CW, 0.12, ZN], [-CW, 0.12, 0], [-CW, 0, 0])} fill="#bdbab2" />
-      <polygon points={poly([CW, 0, ZN], [CW, 0.12, ZN], [CW, 0.12, 0], [CW, 0, 0])} fill="#bdbab2" />
-      <path d={TILES_CORR} stroke="#cbc8c0" strokeWidth=".6" fill="none" />
+      <polygon points={poly([-CW, 0, ZN], [-CW, 0.12, ZN], [-CW, 0.12, 0], [-CW, 0, 0])} fill="#070708" />
+      <polygon points={poly([CW, 0, ZN], [CW, 0.12, ZN], [CW, 0.12, 0], [CW, 0, 0])} fill="#070708" />
+      <path d={TILES_CORR} stroke="#2b2b2e" strokeWidth=".6" fill="none" />
       {/* brillo del azulejo vidriado */}
-      <polygon points={poly([-CW, 0.4, -2.4], [-CW, 3.1, -1.9], [-CW, 3.1, -0.9], [-CW, 0.4, -1.5])} fill="#fff" opacity=".55" filter="url(#lg-soft)" />
-      <polygon points={poly([CW, 0.5, -2.1], [CW, 3.2, -1.5], [CW, 3.2, -0.7], [CW, 0.5, -1.2])} fill="#fff" opacity=".45" filter="url(#lg-soft)" />
+      <polygon points={poly([-CW, 0.4, -2.4], [-CW, 3.1, -1.9], [-CW, 3.1, -0.9], [-CW, 0.4, -1.5])} fill="#fff" opacity=".07" filter="url(#lg-soft)" />
+      <polygon points={poly([CW, 0.5, -2.1], [CW, 3.2, -1.5], [CW, 3.2, -0.7], [CW, 0.5, -1.2])} fill="#fff" opacity=".06" filter="url(#lg-soft)" />
       <polygon points={poly([-CW, 0, ZN], [CW, 0, ZN], [CW, 0, 0], [-CW, 0, 0])} fill="url(#lg-c-floor)" />
       <path d={FLOOR_JOINTS} stroke="#a3a29d" strokeWidth=".9" opacity=".55" fill="none" />
       {/* reflejo de los tubos en el concreto pulido */}
@@ -480,9 +480,9 @@ export default function GarageScene({ status, opensShort, busyShort, freeShort }
       {/* ─── Pared del fondo con la entrada de la bahía ─── */}
       <path fillRule="evenodd" fill="url(#lg-c-end)"
         d={`M${END.x0} ${END.y0}H${END.x1}V${END.y1}H${END.x0}Z M${DOOR.x0} ${DOOR.y0}H${DOOR.x1}V${DOOR.y1}H${DOOR.x0}Z`} />
-      <path d={TILES_END} stroke="#cdcac2" strokeWidth=".55" fill="none" />
-      <polygon points={poly([1.78, 0.3, 0], [1.98, 3.2, 0], [2.28, 3.2, 0], [2.08, 0.3, 0])} fill="#fff" opacity=".6" filter="url(#lg-soft)" />
-      <polygon points={poly([-2.52, 2.5, 0], [-2.46, 3.35, 0], [-2.28, 3.35, 0], [-2.34, 2.5, 0])} fill="#fff" opacity=".5" filter="url(#lg-soft)" />
+      <path d={TILES_END} stroke="#2c2c2f" strokeWidth=".55" fill="none" />
+      <polygon points={poly([1.78, 0.3, 0], [1.98, 3.2, 0], [2.28, 3.2, 0], [2.08, 0.3, 0])} fill="#fff" opacity=".08" filter="url(#lg-soft)" />
+      <polygon points={poly([-2.52, 2.5, 0], [-2.46, 3.35, 0], [-2.28, 3.35, 0], [-2.34, 2.5, 0])} fill="#fff" opacity=".07" filter="url(#lg-soft)" />
 
       {/* ─── Interior de la bahía (azulejo iluminado y fosa) ─── */}
       <g clipPath="url(#lg-door)">

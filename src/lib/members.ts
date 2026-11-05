@@ -20,6 +20,8 @@ export interface Member {
   nip: string;
   /** Cambia al restablecer el NIP: cierra las sesiones abiertas. */
   nipVer: number;
+  /** Cambia en cada entrada: solo un celular a la vez (prestar la cuenta cierra la sesión del dueño). */
+  sessVer?: number;
   status: MemberStatus; price: number; perPeriod: number;
   /** Día del primer cobro aprobado: los meses se cuentan desde ahí. */
   anchor?: string; periodStart?: string; periodEnd?: string;
@@ -94,7 +96,7 @@ const COOKIE = "lg_socio";
 const TTL = 30 * 24 * 3600;
 const sign = (v: string) => createHmac("sha256", serverKey()).update(`socio|${v}`).digest("base64url");
 export function memberCookie(m: Member): string {
-  const v = `${m.id}.${m.nipVer}.${Math.floor(Date.now() / 1000) + TTL}`;
+  const v = `${m.id}.${m.nipVer}-${m.sessVer ?? 0}.${Math.floor(Date.now() / 1000) + TTL}`;
   return `${COOKIE}=${v}.${sign(v)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${TTL}`;
 }
 export const clearMemberCookie = `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
@@ -107,13 +109,18 @@ export async function memberFromCookie(cookieHeader: string | null | undefined):
   const want = sign(`${id}.${ver}.${exp}`);
   if (mac.length !== want.length || !timingSafeEqual(Buffer.from(mac), Buffer.from(want))) return null;
   const m = await getMember(id);
-  return m && String(m.nipVer) === ver ? m : null;
+  return m && `${m.nipVer}-${m.sessVer ?? 0}` === ver ? m : null;
 }
 export const memberFromRequest = (req: Request) => memberFromCookie(req.headers.get("cookie"));
 
 /* ───────── Entrar: celular + NIP, con límite de intentos ───────── */
 const MAX_FAILS = 5, WINDOW = 15 * 60;
+/** Entrar en su celular: valida el NIP y abre sesión nueva (cierra la anterior). */
 export async function login(phoneRaw: string, nip: string, ip: string): Promise<Result<Member>> {
+  return checkNip(phoneRaw, nip, ip, true);
+}
+/** Valida celular + NIP con límite de intentos. `newSession`: solo al entrar en su propio celular. */
+export async function checkNip(phoneRaw: string, nip: string, ip: string, newSession = false): Promise<Result<Member>> {
   const phone = normalizePhone(phoneRaw);
   if (!phone || !/^\d{4}$/.test(nip)) return fail(400, "Escribe tu celular (10 dígitos) y tu NIP de 4 números.");
   const kPhone = `lg:rl:soc:ph:${phone}`, kIp = `lg:rl:soc:ip:${ip}`;
@@ -125,7 +132,8 @@ export async function login(phoneRaw: string, nip: string, ip: string): Promise<
     return fail(401, "Celular o NIP incorrecto.");
   }
   await redis("DEL", kPhone);
-  return { ok: true, value: m };
+  // Entrar en otro celular cierra la sesión anterior: una cuenta, un celular.
+  return { ok: true, value: newSession ? await save({ ...m, sessVer: (m.sessVer ?? 0) + 1 }) : m };
 }
 
 /* ───────── Alta: datos → pago con tarjeta (suscripción) ───────── */
@@ -315,7 +323,7 @@ export async function bookWash(m: Member, date: string, time: string, walkIn = f
  * Registrar la lavada de un socio que está en el lugar (panel, con su celular + NIP tecleado por el cliente).
  * Si tenía turno hoy, se sella ese; si no, se registra una lavada hecha ahora. Cuenta para su mes.
  */
-export async function recordVisit(m: Member, by: string): Promise<Result<{ booking: Booking; number: number; of: number }>> {
+export async function recordVisit(m: Member, by: string): Promise<Result<{ booking: Booking; number: number; of: number; vehicle: Vehicle }>> {
   const lock = `lg:mem:lock:${m.id}`;
   if ((await redis("SET", lock, "1", "NX", "EX", 15)) !== "OK") return fail(409, "Espera un momento e intenta de nuevo.");
   try {
@@ -326,6 +334,7 @@ export async function recordVisit(m: Member, by: string): Promise<Result<{ booki
     const now = new Date().toISOString();
     const todayOpen = list.find((b) => b.date === c.now.date && b.status === "confirmed");
     let b: Booking;
+    if (list.some((x) => x.date === c.now.date && x.status === "done")) return fail(409, "Este socio ya lavó hoy. Solo una lavada por día.");
     if (todayOpen) {
       b = { ...todayOpen, status: "done", doneBy: by, doneAt: now, updatedAt: now };
       await kvSet(`lg:bk:${b.id}`, b);
@@ -346,7 +355,7 @@ export async function recordVisit(m: Member, by: string): Promise<Result<{ booki
     }
     const all = await memberWashes(m);
     const number = all.filter((x) => x.status === "done" && !!m.periodStart && x.date >= m.periodStart! && x.date < m.periodEnd!).length;
-    return { ok: true, value: { booking: b, number, of: m.perPeriod } };
+    return { ok: true, value: { booking: b, number, of: m.perPeriod, vehicle: m.vehicle } };
   } finally {
     await redis("DEL", lock);
   }

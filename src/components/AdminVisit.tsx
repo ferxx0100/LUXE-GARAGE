@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { vehicleLabel } from "./fmt";
 
 const field = "min-h-14 w-full rounded-xl border-2 border-white/15 bg-black/30 px-4 text-lg text-white outline-none placeholder:text-white/40 focus:border-gold";
 
@@ -21,12 +22,12 @@ export default function AdminVisit({ onUnauthorized, onDone }: { onUnauthorized:
     setBusy(false); setNip("");
     if (r.status === 401) return onUnauthorized();
     const d = await r.json().catch(() => ({}));
-    if (r.ok) { setPhone(""); setRes({ ok: true, t: `${d.name} · ${d.code} — Lavada ${d.number} de ${d.of} registrada` }); onDone(); }
+    if (r.ok) { setPhone(""); setRes({ ok: true, t: `${d.name} · ${d.code} — Lavada ${d.number} de ${d.of} registrada. Revisa que sea ${vehicleLabel(d.vehicle).toLowerCase()}.` }); onDone(); }
     else setRes({ ok: false, t: d.error ?? "No se pudo registrar." });
   }
 
   return (
-    <section className="rounded-3xl border border-gold/40 bg-[linear-gradient(160deg,#1c1709,#0b0b0c)] p-4">
+    <section className="rounded-3xl border-2 border-gold/50 bg-white/[.04] p-4">
       <h2 className="text-lg font-bold">Registrar lavada de socio</h2>
       <p className="mt-1 text-sm text-white/60">El cliente escribe su celular y su NIP.</p>
       <form onSubmit={go} className="mt-3 grid gap-2">

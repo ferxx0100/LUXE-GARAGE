@@ -89,7 +89,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
                     </span>
                   </span>
                   <span className="text-center">
-                    <span className="num block rounded-xl bg-black px-3 py-1 text-2xl font-bold tracking-[.2em] text-white" aria-label={`Sello ${b.seal}`}>{b.seal}</span>
+                    <span className="keep-dark num block rounded-xl bg-black px-3 py-1 text-2xl font-bold tracking-[.2em] text-white" aria-label={`Sello ${b.seal}`}>{b.seal}</span>
                     <span className="block text-[10px] text-white/45">sello</span>
                   </span>
                   <span className="col-span-3">

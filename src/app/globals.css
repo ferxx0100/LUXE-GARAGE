@@ -113,3 +113,62 @@ body { background: var(--color-ink); color: #f4f1e8; font-family: var(--font-san
   .lg-fluor, .lg-power, .lg-chevron, .live-dot, .sheet-in, .lg-neon { animation: none; }
   .lg-shutter, .lg-foam { transition: none; }
 }
+
+/* ───── Tema medio-claro para /admin y /socio (pedido del dueño): fondo cálido claro, tarjetas blancas,
+   texto oscuro y oro más oscuro. La tarjeta del socio (.keep-dark) se queda oscura como tarjeta física. ───── */
+body:has(.theme-soft) { background: #e6e2da; color: #1b1a17; }
+.theme-soft { color: #1b1a17; }
+.theme-soft .text-white:not(.keep-dark *):not(.keep-dark) { color: rgb(27, 26, 23); }
+.theme-soft .text-white\/40:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.52); }
+.theme-soft .text-white\/45:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.57); }
+.theme-soft .text-white\/50:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.62); }
+.theme-soft .text-white\/55:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.67); }
+.theme-soft .text-white\/60:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.72); }
+.theme-soft .text-white\/65:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.77); }
+.theme-soft .text-white\/70:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.82); }
+.theme-soft .text-white\/75:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.87); }
+.theme-soft .text-white\/80:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.92); }
+.theme-soft .text-white\/85:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 0.97); }
+.theme-soft .text-white\/90:not(.keep-dark *):not(.keep-dark) { color: rgb(27 26 23 / 1.00); }
+.theme-soft input::placeholder { color: rgb(27 26 23 / .42); }
+.theme-soft .border-white\/5:not(.keep-dark *):not(.keep-dark) { border-color: rgb(27 26 23 / 0.10); }
+.theme-soft .border-white\/10:not(.keep-dark *):not(.keep-dark) { border-color: rgb(27 26 23 / 0.15); }
+.theme-soft .border-white\/12:not(.keep-dark *):not(.keep-dark) { border-color: rgb(27 26 23 / 0.17); }
+.theme-soft .border-white\/15:not(.keep-dark *):not(.keep-dark) { border-color: rgb(27 26 23 / 0.20); }
+.theme-soft .border-white\/20:not(.keep-dark *):not(.keep-dark) { border-color: rgb(27 26 23 / 0.25); }
+.theme-soft .border-white\/30:not(.keep-dark *):not(.keep-dark) { border-color: rgb(27 26 23 / 0.35); }
+.theme-soft .divide-white\/5 > :not(:last-child) { border-color: rgb(27 26 23 / .1); }
+.theme-soft .divide-white\/10 > :not(:last-child) { border-color: rgb(27 26 23 / .1); }
+.theme-soft .bg-white\/\[\.02\]:not(.keep-dark *):not(.keep-dark) { background-color: #fbfaf7; }
+.theme-soft .bg-white\/\[\.03\]:not(.keep-dark *):not(.keep-dark) { background-color: #fbfaf7; }
+.theme-soft .bg-white\/\[\.04\]:not(.keep-dark *):not(.keep-dark) { background-color: #fbfaf7; }
+.theme-soft .bg-white\/\[\.05\]:not(.keep-dark *):not(.keep-dark) { background-color: #fbfaf7; }
+.theme-soft .bg-white\/\[\.06\]:not(.keep-dark *):not(.keep-dark) { background-color: #fbfaf7; }
+.theme-soft .bg-white\/5:not(.keep-dark *):not(.keep-dark) { background-color: #fbfaf7; }
+.theme-soft .bg-white\/10:not(.keep-dark *):not(.keep-dark) { background-color: #ecE8df; }
+.theme-soft .bg-black\/30:not(.keep-dark *):not(.keep-dark) { background-color: #ffffff; }
+.theme-soft .bg-black\/40:not(.keep-dark *):not(.keep-dark) { background-color: #ffffff; }
+.theme-soft .bg-black\/25:not(.keep-dark *):not(.keep-dark) { background-color: #ffffff; }
+.theme-soft .bg-black:not(.keep-dark *):not(.keep-dark) { background-color: #1b1a17; }
+.theme-soft .bg-ink:not(.keep-dark *):not(.keep-dark) { background-color: rgb(230 226 218 / .94); }
+.theme-soft .bg-ink\/90:not(.keep-dark *):not(.keep-dark) { background-color: rgb(230 226 218 / .94); }
+.theme-soft .bg-ink\/95:not(.keep-dark *):not(.keep-dark) { background-color: rgb(230 226 218 / .94); }
+.theme-soft .bg-ink\/85:not(.keep-dark *):not(.keep-dark) { background-color: rgb(230 226 218 / .94); }
+.theme-soft .text-gold:not(.keep-dark *):not(.keep-dark) { color: #8a6a12; }
+.theme-soft .text-gold-hi:not(.keep-dark *):not(.keep-dark) { color: #7a5c0e; }
+.theme-soft .text-gold-grad:not(.keep-dark *):not(.keep-dark) { color: #8a6a12; background: none; -webkit-text-fill-color: currentColor; }
+.theme-soft .bg-gold\/10:not(.keep-dark *):not(.keep-dark) { background-color: rgb(212 175 55 / .16); }
+.theme-soft .bg-gold\/15:not(.keep-dark *):not(.keep-dark) { background-color: rgb(212 175 55 / .16); }
+.theme-soft .bg-gold\/20:not(.keep-dark *):not(.keep-dark) { background-color: rgb(212 175 55 / .16); }
+.theme-soft .bg-gold\/\[\.07\]:not(.keep-dark *):not(.keep-dark) { background-color: rgb(212 175 55 / .16); }
+.theme-soft .from-gold\/\[\.10\]:not(.keep-dark *):not(.keep-dark) { --tw-gradient-from: rgb(212 175 55 / .14); }
+.theme-soft .from-gold\/\[\.12\]:not(.keep-dark *):not(.keep-dark) { --tw-gradient-from: rgb(212 175 55 / .16); }
+.theme-soft .from-white\/\[\.07\]:not(.keep-dark *):not(.keep-dark) { --tw-gradient-from: #ffffff; }
+.theme-soft .text-red-100:not(.keep-dark *):not(.keep-dark) { color: #a3261c; }
+.theme-soft .text-red-200:not(.keep-dark *):not(.keep-dark) { color: #a3261c; }
+.theme-soft .text-red-300:not(.keep-dark *):not(.keep-dark) { color: #a3261c; }
+.theme-soft .text-emerald-200:not(.keep-dark *):not(.keep-dark) { color: #0b7a3b; }
+.theme-soft .text-emerald-300:not(.keep-dark *):not(.keep-dark) { color: #0b7a3b; }
+.theme-soft .text-emerald-400:not(.keep-dark *):not(.keep-dark) { color: #0b7a3b; }
+.theme-soft .text-go:not(.keep-dark *):not(.keep-dark) { color: #0b7a3b; }
+.theme-soft .text-stop:not(.keep-dark *):not(.keep-dark) { color: #b3261e; }

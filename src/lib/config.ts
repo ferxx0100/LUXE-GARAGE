@@ -19,7 +19,7 @@ export function whatsappLink(text: string): string {
   return `https://wa.me/${BUSINESS.phone}?text=${encodeURIComponent(text)}`;
 }
 
-export const SITE_URL = "https://luxegaragee.com";
+export const SITE_URL = "https://www.luxegaragee.com"; // dominio principal (luxegaragee.com redirige aquí)
 
 export const telLink = `tel:+${BUSINESS.phone}`;
 // Abre la ficha real "Luxe Garage" en Google Maps (con su pin exacto, fotos y reseñas).

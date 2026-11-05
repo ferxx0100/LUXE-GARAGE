@@ -114,7 +114,7 @@ export default function SocioApp({ hours, prices, washesPerMonth, mpPublicKey, h
       {msg && <p role="status" className={`rounded-2xl p-4 text-base font-semibold ${msg.ok ? "bg-go/15 text-[#bff5d3]" : "bg-stop/15 text-red-200"}`}>{msg.t}</p>}
 
       {/* Tarjeta de socio: el sello cambia cada 30 s y coincide con el que ve el empleado en "Hoy" */}
-      <section className="overflow-hidden rounded-3xl border border-gold/40 bg-gradient-to-b from-gold/[.10] to-transparent">
+      <section className="keep-dark overflow-hidden rounded-3xl border border-gold/40 bg-[linear-gradient(160deg,#241c09,#0f0e0b_60%,#0b0b0c)] text-white shadow-[0_20px_40px_-24px_rgba(0,0,0,.6)]">
         {seal && <ReceiptSeal endpoint="/api/socio/seal" initial={seal} />}
         <div className="border-t border-dashed border-gold/30 px-6 py-5 text-center">
           <p className="text-xs font-semibold tracking-[.2em] text-white/55">SOCIO</p>
@@ -229,7 +229,7 @@ function Login({ onDone, help, prices, washes, mpPublicKey }: { onDone: () => vo
         <button disabled={busy || phone.replace(/\D/g, "").length < 10 || nip.length < 4} className="btn-gold mt-1 min-h-16 text-lg disabled:opacity-45">{busy ? "Entrando…" : "Entrar"}</button>
         <p className="text-center text-sm text-white/55">¿Olvidaste tu NIP? <a href={help} className="text-gold underline underline-offset-4">Llámanos</a> y te damos uno nuevo.</p>
       </form>
-      <div className="rounded-[28px] border border-gold/30 bg-[linear-gradient(160deg,#1c1709,#0b0b0c)] p-6 text-center">
+      <div className="keep-dark rounded-[28px] border border-gold/30 bg-[linear-gradient(160deg,#1c1709,#0b0b0c)] p-6 text-white text-center">
         <p className="text-sm font-semibold uppercase tracking-[.22em] text-gold">Suscripción mensual</p>
         <p className="mt-2 text-lg text-white/85">{washes} lavadas completas al mes</p>
         <p className="num mt-1 text-base text-white/60">Carro ${prices.carro} · Camioneta ${prices.camioneta} · SUV/pick up ${prices.suv} al mes</p>

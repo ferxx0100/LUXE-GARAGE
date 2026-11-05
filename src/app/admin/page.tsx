@@ -100,11 +100,11 @@ export default function Admin() {
     setAuthed(false); setData(null); setForm(null); setRole(null);
   }
 
-  if (authed === null) return <main className="p-10 text-center text-white/60">Cargando…</main>;
+  if (authed === null) return <main className="theme-soft p-10 text-center text-white/60">Cargando…</main>;
 
   if (!authed)
     return (
-      <main className="mx-auto max-w-sm p-6 pt-20">
+      <main className="theme-soft mx-auto max-w-sm p-6 pt-20">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/emblem-128.png" alt="" width="64" height="64" className="mx-auto" />
         <h1 className="font-display mt-4 text-center text-2xl text-gold">Panel del negocio</h1>
@@ -134,7 +134,7 @@ export default function Admin() {
   const set = (patch: Partial<Settings>) => setForm((f) => f && { ...f, ...patch });
 
   return (
-    <main className="mx-auto w-full max-w-2xl overflow-x-clip px-4 sm:px-5"
+    <main className="theme-soft mx-auto w-full max-w-2xl overflow-x-clip px-4 sm:px-5"
       style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)", paddingLeft: "max(env(safe-area-inset-left), 16px)", paddingRight: "max(env(safe-area-inset-right), 16px)" }}>
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex min-w-0 items-center gap-2.5">

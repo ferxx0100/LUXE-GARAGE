@@ -1,7 +1,7 @@
 import { deny, guardActor } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { clientIp, json } from "@/lib/http";
-import { login, recordVisit } from "@/lib/members";
+import { checkNip, recordVisit } from "@/lib/members";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +15,12 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return deny.bad("Escribe celular y NIP");
   try {
-    const who = await login(parsed.data.phone, parsed.data.nip, clientIp(req));
+    const who = await checkNip(parsed.data.phone, parsed.data.nip, clientIp(req));
     if (!who.ok) return json({ error: who.error }, who.status);
     const r = await recordVisit(who.value, g.actor.name);
     if (!r.ok) return json({ error: r.error }, r.status);
     await audit(g.actor.name, "Registró lavada de socio", `${who.value.code} · ${r.value.number} de ${r.value.of}`);
-    return json({ ok: true, name: who.value.name.split(" ")[0], code: who.value.code, number: r.value.number, of: r.value.of });
+    return json({ ok: true, name: who.value.name.split(" ")[0], code: who.value.code, number: r.value.number, of: r.value.of, vehicle: r.value.vehicle });
   } catch {
     return deny.down();
   }

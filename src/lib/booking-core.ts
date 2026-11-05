@@ -141,7 +141,7 @@ export const SERVICE_DUR: Record<Service, Record<Vehicle, number>> = {
   detallado: { carro: 150, camioneta: 180, suv: 240 },
 };
 export const serviceMin = (s: Service | undefined, v: Vehicle) => SERVICE_DUR[s ?? "sencillo"]?.[v] ?? WASH_MIN[v];
-export const serviceLabel = (s?: string | null) => (s === "profundo" ? "Lavado profundo" : s === "detallado" ? "Detallado premium" : "Lavado sencillo");
+export const serviceLabel = (s?: string | null) => (s === "profundo" ? "Lavado profundo" : s === "detallado" ? "Detallado exterior" : "Lavado sencillo");
 export const washMin = (v?: Vehicle | null) => WASH_MIN[v ?? "carro"] ?? WASH_MIN.carro;
 export const CELL = 5;         // tamaño de la celda de agenda (min): si está libre, se aparta ~5 min después de ahora
 export const LEAD_MIN = 4;     // hoy: la cita empieza al menos 4 min después de "ahora" (redondeado a 5 → entre 4 y 8 min)

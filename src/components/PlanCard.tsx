@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import JoinFlow from "./JoinFlow";
-import { VEHICLES, type Vehicle } from "./fmt";
+import { SIZE_TAG, VEHICLES, type Vehicle } from "./fmt";
 
 const Check = () => (
   <svg viewBox="0 0 24 24" className="mt-0.5 size-5 shrink-0 text-gold" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -15,7 +15,7 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
 }) {
   const [v, setV] = useState<Vehicle>("carro");
   const soldOut = seats <= 0;
-  const perks = [`${washes} lavadas completas al mes`, "Interior y exterior", "Tú eliges día y hora desde tu celular", "Tarjeta de socio con sello vivo", "Se renueva sola · cancelas cuando quieras"];
+  const perks = [`${washes} lavados sencillos al mes`, "Por fuera y por dentro, con aromatizante", "Tú eliges día y hora desde tu celular", "Tarjeta de socio con sello vivo", "Se renueva sola · cancelas cuando quieras"];
   const perWash = Math.round(prices[v] / washes);
   const saving = single && single[v] > perWash ? Math.round((1 - perWash / single[v]) * 100) : 0;
 
@@ -32,7 +32,7 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
         {VEHICLES.map((k) => (
           <button key={k} type="button" role="radio" aria-checked={v === k} onClick={() => setV(k)}
             className={`min-h-12 rounded-xl px-1 text-[15px] font-semibold leading-tight transition ${v === k ? "bg-gold text-ink shadow" : "text-white/70"}`}>
-            {k === "suv" ? "SUV / pick up" : k === "camioneta" ? "Camioneta" : "Carro"}
+            <span className="num block text-xs opacity-80">{SIZE_TAG[k]}</span>{k === "suv" ? "SUV / pick up" : k === "camioneta" ? "Camioneta" : "Carro"}
           </button>
         ))}
       </div>

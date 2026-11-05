@@ -99,7 +99,7 @@ test("servicio: la lavada de membresía no se liga a un auto", () => {
   assert.equal(serviceText({ kind: "completo" }), "Exterior e interior");
   assert.equal(serviceText({ kind: "completo", vehicle: "camioneta", plate: "AAA-000-A" }), "Exterior e interior · Camioneta · AAA-000-A");
   assert.equal(serviceText({ kind: "exterior", vehicle: "carro", plate: "" }), "Solo exterior · Carro");
-  assert.equal(serviceText({ kind: "completo", vehicle: "suv", service: "detallado" }), "Detallado premium · SUV o pick up");
+  assert.equal(serviceText({ kind: "completo", vehicle: "suv", service: "detallado" }), "Detallado exterior · SUV o pick up");
 });
 
 test("Mercado Pago: preferencia con monto del servidor y decisión solo con lo que dice la API", () => {

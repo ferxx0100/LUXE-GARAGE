@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
-import { DAY, durText, MONTH, SERVICE_DUR, serviceLabel, toMin, wd, VEHICLES, vehicleLabel, type DayHours, type Service, type Vehicle } from "./fmt";
+import { DAY, durText, MONTH, SERVICE_DUR, SIZE_TAG, serviceLabel, toMin, wd, VEHICLES, vehicleLabel, type DayHours, type Service, type Vehicle } from "./fmt";
 
-export type ReserveDetail = { date?: string; time?: string; service?: Service };
+export type ReserveDetail = { date?: string; time?: string; service?: Service; vehicle?: Vehicle };
 /** Abre la ventana de apartar desde cualquier botón: window.dispatchEvent(new CustomEvent("lg:reserve", { detail })) */
 export const openReserve = (detail: ReserveDetail = {}) => window.dispatchEvent(new CustomEvent("lg:reserve", { detail }));
 
@@ -40,7 +40,9 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
       setService(d.service ?? "sencillo");
       const ok = d.date && d.time && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && /^\d{2}:\d{2}$/.test(d.time);
       setSlot(ok ? { date: d.date!, time: d.time! } : null);
-      setStep("vehicle"); setError(""); setHold(null); setOpen(true);
+      // Si ya eligió tamaño en el menú, no se vuelve a preguntar: directo a día y hora.
+      if (d.vehicle && !ok) { setVehicle(d.vehicle); setStep("pick"); } else setStep("vehicle");
+      setError(""); setHold(null); setOpen(true);
     };
     window.addEventListener("lg:reserve", on);
     return () => window.removeEventListener("lg:reserve", on);
@@ -120,7 +122,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
               {VEHICLES.map((v) => (
                 <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => chooseVehicle(v)}
                   className="flex min-h-20 items-center justify-between rounded-2xl border-2 border-white/15 bg-white/[.04] px-5 text-left transition active:scale-[.98]">
-                  <span><span className="block text-xl font-bold">{vehicleLabel(v)}</span><span className="block text-sm text-white/60">{durText(SERVICE_DUR[service][v])}</span></span>
+                  <span><span className="block text-xl font-bold"><span className="num mr-2 rounded-md bg-white/10 px-1.5 py-0.5 text-sm">{SIZE_TAG[v]}</span>{vehicleLabel(v)}</span><span className="block text-sm text-white/60">{durText(SERVICE_DUR[service][v])}</span></span>
                   <span className="num text-xl font-bold text-gold">${prices[service][v].toLocaleString("es-MX")}</span>
                 </button>
               ))}
@@ -145,7 +147,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
             <div className="grid gap-3">
               <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
               <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-              <p className="text-center text-xs text-white/50">{service === "detallado" ? "Detallado a mano, encerado y faros" : service === "profundo" ? "Lavado a detalle por dentro y por fuera" : "Exterior y aspirado de interior"} · {durText(SERVICE_DUR[service][vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
+              <p className="text-center text-xs text-white/50">{service === "detallado" ? "Pintura descontaminada, pulido, abrillantado y encerado" : service === "profundo" ? "Todo lo del sencillo, a fondo" : "Por fuera y por dentro"} · {durText(SERVICE_DUR[service][vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
             </div>
           )}
 

@@ -2,6 +2,8 @@
 export type Kind = "completo" | "exterior";
 export type Vehicle = "carro" | "camioneta" | "suv";
 export const VEHICLES: Vehicle[] = ["carro", "camioneta", "suv"];
+/** Tamaño para que se entienda rápido: S carro, M camioneta, XL SUV o pick up. */
+export const SIZE_TAG: Record<Vehicle, string> = { carro: "S", camioneta: "M", suv: "XL" };
 /** Lo que tarda la lavada (min), igual que en el servidor. */
 export const WASH_MIN: Record<Vehicle, number> = { carro: 50, camioneta: 60, suv: 100 };
 export type Service = "sencillo" | "profundo" | "detallado";
@@ -10,7 +12,7 @@ export const SERVICE_DUR: Record<Service, Record<Vehicle, number>> = {
   profundo: { carro: 90, camioneta: 105, suv: 150 },
   detallado: { carro: 150, camioneta: 180, suv: 240 },
 };
-export const serviceLabel = (s?: string | null) => (s === "profundo" ? "Lavado profundo" : s === "detallado" ? "Detallado premium" : "Lavado sencillo");
+export const serviceLabel = (s?: string | null) => (s === "profundo" ? "Lavado profundo" : s === "detallado" ? "Detallado exterior" : "Lavado sencillo");
 export const durText = (min: number) => (min < 60 ? `${min} min` : min % 60 ? `${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")} h` : `${min / 60} h`);
 export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : v === "suv" ? "SUV o pick up" : "");
 export type DayHours = { open: number; close: number } | null;

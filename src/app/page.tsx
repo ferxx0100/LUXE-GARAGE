@@ -3,7 +3,7 @@ import PlanCard from "@/components/PlanCard";
 import LiveGarage from "@/components/LiveGarage";
 import RealVideo from "@/components/RealVideo";
 import ReserveSheet from "@/components/ReserveSheet";
-import SingleWashButton from "@/components/SingleWashButton";
+import WashMenu from "@/components/WashMenu";
 import { BUSINESS, SITE_URL, mapsLink, telLink, whatsappLink } from "@/lib/config";
 import { seatsLeft } from "@/lib/members";
 import { getSettings, hoursLabel } from "@/lib/settings";
@@ -74,67 +74,12 @@ export default async function Home() {
           <div className="mx-auto max-w-md"><RealVideo /></div>
         </section>
 
-        {/* Lavados de una sola vez (sin membresía): del más completo al más sencillo. */}
+        {/* Lavados sin membresía: tres opciones chicas, tamaño S/M/XL. */}
         <section id="suelta" className="scroll-mt-14 px-5 pb-16" aria-labelledby="lavados">
-          <div className="mx-auto grid max-w-md gap-4">
-            <h2 id="lavados" className="font-display text-center text-2xl font-semibold text-gold">Lavados sin membresía</h2>
-
-            {/* Detallado premium: la ficha más elegante */}
-            <article className="relative overflow-hidden rounded-[28px] border border-gold/60 bg-[linear-gradient(155deg,#2a200a_0%,#141109_45%,#0b0b0c_100%)] p-6 shadow-[0_30px_60px_-28px_rgba(212,175,55,.55)]">
-              <div className="pointer-events-none absolute -left-20 -top-24 size-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
-              <div className="relative flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[.28em] text-gold">Premium</p>
-                <span className="rounded-full border border-gold/50 px-3 py-1 text-xs font-semibold text-gold">El más completo</span>
-              </div>
-              <h3 className="font-display relative mt-3 text-[1.9rem] font-semibold leading-tight text-white">Detallado premium</h3>
-              <p className="relative mt-1 text-base text-white/70">Cuidado a mano para que tu auto quede como nuevo.</p>
-              <ul className="relative mt-5 grid gap-2.5 text-[1.02rem] text-white/85">
-                {["Lavado a mano a detalle con shampoo pH neutro que cuida la pintura", "Aspirado profundo: asientos, tapetes, alfombras y cajuela", "Limpieza de tablero, puertas, plásticos y vidrios", "Encerado de carrocería", "Limpieza y abrillantado de faros", "Llantas y rines a detalle"].map((t) => (
-                  <li key={t} className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-gold" aria-hidden />{t}</li>
-                ))}
-              </ul>
-              <p className="relative mt-3 text-sm text-white/50">No incluye pulido.</p>
-              <div className="relative mt-5 grid grid-cols-3 gap-2">
-                {(["carro", "camioneta", "suv"] as const).map((v) => (
-                  <div key={v} className="rounded-2xl border border-gold/25 bg-black/30 px-3 py-3">
-                    <p className="text-[13px] leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : "SUV / pick up"}</p>
-                    <p className="num mt-1 text-xl font-bold text-gold">${s.detail[v].toLocaleString("es-MX")}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="relative mt-5"><SingleWashButton service="detallado" className="btn-gold min-h-16 w-full text-lg" label="Reservar detallado" /></div>
-            </article>
-
-            {/* Lavado profundo: intermedio */}
-            <article className="rounded-[28px] border border-white/15 bg-white/[.04] p-6">
-              <h3 className="text-xl font-semibold text-white">Lavado profundo</h3>
-              <p className="mt-1 text-base text-white/60">Por dentro y por fuera, a detalle.</p>
-              <ul className="mt-4 grid gap-2 text-base text-white/80">
-                {["Lavado exterior a detalle", "Aspirado profundo de asientos, tapetes y cajuela", "Limpieza de tablero, puertas y vidrios"].map((t) => (
-                  <li key={t} className="flex gap-3"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-white/50" aria-hidden />{t}</li>
-                ))}
-              </ul>
-              <div className="mt-5 grid grid-cols-3 gap-2">
-                {(["carro", "camioneta", "suv"] as const).map((v) => (
-                  <div key={v} className="rounded-2xl bg-white/[.05] px-3 py-3">
-                    <p className="text-[13px] leading-tight text-white/60">{v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : "SUV / pick up"}</p>
-                    <p className="num mt-1 text-xl font-bold text-white">${s.deep[v]}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5"><SingleWashButton service="profundo" label="Reservar profundo" /></div>
-            </article>
-
-            {/* Lavado sencillo: el básico */}
-            <article className="rounded-[28px] border border-white/10 bg-white/[.02] p-5">
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="text-lg font-semibold text-white">Lavado sencillo</h3>
-                <p className="num text-base text-white/70">desde ${s.single.carro}</p>
-              </div>
-              <p className="mt-1 text-sm text-white/60">Exterior y aspirado de interior.</p>
-              <p className="num mt-3 text-sm text-white/55">Carro ${s.single.carro} · Camioneta ${s.single.camioneta} · SUV / pick up ${s.single.suv}</p>
-              <div className="mt-4"><SingleWashButton service="sencillo" className="btn-line min-h-12 w-full text-base" label="Reservar sencillo" /></div>
-            </article>
+          <div className="mx-auto max-w-md">
+            <h2 id="lavados" className="text-center text-lg font-semibold text-white/85">¿Solo una lavada?</h2>
+            <p className="mb-4 mt-1 text-center text-sm text-white/55">Sin membresía · pagas al reservar</p>
+            <WashMenu prices={{ sencillo: s.single, profundo: s.deep, detallado: s.detail }} />
           </div>
         </section>
 

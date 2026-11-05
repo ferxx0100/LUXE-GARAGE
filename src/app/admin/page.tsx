@@ -27,9 +27,9 @@ const PRICE_FIELDS: { group: "socio" | "single" | "deep" | "detail"; key: keyof 
   { group: "deep", key: "carro", label: "Lavado profundo · carro" },
   { group: "deep", key: "camioneta", label: "Lavado profundo · camioneta" },
   { group: "deep", key: "suv", label: "Lavado profundo · SUV o pick up" },
-  { group: "detail", key: "carro", label: "Detallado premium · carro" },
-  { group: "detail", key: "camioneta", label: "Detallado premium · camioneta" },
-  { group: "detail", key: "suv", label: "Detallado premium · SUV o pick up" },
+  { group: "detail", key: "carro", label: "Detallado exterior · carro" },
+  { group: "detail", key: "camioneta", label: "Detallado exterior · camioneta" },
+  { group: "detail", key: "suv", label: "Detallado exterior · SUV o pick up" },
 ];
 
 async function api(path: string, method = "GET", body?: unknown) {

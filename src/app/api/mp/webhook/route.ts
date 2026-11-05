@@ -1,7 +1,7 @@
 import { verifyMpSignature } from "@/lib/booking-core";
 import { applyPayment } from "@/lib/payments/apply";
 import { onAuthorizedPayment, onPreapproval } from "@/lib/members";
-import { getAuthorizedPayment, getPayment, getPreapproval, MpError, mpReason } from "@/lib/payments/mercadopago";
+import { getAuthorizedPayment, getPayment, getPreapproval, mpReason } from "@/lib/payments/mercadopago";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +28,8 @@ export async function POST(req: Request) {
     else if (type === "subscription_authorized_payment") await onAuthorizedPayment(await getAuthorizedPayment(dataId));
     return new Response(null, { status: 200 });
   } catch (e) {
-    // No existe en Mercado Pago (p. ej. "Simular notificación" con un id inventado): nada que hacer, no reintentar.
-    if (e instanceof MpError && e.status === 404) return new Response(null, { status: 200 });
+    // Siempre error: Mercado Pago reintenta solo (aunque "Simular notificación" con un id inventado salga en rojo).
     console.error("webhook: error al consultar el pago", mpReason(e));
-    return new Response(null, { status: 500 }); // Mercado Pago reintenta
+    return new Response(null, { status: 500 });
   }
 }

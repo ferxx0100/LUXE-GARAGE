@@ -14,13 +14,13 @@ export const Settings = z.object({
   /** Suscripción mensual (cobro automático): lo principal del negocio. */
   socio: byVehicle(499, 620, 899),
   /** Lavado sencillo (exterior y aspirado), pagado al apartar. */
-  single: byVehicle(149, 199, 269),
-  /** Lavado profundo (≈3× el sencillo; todos los precios terminan en 5 o 9). */
-  deep: byVehicle(449, 599, 809),
-  /** Detallado premium (≈4× el sencillo). */
-  detail: byVehicle(595, 795, 1075),
+  single: byVehicle(150, 180, 250),
+  /** Lavado profundo (tabla del dueño, 5-nov-2026). */
+  deep: byVehicle(350, 400, 500),
+  /** Detallado (tabla del dueño, 5-nov-2026). */
+  detail: byVehicle(1500, 1700, 2000),
   /** Versión de la lista de precios: al cambiarla se aplican los precios nuevos de arriba. */
-  pricesV: z.number().int().default(4),
+  pricesV: z.number().int().default(5),
   /** Lavadas completas por mes pagado. */
   membershipWashes: z.number().int().min(1).max(31).default(4),
   /** Socios activos como máximo (para no sobrevender el horario). */
@@ -46,7 +46,7 @@ const KEY = "lg:settings";
  * Si el almacén falla, lanza error: así Vercel sigue sirviendo la última página buena
  * en lugar de publicar precios equivocados.
  */
-const PRICES_V = 4;
+const PRICES_V = 5;
 export async function getSettings(): Promise<Settings> {
   let raw = await kvGet<Record<string, unknown>>(KEY);
   // Precios guardados de una lista anterior: se usan los nuevos (horario, tope y aviso se conservan).

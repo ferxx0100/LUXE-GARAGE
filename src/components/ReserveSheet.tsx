@@ -21,6 +21,8 @@ const dayText = (d: string) => `${DAY[wd(d)]} ${Number(d.slice(8))} de ${MONTH[N
  */
 export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: DayHours[]; prices: Record<Service, Record<Vehicle, number>>; mpPublicKey: string | null }) {
   const [service, setService] = useState<Service>("sencillo");
+  // Si llegó desde el semáforo u "Otro día u hora" (sin lavado elegido), puede escoger cuál.
+  const [askService, setAskService] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
@@ -37,7 +39,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
   useEffect(() => {
     const on = (e: Event) => {
       const d = (e as CustomEvent<ReserveDetail>).detail ?? {};
-      setService(d.service ?? "sencillo");
+      setService(d.service ?? "sencillo"); setAskService(!d.service);
       const ok = d.date && d.time && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && /^\d{2}:\d{2}$/.test(d.time);
       setSlot(ok ? { date: d.date!, time: d.time! } : null);
       // Si ya eligió tamaño en el menú, no se vuelve a preguntar: directo a día y hora.
@@ -96,7 +98,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
   }
 
   const back = step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => (service === "sencillo" ? setStep("who") : (setStep("pick"), setSlot(null))) : null;
-  const title = step === "vehicle" ? (service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? serviceLabel(service) : "Pagar";
+  const title = step === "vehicle" ? (askService ? "¿Qué lavado y tamaño?" : service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? serviceLabel(service) : "Pagar";
 
   const sheet = (
     <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
@@ -118,7 +120,18 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
           {error && <p role="alert" className="mb-4 rounded-2xl bg-stop/15 p-4 text-base font-semibold text-red-200">{error}</p>}
 
           {step === "vehicle" && (
-            <div className="grid gap-3" role="radiogroup" aria-label="Vehículo">
+            <div className="grid gap-3">
+              {askService && (
+                <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white/[.06] p-1" role="radiogroup" aria-label="Lavado">
+                  {(["sencillo", "profundo", "detallado"] as Service[]).map((k) => (
+                    <button key={k} type="button" role="radio" aria-checked={service === k} onClick={() => setService(k)}
+                      className={`min-h-14 rounded-xl px-1 text-[15px] font-semibold leading-tight transition ${service === k ? "bg-gold text-ink shadow" : "text-white/75"}`}>
+                      {k === "sencillo" ? "Sencillo" : k === "profundo" ? "Profundo" : <>Detallado<span className="block text-xs opacity-80">exterior</span></>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="grid gap-3" role="radiogroup" aria-label="Vehículo">
               {VEHICLES.map((v) => (
                 <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => chooseVehicle(v)}
                   className="flex min-h-20 items-center justify-between rounded-2xl border-2 border-white/15 bg-white/[.04] px-5 text-left transition active:scale-[.98]">
@@ -126,6 +139,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
                   <span className="num text-xl font-bold text-gold">${prices[service][v].toLocaleString("es-MX")}</span>
                 </button>
               ))}
+              </div>
               <p className="text-center text-xs text-white/50">{service === "sencillo" ? "Precio de lavado sencillo. Si eres socio, no pagas." : `${serviceLabel(service)} · pago al reservar.`}</p>
             </div>
           )}

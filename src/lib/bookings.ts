@@ -2,14 +2,14 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import {
   addDays, blocksFromCells, candidateStarts, CELL, cellsFor, dayWindow, fits, fromMin, inRange, isTimeStr, localNow, nextFree,
-  priceFor, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, shortCode, spotLabel, toMin, washMin,
-  type Block, type Kind, type Now, type Place, type Spot, type Vehicle,
+  priceFor, sealFor, sealSecondsLeft, sealWindow, SERVICE_MIN, shortCode, spotLabel, toMin, washMin, serviceMin,
+  type Block, type Kind, type Now, type Place, type Service, type Spot, type Vehicle,
 } from "./booking-core";
 import { serverKey } from "./auth";
 import { BUSINESS } from "./config";
 import { busyUntilMin, closedToday, getGarage, toPublic, type GarageRecord, type PublicGarage } from "./garage-state";
 import { sendBookingCancelled, sendBookingConfirmed } from "./mail";
-import { getSettings, type Settings } from "./settings";
+import { getSettings, servicePrices, type Settings } from "./settings";
 import { claimCells, extendCells, kvGet, kvSet, ownsCells, readCells, redis, releaseCells, reserveCells } from "./store";
 
 /* ───────── Datos que pedimos (mínimos, LFPDPPP): nombre y teléfono ───────── */
@@ -26,6 +26,7 @@ export const BookingInput = z
     time: TimeStr,
     vehicle: z.enum(["carro", "camioneta", "suv"]),
     kind: z.enum(["completo", "exterior"]),
+    service: z.enum(["sencillo", "profundo", "detallado"]).default("sencillo"),
     place: z.enum(["garage", "domicilio"]),
     address: z.string().trim().max(200).default(""),
     name: Name,
@@ -49,6 +50,8 @@ export interface Booking {
   owner?: string; membershipId?: string; membershipCode?: string;
   /** Sello de lavada hecha: quién la selló (Dueño o nombre del empleado) y cuándo. */
   doneBy?: string; doneAt?: string;
+  /** Servicio de una sola vez (sin dato = sencillo). Las de socio no lo llevan. */
+  service?: "sencillo" | "profundo" | "detallado";
   createdAt: string; updatedAt: string;
 }
 
@@ -90,9 +93,9 @@ const bookableDay = (c: Ctx, date: string) => inRange(date, c.now.date) && !(dat
 const busyFor = (c: Ctx, date: string) => (date === c.now.date ? c.busyMin : null);
 
 /** Disponibilidad pública: solo horas libres, nunca quién reservó. */
-export async function availability(date: string, kind: Kind, vehicle?: Vehicle) {
+export async function availability(date: string, kind: Kind, vehicle?: Vehicle, service?: Service) {
   const c = await todayCtx();
-  const duration = vehicle ? washMin(vehicle) : SERVICE_MIN[kind];
+  const duration = vehicle ? serviceMin(service, vehicle) : SERVICE_MIN[kind];
   const w = dayWindow(c.s.hours, date);
   if (!w || !bookableDay(c, date)) return { date, kind, duration, starts: [] as string[], next: null as string | null };
   const blocks = await dayBlocks(date, w);
@@ -147,7 +150,7 @@ export function startAllowed(c: Ctx, date: string, time: string, duration: numbe
 /** Aparta las celdas (atómico: todas o ninguna) y crea la reserva sin pagar. */
 export async function createHold(input: z.infer<typeof BookingInput>): Promise<Result<Booking>> {
   const c = await todayCtx();
-  const duration = washMin(input.vehicle);
+  const duration = serviceMin(input.service, input.vehicle);
   if (!startAllowed(c, input.date, input.time, duration)) return { ok: false, status: 409, error: "Esa hora ya no está disponible. Elige otra." };
   const id = randomBytes(16).toString("base64url");
   if (!(await reserveCells(cellsFor(input.date, toMin(input.time), duration), id, HOLD_SEC))) {
@@ -158,7 +161,7 @@ export async function createHold(input: z.infer<typeof BookingInput>): Promise<R
   // Sin domicilio: siempre en el lugar. El precio sale de los ajustes (lavada suelta), nunca del navegador.
   const b: Booking = {
     ...data, place: "garage", address: "", duration, owner: id,
-    id, code: shortCode(id), status: "hold", amount: priceFor(c.s.single, input.vehicle), createdAt: now, updatedAt: now,
+    id, code: shortCode(id), status: "hold", amount: priceFor(servicePrices(c.s, input.service), input.vehicle), createdAt: now, updatedAt: now,
   };
   await kvSet(bk(id), b, 2 * 24 * 3600); // si nunca se paga, se borra sola
   return { ok: true, value: b };

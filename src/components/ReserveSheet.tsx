@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
-import { DAY, durText, MONTH, toMin, wd, VEHICLES, vehicleLabel, WASH_MIN, type DayHours, type Vehicle } from "./fmt";
+import { DAY, durText, MONTH, SERVICE_DUR, serviceLabel, toMin, wd, VEHICLES, vehicleLabel, type DayHours, type Service, type Vehicle } from "./fmt";
 
-export type ReserveDetail = { date?: string; time?: string };
+export type ReserveDetail = { date?: string; time?: string; service?: Service };
 /** Abre la ventana de apartar desde cualquier botón: window.dispatchEvent(new CustomEvent("lg:reserve", { detail })) */
 export const openReserve = (detail: ReserveDetail = {}) => window.dispatchEvent(new CustomEvent("lg:reserve", { detail }));
 
@@ -16,10 +16,11 @@ const dayText = (d: string) => `${DAY[wd(d)]} ${Number(d.slice(8))} de ${MONTH[N
 
 /**
  * Apartar, igual para todos: (1) tamaño (carro 50 min, camioneta 1 h, SUV o pick up 1:40) → (2) día y hora que alcance
- * → (3) "Soy socio" o "Lavada normal" → (4) pagar en Mercado Pago (solo la lavada normal).
+ * → (3) "Soy socio" o "Lavado sencillo" → (4) pagar en Mercado Pago. Profundo y detallado (fichas de abajo) no pasan por "socio".
  * Los socios terminan en su cuenta (/socio) con el turno ya elegido.
  */
-export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: DayHours[]; prices: Record<Vehicle, number>; mpPublicKey: string | null }) {
+export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: DayHours[]; prices: Record<Service, Record<Vehicle, number>>; mpPublicKey: string | null }) {
+  const [service, setService] = useState<Service>("sencillo");
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
@@ -36,6 +37,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
   useEffect(() => {
     const on = (e: Event) => {
       const d = (e as CustomEvent<ReserveDetail>).detail ?? {};
+      setService(d.service ?? "sencillo");
       const ok = d.date && d.time && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && /^\d{2}:\d{2}$/.test(d.time);
       setSlot(ok ? { date: d.date!, time: d.time! } : null);
       setStep("vehicle"); setError(""); setHold(null); setOpen(true);
@@ -69,7 +71,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
     try {
       const r = await fetch("/api/booking", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ date: slot.date, time: slot.time, vehicle, kind: "completo", place: "garage", address: "", name, phone }),
+        body: JSON.stringify({ date: slot.date, time: slot.time, vehicle, service, kind: "completo", place: "garage", address: "", name, phone }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { setError(d.error ?? "No se pudo apartar. Intenta de nuevo."); if (r.status === 409) { setStep("pick"); setSlot(null); } return; }
@@ -83,16 +85,16 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
     setVehicle(v); setError("");
     if (!slot) { setStep("pick"); return; }
     try {
-      const r = await fetch(`/api/booking/availability?date=${slot.date}&kind=completo&vehicle=${v}`, { cache: "no-store" });
+      const r = await fetch(`/api/booking/availability?date=${slot.date}&kind=completo&vehicle=${v}&service=${service}`, { cache: "no-store" });
       const d = await r.json();
-      if (Array.isArray(d.starts) && d.starts.includes(slot.time)) { setStep("who"); return; }
+      if (Array.isArray(d.starts) && d.starts.includes(slot.time)) { setStep(service === "sencillo" ? "who" : "single"); return; }
     } catch { /* si falla, que elija otra hora */ }
-    setError(`A esa hora no alcanza para ${vehicleLabel(v).toLowerCase()} (${durText(WASH_MIN[v])}). Elige otra.`);
+    setError(`A esa hora no alcanza para ${vehicleLabel(v).toLowerCase()} (${durText(SERVICE_DUR[service][v])}). Elige otra.`);
     setSlot(null); setStep("pick");
   }
 
-  const back = step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => setStep("who") : null;
-  const title = step === "vehicle" ? "¿Qué vas a lavar?" : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? "Lavada normal" : "Pagar";
+  const back = step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => (service === "sencillo" ? setStep("who") : (setStep("pick"), setSlot(null))) : null;
+  const title = step === "vehicle" ? (service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? serviceLabel(service) : "Pagar";
 
   const sheet = (
     <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
@@ -106,7 +108,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
         {slot && step !== "pick" && step !== "vehicle" && (
           <div className="shrink-0 border-b border-white/10 px-5 py-3 text-center">
             <p className="text-base text-white/70">{dayText(slot.date)} · {vehicle === "suv" ? "SUV / pick up" : vehicleLabel(vehicle)}</p>
-            <p className="num text-3xl font-bold text-gold">{range(slot.time, WASH_MIN[vehicle])}</p>
+            <p className="num text-3xl font-bold text-gold">{range(slot.time, SERVICE_DUR[service][vehicle])}</p>
           </div>
         )}
 
@@ -118,15 +120,15 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
               {VEHICLES.map((v) => (
                 <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => chooseVehicle(v)}
                   className="flex min-h-20 items-center justify-between rounded-2xl border-2 border-white/15 bg-white/[.04] px-5 text-left transition active:scale-[.98]">
-                  <span><span className="block text-xl font-bold">{vehicleLabel(v)}</span><span className="block text-sm text-white/60">{durText(WASH_MIN[v])}</span></span>
-                  <span className="num text-xl font-bold text-gold">${prices[v]}</span>
+                  <span><span className="block text-xl font-bold">{vehicleLabel(v)}</span><span className="block text-sm text-white/60">{durText(SERVICE_DUR[service][v])}</span></span>
+                  <span className="num text-xl font-bold text-gold">${prices[service][v].toLocaleString("es-MX")}</span>
                 </button>
               ))}
-              <p className="text-center text-xs text-white/50">Precio de lavada normal. Si eres socio, no pagas.</p>
+              <p className="text-center text-xs text-white/50">{service === "sencillo" ? "Precio de lavado sencillo. Si eres socio, no pagas." : `${serviceLabel(service)} · pago al reservar.`}</p>
             </div>
           )}
 
-          {step === "pick" && <SlotPicker hours={hours} vehicle={vehicle} onPick={(date, time) => { setSlot({ date, time }); setStep("who"); setError(""); }} />}
+          {step === "pick" && <SlotPicker hours={hours} vehicle={vehicle} service={service} onPick={(date, time) => { setSlot({ date, time }); setStep(service === "sencillo" ? "who" : "single"); setError(""); }} />}
 
           {step === "who" && slot && (
             <div className="grid gap-3">
@@ -134,7 +136,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
                 <span className="text-xl font-bold">Soy socio</span><span className="text-sm text-white/70">Usa una de tus lavadas</span>
               </a>
               <button type="button" onClick={() => setStep("single")} className="flex min-h-20 items-center justify-between rounded-3xl border-2 border-white/15 bg-white/[.04] px-6 text-left active:scale-[.98]">
-                <span className="text-xl font-bold">Lavada normal</span><span className="num text-sm text-white/70">${prices[vehicle]}</span>
+                <span className="text-xl font-bold">Lavado sencillo</span><span className="num text-sm text-white/70">${prices.sencillo[vehicle]}</span>
               </button>
             </div>
           )}
@@ -143,7 +145,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
             <div className="grid gap-3">
               <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
               <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-              <p className="text-center text-xs text-white/50">Exterior y aspirado de interior · {durText(WASH_MIN[vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
+              <p className="text-center text-xs text-white/50">{service === "detallado" ? "Detallado a mano, encerado y faros" : service === "profundo" ? "Lavado a detalle por dentro y por fuera" : "Exterior y aspirado de interior"} · {durText(SERVICE_DUR[service][vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
             </div>
           )}
 
@@ -166,7 +168,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
           <footer className="shrink-0 border-t border-white/10 px-4 pt-3" style={{ paddingBottom: "max(.8rem, env(safe-area-inset-bottom))" }}>
             {mpPublicKey ? (
               <button type="button" onClick={reserve} disabled={!!missing || busy} className="btn-gold min-h-16 w-full text-lg disabled:opacity-45">
-                {busy ? "Apartando…" : missing || `Pagar $${prices[vehicle]}`}
+                {busy ? "Apartando…" : missing || `Pagar $${prices[service][vehicle].toLocaleString("es-MX")}`}
               </button>
             ) : <p className="py-4 text-center text-white/70">Los pagos en línea se están activando.</p>}
           </footer>

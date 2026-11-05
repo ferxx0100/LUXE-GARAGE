@@ -7,7 +7,7 @@ import AdminToday from "@/components/AdminToday";
 
 type Money = { carro: number; camioneta: number; suv: number };
 type Settings = {
-  socio: Money; single: Money;
+  socio: Money; single: Money; deep: Money; detail: Money; pricesV?: number;
   membershipWashes: number; memberCap: number;
   hours: ({ open: number; close: number } | null)[];
   notice: string;
@@ -17,13 +17,19 @@ type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busySince?: string | null; busyMinutes?: number | null; busyUntil?: string | null; updatedAt: string | null; public: Pub; reason: "manual-open" | "manual-closed" | "schedule-open" | "schedule-closed" };
 type Data = { settings: Settings; garage: Garage | null; storage: "redis" | "memory" };
 
-const PRICE_FIELDS: { group: "socio" | "single"; key: keyof Money; label: string }[] = [
+const PRICE_FIELDS: { group: "socio" | "single" | "deep" | "detail"; key: keyof Money; label: string }[] = [
   { group: "socio", key: "carro", label: "Suscripción · carro (al mes)" },
-  { group: "socio", key: "camioneta", label: "Suscripción · camioneta (al mes)" },
+  { group: "socio", key: "camioneta", label: "Suscripción · camioneta mediana (al mes)" },
   { group: "socio", key: "suv", label: "Suscripción · SUV o pick up (al mes)" },
-  { group: "single", key: "carro", label: "Lavada normal · carro" },
-  { group: "single", key: "camioneta", label: "Lavada normal · camioneta" },
-  { group: "single", key: "suv", label: "Lavada normal · SUV o pick up" },
+  { group: "single", key: "carro", label: "Lavado sencillo · carro" },
+  { group: "single", key: "camioneta", label: "Lavado sencillo · camioneta mediana" },
+  { group: "single", key: "suv", label: "Lavado sencillo · SUV o pick up" },
+  { group: "deep", key: "carro", label: "Lavado profundo · carro" },
+  { group: "deep", key: "camioneta", label: "Lavado profundo · camioneta mediana" },
+  { group: "deep", key: "suv", label: "Lavado profundo · SUV o pick up" },
+  { group: "detail", key: "carro", label: "Detallado premium · carro" },
+  { group: "detail", key: "camioneta", label: "Detallado premium · camioneta mediana" },
+  { group: "detail", key: "suv", label: "Detallado premium · SUV o pick up" },
 ];
 
 async function api(path: string, method = "GET", body?: unknown) {

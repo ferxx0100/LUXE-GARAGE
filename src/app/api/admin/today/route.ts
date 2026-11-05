@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       .map((b) => ({
         id: b.id, time: b.time, duration: b.duration ?? 30, name: maskName(b.name),
         socio: !!b.membershipId, vehicle: b.vehicle ?? null, status: b.status, doneBy: b.doneBy ?? null,
-        member: b.membershipCode ?? null,
+        member: b.membershipCode ?? null, service: b.membershipId ? null : (b.service ?? "sencillo"),
         ...liveSeal(b.membershipId ?? b.id),
       }));
     return json({

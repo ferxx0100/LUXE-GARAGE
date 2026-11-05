@@ -1,5 +1,5 @@
 // "Pagar con Mercado Pago": crea (o reutiliza) el link de Checkout Pro de un apartado vigente.
-import { fmtDay, fmtTime } from "../booking-core";
+import { fmtDay, fmtTime, serviceLabel } from "../booking-core";
 import { getBooking, HOLD_SEC, holdStillValid } from "../bookings";
 import { SITE_URL } from "../config";
 import { redis } from "../store";
@@ -11,7 +11,7 @@ type Target = { code: string; amount: number; status: string; createdAt: string;
 async function target(id: string): Promise<Target | null> {
   const b = await getBooking(id);
   if (!b) return null;
-  return { ...b, title: `LUXE GARAGE · Lavado ${fmtDay(b.date)} ${fmtTime(b.time)}`, valid: b.status === "hold" && (await holdStillValid(b)) };
+  return { ...b, title: `LUXE GARAGE · ${serviceLabel(b.service)} · ${fmtDay(b.date)} ${fmtTime(b.time)}`, valid: b.status === "hold" && (await holdStillValid(b)) };
 }
 
 /** origin: el sitio desde donde se paga (producción o vista previa de Vercel), para regresar ahí mismo. */

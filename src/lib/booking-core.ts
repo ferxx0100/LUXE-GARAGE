@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type Vehicle = "carro" | "camioneta" | "suv";
 export const VEHICLES: Vehicle[] = ["carro", "camioneta", "suv"];
-export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta" : v === "suv" ? "SUV o pick up" : "");
+export const vehicleLabel = (v?: string | null) => (v === "carro" ? "Carro" : v === "camioneta" ? "Camioneta mediana" : v === "suv" ? "SUV o pick up" : "");
 export type Kind = "completo" | "exterior"; // "Exterior e interior" | "Solo exterior"
 export type Place = "garage" | "domicilio"; // "domicilio" solo en reservas viejas: ya no se ofrece
 export interface Prices { carro: number; camioneta: number; suv: number }
@@ -131,6 +131,17 @@ export function spotLabel(date: string, time: string, now: { date: string }): st
 export const SERVICE_MIN = { completo: 30, exterior: 20 } as const satisfies Record<Kind, number>;
 /** Minutos que tarda la lavada según el tamaño (acordado con el dueño): carro 50, camioneta 1 h, SUV o pick up 1:40. */
 export const WASH_MIN: Record<Vehicle, number> = { carro: 50, camioneta: 60, suv: 100 };
+/** Lavadas de una sola vez (sin membresía): sencillo, profundo y detallado premium. */
+export type Service = "sencillo" | "profundo" | "detallado";
+export const SERVICES: Service[] = ["sencillo", "profundo", "detallado"];
+/** Minutos por servicio y tamaño (el sencillo es el de siempre). Ajustables aquí si el dueño da otros tiempos. */
+export const SERVICE_DUR: Record<Service, Record<Vehicle, number>> = {
+  sencillo: WASH_MIN,
+  profundo: { carro: 90, camioneta: 105, suv: 150 },
+  detallado: { carro: 150, camioneta: 180, suv: 240 },
+};
+export const serviceMin = (s: Service | undefined, v: Vehicle) => SERVICE_DUR[s ?? "sencillo"]?.[v] ?? WASH_MIN[v];
+export const serviceLabel = (s?: string | null) => (s === "profundo" ? "Lavado profundo" : s === "detallado" ? "Detallado premium" : "Lavado sencillo");
 export const washMin = (v?: Vehicle | null) => WASH_MIN[v ?? "carro"] ?? WASH_MIN.carro;
 export const CELL = 5;         // tamaño de la celda de agenda (min): si está libre, se aparta ~5 min después de ahora
 export const LEAD_MIN = 4;     // hoy: la cita empieza al menos 4 min después de "ahora" (redondeado a 5 → entre 4 y 8 min)

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Service } from "./booking-core";
 import { kvGet, kvSet } from "./store";
 
 const money = z.number().int().min(0).max(100000);
@@ -11,9 +12,15 @@ const byVehicle = (carro: number, camioneta: number, suv: number) => z.preproces
 // Claves nuevas (socio/single): los precios viejos guardados (prices: 180/220/555…) se descartan solos.
 export const Settings = z.object({
   /** Suscripción mensual (cobro automático): lo principal del negocio. */
-  socio: byVehicle(450, 650, 999),
-  /** Lavada normal, pagada al apartar (secundaria). */
-  single: byVehicle(149, 199, 249),
+  socio: byVehicle(499, 620, 899),
+  /** Lavado sencillo (exterior y aspirado), pagado al apartar. */
+  single: byVehicle(149, 199, 270),
+  /** Lavado profundo (3× el sencillo, redondeado). */
+  deep: byVehicle(449, 599, 799),
+  /** Detallado premium (4× el sencillo, redondeado). */
+  detail: byVehicle(599, 799, 1099),
+  /** Versión de la lista de precios: al cambiarla se aplican los precios nuevos de arriba. */
+  pricesV: z.number().int().default(3),
   /** Lavadas completas por mes pagado. */
   membershipWashes: z.number().int().min(1).max(31).default(4),
   /** Socios activos como máximo (para no sobrevender el horario). */
@@ -39,8 +46,11 @@ const KEY = "lg:settings";
  * Si el almacén falla, lanza error: así Vercel sigue sirviendo la última página buena
  * en lugar de publicar precios equivocados.
  */
+const PRICES_V = 3;
 export async function getSettings(): Promise<Settings> {
-  const raw = await kvGet<Record<string, unknown>>(KEY);
+  let raw = await kvGet<Record<string, unknown>>(KEY);
+  // Precios guardados de una lista anterior: se usan los nuevos (horario, tope y aviso se conservan).
+  if (raw && raw.pricesV !== PRICES_V) { const { socio: _a, single: _b, deep: _c, detail: _d, ...rest } = raw; raw = { ...rest, pricesV: PRICES_V }; }
   const p = Settings.safeParse(raw ?? {});
   if (p.success) return p.data;
   // Horario guardado con otro formato: conserva lo demás y usa el horario por defecto.
@@ -53,3 +63,7 @@ export async function saveSettings(s: Settings): Promise<void> {
 }
 
 export { hoursText as hoursLabel } from "./booking-core";
+
+/** Precios de un servicio de una sola vez. */
+export const servicePrices = (s: Settings, service: Service | undefined) =>
+  service === "profundo" ? s.deep : service === "detallado" ? s.detail : s.single;

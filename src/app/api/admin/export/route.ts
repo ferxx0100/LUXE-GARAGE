@@ -1,6 +1,6 @@
 import { deny, guardActor } from "@/lib/auth";
 import { audit } from "@/lib/audit";
-import { addDays } from "@/lib/booking-core";
+import { addDays, serviceLabel } from "@/lib/booking-core";
 import { listBookings } from "@/lib/bookings";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     const list = (await listBookings(days)).filter((b) => b.status !== "hold")
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
     const head = ["Fecha", "Hora", "Código", "Cliente", "Celular", "Correo", "Tipo", "Vehículo", "Monto MXN", "Estado", "Pago Mercado Pago", "Sellada por", "Sellada a las"];
-    const rows = list.map((b) => [b.date, b.time, b.code, b.name, b.phone, b.email, b.membershipId ? "Socio" : "Lavada normal", b.vehicle ?? "", b.amount,
+    const rows = list.map((b) => [b.date, b.time, b.code, b.name, b.phone, b.email, b.membershipId ? "Socio" : serviceLabel(b.service), b.vehicle ?? "", b.amount,
       ESTADO[b.status] ?? b.status, b.paymentId ?? "", b.doneBy ?? "", b.doneAt ? new Date(b.doneAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }) : ""]);
     const csv = "\ufeff" + [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
     await audit(g.actor.name, "Exportó reservas", month);

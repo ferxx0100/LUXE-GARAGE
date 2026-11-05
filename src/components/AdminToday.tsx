@@ -1,12 +1,12 @@
 "use client";
-import { vehicleLabel } from "./fmt";
+import { serviceLabel, vehicleLabel } from "./fmt";
 import { useCallback, useEffect, useState } from "react";
 import { FosaBar } from "./AdminAgenda";
 import AdminVisit from "./AdminVisit";
 
 type Pub = "LIBRE" | "OCUPADO" | "CERRADO";
 type Garage = { mode: "auto" | "open" | "closed"; busy: boolean; busyUntil?: string | null; public: Pub };
-type Item = { id: string; time: string; duration: number; name: string; socio: boolean; vehicle: "carro" | "camioneta" | "suv" | null; status: string; seal: string; secondsLeft: number; doneBy: string | null; member: string | null };
+type Item = { id: string; time: string; duration: number; name: string; socio: boolean; vehicle: "carro" | "camioneta" | "suv" | null; status: string; seal: string; secondsLeft: number; doneBy: string | null; member: string | null; service: string | null };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
@@ -84,7 +84,7 @@ export default function AdminToday({ onUnauthorized, onMsg }: { onUnauthorized: 
                   <span className="min-w-0">
                     <span className="block truncate text-lg font-bold">{b.name}</span>
                     <span className="block text-sm text-white/65">
-                      <span className={`mr-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${b.socio ? "bg-gold/20 text-gold" : "bg-white/10 text-white/80"}`}>{b.socio ? "Socio" : b.status === "confirmed" ? "Pagada" : b.status === "pending" ? "Pago en revisión" : "Normal"}</span>
+                      <span className={`mr-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${b.socio ? "bg-gold/20 text-gold" : "bg-white/10 text-white/80"}`}>{b.socio ? "Socio" : b.status === "confirmed" ? "Pagada" : b.status === "pending" ? "Pago en revisión" : "Pagada"}</span>{!b.socio && b.service && <span className="mr-1.5 text-xs font-semibold">{serviceLabel(b.service)}</span>}
                       {vehicleLabel(b.vehicle)}
                     </span>
                   </span>

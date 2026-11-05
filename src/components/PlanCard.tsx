@@ -15,13 +15,15 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
 }) {
   const [v, setV] = useState<Vehicle>("carro");
   const soldOut = seats <= 0;
-  const perks = [`${washes} lavados sencillos al mes`, "Por fuera y por dentro, con aromatizante", "Tú eliges día y hora desde tu celular", "Tarjeta de socio con sello vivo", "Se renueva sola · cancelas cuando quieras"];
+  const perks = ["Tú eliges día y hora desde tu celular", "Tarjeta de socio con sello vivo", "Se renueva sola · cancelas cuando quieras"];
   const perWash = Math.round(prices[v] / washes);
   const saving = single && single[v] > perWash ? Math.round((1 - perWash / single[v]) * 100) : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] p-px text-left shadow-[0_34px_70px_-30px_rgba(212,175,55,.6)] [background:linear-gradient(140deg,#f3dc8a,#8a6a12_35%,#d4af37_60%,#5c470d)]">
-    <div className="relative overflow-hidden rounded-[27px] bg-[linear-gradient(160deg,#211a08_0%,#100e0a_50%,#0b0b0c_100%)] p-6">
+    <div className="relative overflow-hidden rounded-[28px] p-[2px] text-left shadow-[0_34px_70px_-30px_rgba(212,175,55,.6)] [background:linear-gradient(140deg,#f3dc8a,#8a6a12_35%,#d4af37_60%,#5c470d)]">
+    <div className="relative overflow-hidden rounded-[26px] bg-[linear-gradient(160deg,#211a08_0%,#100e0a_50%,#0b0b0c_100%)]">
+      <p className="bg-[linear-gradient(90deg,#8a6a12,#d4af37,#8a6a12)] py-2 text-center text-sm font-bold uppercase tracking-[.2em] text-ink">La que más conviene</p>
+    <div className="relative p-6">
       <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
       <div className="relative flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-[.22em] text-gold">Suscripción mensual</h2>
@@ -39,9 +41,14 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
 
       <p className="relative mt-6 flex items-end gap-2">
         <span className="num text-[3.6rem] font-bold leading-none text-white">${prices[v]}</span>
-        <span className="pb-2 text-lg text-white/60">/ mes</span>
+        <span className="pb-2 text-lg text-white/75">al mes</span>
       </p>
-      <p className="num relative mt-2 text-base text-white/65">${perWash} por lavada{saving > 0 && <span className="ml-2 rounded-full bg-gold/15 px-2.5 py-0.5 text-sm font-semibold text-gold">ahorras {saving}%</span>}</p>
+      <p className="num relative mt-2 text-base text-white/80">${perWash} por lavada{saving > 0 && <span className="ml-2 rounded-full bg-gold/15 px-2.5 py-0.5 text-sm font-semibold text-gold">ahorras {saving}%</span>}</p>
+
+      <div className="relative mt-5 flex items-center gap-4 rounded-2xl border-2 border-gold/60 bg-gold/[.08] px-5 py-4">
+        <span className="num text-[3.2rem] font-bold leading-none text-gold">{washes}</span>
+        <span className="leading-snug"><span className="block text-xl font-bold text-white">lavados al mes</span><span className="block text-base text-white/80">Sencillos: por fuera y por dentro, con aromatizante</span></span>
+      </div>
 
       <ul className="relative mt-6 grid gap-3 border-t border-white/10 pt-5 text-[1.05rem] text-white/85">
         {perks.map((t) => <li key={t} className="flex gap-3"><Check />{t}</li>)}
@@ -53,6 +60,7 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
       <p className="relative mt-4 text-center text-base text-white/60">
         ¿Ya eres socio? <a href="/socio" className="font-semibold text-gold underline decoration-gold/40 underline-offset-4">Entra a tu cuenta</a>
       </p>
+    </div>
     </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { MpButton } from "./PayBrick";
 import { VEHICLES, vehicleLabel, type Vehicle } from "./fmt";
 
-const field = "w-full min-h-16 rounded-2xl border-2 border-white/15 bg-black/30 px-5 text-lg text-white outline-none placeholder:text-white/40 focus:border-gold";
+const field = "w-full min-h-16 rounded-2xl border-2 border-white/15 bg-black/30 px-5 text-lg text-white outline-none placeholder:text-white/35 focus:border-gold";
 const digits = (s: string) => s.replace(/\D/g, "");
 
 /**
@@ -87,14 +87,28 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
           {step === 2 && (
             <div className="grid gap-3">
               <p className="text-center text-xl font-bold">Tus datos</p>
-              <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
-              <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-              <div className="grid grid-cols-2 gap-3">
-                <input className={`${field} num text-center tracking-[.4em]`} value={nip} onChange={(e) => setNip(digits(e.target.value).slice(0, 4))} placeholder="NIP" inputMode="numeric" type="password" autoComplete="new-password" aria-label="Crea tu NIP de 4 números" />
-                <input className={`${field} num text-center tracking-[.4em]`} value={nip2} onChange={(e) => setNip2(digits(e.target.value).slice(0, 4))} placeholder="Repite" inputMode="numeric" type="password" autoComplete="new-password" aria-label="Repite tu NIP" />
+              <label className="grid gap-1.5 text-base font-semibold text-white/90">Tu nombre
+                <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Juan Pérez" autoComplete="name" maxLength={80} />
+              </label>
+              <label className="grid gap-1.5 text-base font-semibold text-white/90">Tu celular (10 números)
+                <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Ej. 351 000 0000" inputMode="tel" autoComplete="tel" maxLength={20} />
+              </label>
+              {/* Qué es el NIP, dicho fácil y visible (para quien usa lentes también). */}
+              <div className="mt-1 rounded-2xl border-2 border-gold/40 bg-gold/[.07] p-4">
+                <p className="text-lg font-bold text-gold">Crea tu NIP: 4 números</p>
+                <p className="mt-1 text-base leading-snug text-white/90">Es tu clave secreta, como la de tu tarjeta del banco. Tú la inventas. Con tu celular y tu NIP entras a tu cuenta para apartar tus lavadas.</p>
               </div>
-              <p className="text-center text-sm text-white/60">Con tu celular y este NIP entras a tu cuenta para apartar tus lavadas.</p>
-              <p className="text-center text-xs text-white/50">Al continuar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="grid gap-1.5 text-base font-semibold text-white/90">Tu NIP
+                  <input className={`${field} num text-center text-2xl tracking-[.5em]`} value={nip} onChange={(e) => setNip(digits(e.target.value).slice(0, 4))} placeholder="••••" inputMode="numeric" type="password" autoComplete="new-password" />
+                </label>
+                <label className="grid gap-1.5 text-base font-semibold text-white/90">Repítelo
+                  <input className={`${field} num text-center text-2xl tracking-[.5em]`} value={nip2} onChange={(e) => setNip2(digits(e.target.value).slice(0, 4))} placeholder="••••" inputMode="numeric" type="password" autoComplete="new-password" />
+                </label>
+              </div>
+              {nip.length === 4 && nip2.length === 4 && nip !== nip2 && <p role="alert" className="text-center text-base font-semibold text-red-300">Los dos NIP no son iguales.</p>}
+              <p className="text-center text-base text-white/80">Apúntalo o recuérdalo. Si lo olvidas, en el lugar te lo cambiamos.</p>
+              <p className="text-center text-sm text-white/70">Al continuar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
             </div>
           )}
 
@@ -103,7 +117,7 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
               <div className="rounded-3xl border border-gold/40 bg-gold/[.07] p-5 text-center">
                 <p className="text-base text-white/75">{vehicleLabel(vehicle)} · {washes} lavadas al mes</p>
                 <p className="num mt-1 text-4xl font-bold text-gold">${member.amount} <span className="text-lg font-semibold text-white/70">al mes</span></p>
-                <p className="mt-2 text-sm text-white/65">Se cobra solo cada mes. Cancelas cuando quieras.</p>
+                <p className="mt-2 text-base text-white/80">Se cobra solo cada mes. Cancelas cuando quieras.</p>
               </div>
               {mpPublicKey ? (
                 <>
@@ -111,7 +125,7 @@ export default function JoinFlow({ prices, washes, mpPublicKey, soldOut, label =
                     <input className={field} value={email} onChange={(e) => setEmail(e.target.value.trim())} placeholder="tucorreo@ejemplo.com" inputMode="email" autoComplete="email" maxLength={120} />
                   </label>
                   <MpButton checkoutUrl="/api/socio/checkout" body={{ id: member.id, email }} disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)} onError={setError} label={`Pagar $${member.amount} con Mercado Pago`} />
-                  <p className="text-center text-xs text-white/50">En Mercado Pago pones tu tarjeta y autorizas el cobro mensual. Al terminar regresas a tu cuenta.</p>
+                  <p className="text-center text-sm text-white/75">En Mercado Pago pones tu tarjeta y autorizas el cobro mensual. Al terminar regresas a tu cuenta.</p>
                 </>
               ) : <p className="text-center text-white/70">Los pagos en línea se están activando.</p>}
             </div>

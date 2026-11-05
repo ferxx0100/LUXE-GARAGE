@@ -26,10 +26,11 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
-  const [step, setStep] = useState<"vehicle" | "pick" | "who" | "single" | "pay">("vehicle");
+  const [step, setStep] = useState<"vehicle" | "pick" | "who" | "socio" | "single" | "pay">("vehicle");
   const [vehicle, setVehicle] = useState<Vehicle>("carro");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [nip, setNip] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [hold, setHold] = useState<{ id: string; amount: number; until: number } | null>(null);
@@ -43,7 +44,9 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
       const ok = d.date && d.time && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && /^\d{2}:\d{2}$/.test(d.time);
       setSlot(ok ? { date: d.date!, time: d.time! } : null);
       // Si ya eligió tamaño en el menú, no se vuelve a preguntar: directo a día y hora.
-      if (d.vehicle && !ok) { setVehicle(d.vehicle); setStep("pick"); } else setStep("vehicle");
+      // Desde el letrero (hora ya elegida, sin lavado): primero "Soy socio" o "Pagar un lavado".
+      if (ok && !d.service) setStep("who");
+      else if (d.vehicle && !ok) { setVehicle(d.vehicle); setStep("pick"); } else setStep("vehicle");
       setError(""); setHold(null); setOpen(true);
     };
     window.addEventListener("lg:reserve", on);
@@ -84,21 +87,53 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
     finally { setBusy(false); }
   }
 
-  // Elegir tamaño: si ya venía una hora (del letrero), se revisa que alcance para ese tamaño.
+  // Elegir tamaño: si ya venía una hora (del letrero), se revisa que alcance para ese lavado y tamaño.
+  async function fits(v: Vehicle, svc: Service) {
+    if (!slot) return false;
+    try {
+      const r = await fetch(`/api/booking/availability?date=${slot.date}&kind=completo&vehicle=${v}&service=${svc}`, { cache: "no-store" });
+      const d = await r.json();
+      return Array.isArray(d.starts) && d.starts.includes(slot.time);
+    } catch { return false; }
+  }
   async function chooseVehicle(v: Vehicle) {
     setVehicle(v); setError("");
     if (!slot) { setStep("pick"); return; }
-    try {
-      const r = await fetch(`/api/booking/availability?date=${slot.date}&kind=completo&vehicle=${v}&service=${service}`, { cache: "no-store" });
-      const d = await r.json();
-      if (Array.isArray(d.starts) && d.starts.includes(slot.time)) { setStep(service === "sencillo" ? "who" : "single"); return; }
-    } catch { /* si falla, que elija otra hora */ }
+    setBusy(true);
+    const ok = await fits(v, service);
+    setBusy(false);
+    if (ok) { setStep(service === "sencillo" && !askService ? "who" : "single"); return; }
+    if (askService) { setError(`${serviceLabel(service)} para ${vehicleLabel(v).toLowerCase()} dura ${durText(SERVICE_DUR[service][v])} y a esa hora no alcanza. Escoge otro lavado.`); return; }
     setError(`A esa hora no alcanza para ${vehicleLabel(v).toLowerCase()} (${durText(SERVICE_DUR[service][v])}). Elige otra.`);
     setSlot(null); setStep("pick");
   }
 
-  const back = step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => (service === "sencillo" ? setStep("who") : (setStep("pick"), setSlot(null))) : null;
-  const title = step === "vehicle" ? (askService ? "¿Qué lavado y tamaño?" : service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? serviceLabel(service) : "Pagar";
+  // Socio: celular + NIP y aparta ese turno con una de sus lavadas (mismas rutas y bloqueo por intentos que /socio).
+  const nipMissing = phone.replace(/\D/g, "").length < 10 ? "Escribe tu celular" : nip.length < 4 ? "Escribe tu NIP de 4 números" : "";
+  async function memberBook() {
+    if (!slot || nipMissing || busy) return;
+    setBusy(true); setError("");
+    try {
+      const l = await fetch("/api/socio/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone, nip }) });
+      const ld = await l.json().catch(() => ({}));
+      if (!l.ok) { setError(ld.error ?? "Celular o NIP incorrecto."); return; }
+      const b = await fetch("/api/socio/book", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ date: slot.date, time: slot.time }) });
+      const bd = await b.json().catch(() => ({}));
+      if (!b.ok) { setError(bd.error ?? "No pudimos apartar. Intenta de nuevo."); return; }
+      window.location.href = "/socio";
+    } catch { setError("Sin conexión. Intenta de nuevo."); }
+    finally { setBusy(false); setNip(""); }
+  }
+
+  const back =
+    step === "pick" ? () => setStep("vehicle")
+    : step === "socio" ? () => { setStep("who"); setError(""); }
+    : step === "vehicle" && askService && slot ? () => { setStep("who"); setError(""); }
+    : step === "who" && !askService ? () => { setStep("pick"); setSlot(null); }
+    : step === "single" ? () => (askService ? setStep("vehicle") : service === "sencillo" ? setStep("who") : (setStep("pick"), setSlot(null)))
+    : null;
+  const title = step === "vehicle" ? (askService ? "¿Qué lavado y tamaño?" : service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "socio" ? "Soy socio" : step === "single" ? serviceLabel(service) : "Pagar";
+  const startOnly = step === "who" || step === "socio" || step === "vehicle";
 
   const sheet = (
     <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
@@ -109,10 +144,10 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
           <button type="button" onClick={() => !busy && setOpen(false)} aria-label="Cerrar" className="grid size-12 place-items-center rounded-full bg-white/10 text-xl">✕</button>
         </header>
 
-        {slot && step !== "pick" && step !== "vehicle" && (
+        {slot && step !== "pick" && (
           <div className="shrink-0 border-b border-white/10 px-5 py-3 text-center">
-            <p className="text-base text-white/70">{dayText(slot.date)} · {vehicle === "suv" ? "SUV / pick up" : vehicleLabel(vehicle)}</p>
-            <p className="num text-3xl font-bold text-gold">{range(slot.time, SERVICE_DUR[service][vehicle])}</p>
+            <p className="text-base text-white/75">{dayText(slot.date)}{startOnly ? " · siguiente horario" : ` · ${vehicle === "suv" ? "SUV / pick up" : vehicleLabel(vehicle)}`}</p>
+            <p className="num text-3xl font-bold text-gold">{startOnly ? range(slot.time, 0).split(/[–-]/)[0] : range(slot.time, SERVICE_DUR[service][vehicle])}</p>
           </div>
         )}
 
@@ -133,14 +168,14 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
               )}
               <div className="grid gap-3" role="radiogroup" aria-label="Vehículo">
               {VEHICLES.map((v) => (
-                <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => chooseVehicle(v)}
+                <button key={v} type="button" role="radio" aria-checked={vehicle === v} onClick={() => chooseVehicle(v)} disabled={busy}
                   className="flex min-h-20 items-center justify-between rounded-2xl border-2 border-white/15 bg-white/[.04] px-5 text-left transition active:scale-[.98]">
                   <span><span className="block text-xl font-bold"><span className="num mr-2 rounded-md bg-white/10 px-1.5 py-0.5 text-sm">{SIZE_TAG[v]}</span>{vehicleLabel(v)}</span><span className="block text-sm text-white/60">{durText(SERVICE_DUR[service][v])}</span></span>
                   <span className="num text-xl font-bold text-gold">${prices[service][v].toLocaleString("es-MX")}</span>
                 </button>
               ))}
               </div>
-              <p className="text-center text-xs text-white/50">{service === "sencillo" ? "Precio de lavado sencillo. Si eres socio, no pagas." : `${serviceLabel(service)} · pago al reservar.`}</p>
+              <p className="text-center text-sm text-white/70">{service === "sencillo" ? "Precio de lavado sencillo. Si eres socio, no pagas." : `${serviceLabel(service)} · pago al reservar.`}</p>
             </div>
           )}
 
@@ -148,12 +183,26 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
 
           {step === "who" && slot && (
             <div className="grid gap-3">
-              <a href={`/socio?d=${slot.date}&t=${slot.time}`} className="flex min-h-20 items-center justify-between rounded-3xl border-2 border-gold bg-gold/10 px-6 active:scale-[.98]">
-                <span className="text-xl font-bold">Soy socio</span><span className="text-sm text-white/70">Usa una de tus lavadas</span>
-              </a>
-              <button type="button" onClick={() => setStep("single")} className="flex min-h-20 items-center justify-between rounded-3xl border-2 border-white/15 bg-white/[.04] px-6 text-left active:scale-[.98]">
-                <span className="text-xl font-bold">Lavado sencillo</span><span className="num text-sm text-white/70">${prices.sencillo[vehicle]}</span>
+              <button type="button" onClick={() => { setStep("socio"); setError(""); }} className="flex min-h-24 items-center justify-between gap-3 rounded-3xl border-2 border-gold bg-gold/10 px-6 text-left active:scale-[.98]">
+                <span><span className="block text-2xl font-bold">Soy socio</span><span className="block text-base text-white/80">Con tu celular y tu NIP</span></span>
+                <span className="text-3xl text-gold" aria-hidden>›</span>
               </button>
+              <button type="button" onClick={() => { setError(""); setStep(askService ? "vehicle" : "single"); }} className="flex min-h-24 items-center justify-between gap-3 rounded-3xl border-2 border-white/20 bg-white/[.05] px-6 text-left active:scale-[.98]">
+                <span><span className="block text-2xl font-bold">Pagar un lavado</span><span className="block text-base text-white/80">{askService ? `Sencillo, profundo o detallado · desde $${prices.sencillo.carro}` : `${serviceLabel(service)} · $${prices[service][vehicle].toLocaleString("es-MX")}`}</span></span>
+                <span className="text-3xl text-white/60" aria-hidden>›</span>
+              </button>
+            </div>
+          )}
+
+          {step === "socio" && slot && (
+            <div className="grid gap-4">
+              <label className="grid gap-1.5 text-base font-semibold text-white/90">Tu celular
+                <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10 números" inputMode="tel" autoComplete="tel" maxLength={20} />
+              </label>
+              <label className="grid gap-1.5 text-base font-semibold text-white/90">Tu NIP (los 4 números que creaste)
+                <input className={`${field} num text-center text-2xl tracking-[.5em]`} value={nip} onChange={(e) => setNip(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="••••" inputMode="numeric" type="password" autoComplete="current-password" />
+              </label>
+              <p className="text-center text-base text-white/75">Se usa una de tus lavadas del mes. ¿Olvidaste tu NIP? En el lugar te lo cambiamos.</p>
             </div>
           )}
 
@@ -161,7 +210,7 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
             <div className="grid gap-3">
               <input className={field} value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" autoComplete="name" maxLength={80} aria-label="Nombre" />
               <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
-              <p className="text-center text-xs text-white/50">{service === "detallado" ? "Pintura descontaminada, pulido, abrillantado y encerado" : service === "profundo" ? "Todo lo del sencillo, a fondo" : "Por fuera y por dentro"} · {durText(SERVICE_DUR[service][vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
+              <p className="text-center text-sm text-white/70">{service === "detallado" ? "Pintura descontaminada, pulido, abrillantado y encerado" : service === "profundo" ? "Todo lo del sencillo, a fondo" : "Por fuera y por dentro"} · {durText(SERVICE_DUR[service][vehicle])}. Al pagar aceptas nuestro <a href="/privacidad" target="_blank" className="text-gold underline">aviso de privacidad</a>.</p>
             </div>
           )}
 
@@ -179,6 +228,14 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
             </div>
           )}
         </div>
+
+        {step === "socio" && (
+          <footer className="shrink-0 border-t border-white/10 px-4 pt-3" style={{ paddingBottom: "max(.8rem, env(safe-area-inset-bottom))" }}>
+            <button type="button" onClick={memberBook} disabled={!!nipMissing || busy} className="btn-gold min-h-16 w-full text-lg disabled:opacity-45">
+              {busy ? "Apartando…" : nipMissing || "Apartar con mi lavada"}
+            </button>
+          </footer>
+        )}
 
         {step === "single" && (
           <footer className="shrink-0 border-t border-white/10 px-4 pt-3" style={{ paddingBottom: "max(.8rem, env(safe-area-inset-bottom))" }}>

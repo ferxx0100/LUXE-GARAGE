@@ -12,9 +12,13 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { type?: string; data?: { id?: string | number } };
   const dataId = url.searchParams.get("data.id") ?? String(body.data?.id ?? "");
   const type = url.searchParams.get("type") ?? body.type;
-  const secret = process.env.MP_WEBHOOK_SECRET ?? "";
-  if (!secret) return new Response(null, { status: 503 });
-  if (!verifyMpSignature(req.headers.get("x-signature"), req.headers.get("x-request-id"), dataId, secret)) return new Response(null, { status: 401 });
+  // Sin espacios ni saltos de línea (se cuelan al pegarla en Vercel).
+  const secret = (process.env.MP_WEBHOOK_SECRET ?? "").replace(/\s+/g, "");
+  if (!secret) { console.error("webhook: falta la firma secreta en Vercel"); return new Response(null, { status: 503 }); }
+  if (!verifyMpSignature(req.headers.get("x-signature"), req.headers.get("x-request-id"), dataId, secret)) {
+    console.error("webhook: firma inválida (debe ser la firma secreta de Producción)", type ?? "");
+    return new Response(null, { status: 401 });
+  }
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(dataId)) return new Response(null, { status: 200 });
 
   try {

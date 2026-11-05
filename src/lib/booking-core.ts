@@ -323,9 +323,11 @@ export function verifyMpSignature(xSignature: string | null, xRequestId: string 
 }
 
 /** "Exterior e interior · Camioneta · AAA-000-A". Sin vehículo (lavada de membresía) solo dice el servicio. */
-export function serviceText(x: { kind: string; vehicle?: string; plate?: string }): string {
+export function serviceText(x: { kind: string; vehicle?: string; plate?: string; service?: string }): string {
   const v = vehicleLabel(x.vehicle);
-  return [x.kind === "exterior" ? "Solo exterior" : "Exterior e interior", v, x.plate ?? ""].filter(Boolean).join(" · ");
+  // Lavados de una sola vez dicen qué se pagó (sencillo, profundo o detallado); los de socio, "Exterior e interior".
+  const what = x.service ? serviceLabel(x.service) : x.kind === "exterior" ? "Solo exterior" : "Exterior e interior";
+  return [what, v, x.plate ?? ""].filter(Boolean).join(" · ");
 }
 
 /* ───────── Pago dentro de Mercado Pago (Checkout Pro) ───────── */
@@ -369,14 +371,14 @@ export const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export type TicketData = { tone: "gold" | "cyan"; kicker: string; code: string; rows: { label: string; value: string }[]; washes: { day: string; time: string }[]; total: string };
 
 export function bookingTicket(b: {
-  code: string; date: string; time: string; duration: number; kind: string; vehicle?: string; place: string; amount: number; name: string; membershipCode?: string;
+  code: string; date: string; time: string; duration: number; kind: string; vehicle?: string; place: string; amount: number; name: string; membershipCode?: string; service?: string;
 }, location: string): TicketData {
   return {
     tone: "gold", kicker: "Reserva", code: b.code,
     rows: [
       { label: "Cuándo", value: capFirst(fmtDay(b.date)) },
       { label: "Hora", value: fmtRange(b.time, b.duration) },
-      { label: "Servicio", value: serviceText({ kind: b.kind, vehicle: b.vehicle }) },
+      { label: "Servicio", value: serviceText({ kind: b.kind, vehicle: b.vehicle, service: b.membershipCode ? undefined : b.service }) },
       { label: "Dónde", value: b.place === "domicilio" ? "A domicilio" : location },
       { label: "A nombre de", value: maskName(b.name) },
     ],

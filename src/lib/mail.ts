@@ -1,7 +1,7 @@
 // Correos transaccionales con Resend (API REST, sin dependencias).
 // Variables en Vercel: RESEND_API_KEY (Secret), MAIL_FROM ("LUXE GARAGE <reservas@luxegaragee.com>"),
 // MAIL_TO_ADMIN (correo del negocio). Sin RESEND_API_KEY no se envía nada y la reserva sigue normal.
-import { fmtDay, fmtRange, fromMin, serviceText, toMin } from "./booking-core";
+import { fmtDay, fmtRange, fromMin, serviceText, toMin, serviceLabel, vehicleLabel } from "./booking-core";
 import type { Booking } from "./bookings";
 import { BUSINESS, SITE_URL, mapsLink } from "./config";
 import type { Member } from "./members";
@@ -40,7 +40,7 @@ export function icsCalendar(events: CalEvent[]): string {
 export function icsFor(b: Booking): string {
   return icsCalendar([{
     uid: b.code, date: b.date, time: b.time, duration: dur(b),
-    summary: `Lavado LUXE GARAGE · ${b.code}`,
+    summary: `${b.membershipId ? "Lavado de socio" : serviceLabel(b.service)} · LUXE GARAGE · ${b.code}`,
     location: b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location,
     description: `Reserva ${b.code}. Ver: ${site()}/reserva/${b.id} · Ayuda: +${BUSINESS.phone}`,
   }]);
@@ -130,7 +130,7 @@ export async function sendMemberWelcome(m: Member): Promise<void> {
   const jobs: Promise<void>[] = m.email ? [send({ to: m.email, subject: `Bienvenido a LUXE GARAGE · Socio ${m.code}`, html, text: `Ya eres socio de LUXE GARAGE (${m.code}). Entra: ${link}` })] : [];
   const admin = process.env.MAIL_TO_ADMIN;
   if (admin) {
-    jobs.push(send({ to: admin, subject: `Nuevo socio ${m.code} · ${m.vehicle} · $${m.price}/mes`, html: layout(`Nuevo socio · $${m.price} al mes`, `<tr><td style="padding:8px 28px;font-size:16px;line-height:1.6;color:#e9e6dd">${esc(m.name)}<br>${esc(m.phone)}<br>${m.vehicle === "carro" ? "Carro" : "Camioneta"}</td></tr>`), text: `Nuevo socio ${m.code}` }));
+    jobs.push(send({ to: admin, subject: `Nuevo socio ${m.code} · ${m.vehicle} · $${m.price}/mes`, html: layout(`Nuevo socio · $${m.price} al mes`, `<tr><td style="padding:8px 28px;font-size:16px;line-height:1.6;color:#e9e6dd">${esc(m.name)}<br>${esc(m.phone)}<br>${vehicleLabel(m.vehicle)}</td></tr>`), text: `Nuevo socio ${m.code}` }));
   }
   const res = await Promise.allSettled(jobs);
   if (res.some((x) => x.status === "rejected")) console.error("correo: bienvenida de socio no enviada", m.code);

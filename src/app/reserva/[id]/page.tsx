@@ -61,7 +61,7 @@ export default async function Reserva({ params, searchParams }: { params: Promis
         </div>
         <dl className="grid gap-4 px-6 py-6 text-lg">
           <div><dt className="text-sm text-white/60">Cuándo</dt><dd className="font-semibold">{capFirst(fmtDay(b.date))}<br /><span className="num">{range}</span></dd></div>
-          <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-semibold">{serviceText({ kind: b.kind, vehicle: b.vehicle })}</dd></div>
+          <div><dt className="text-sm text-white/60">Servicio</dt><dd className="font-semibold">{serviceText({ kind: b.kind, vehicle: b.vehicle, service: b.membershipId ? undefined : b.service })}</dd></div>
           <div><dt className="text-sm text-white/60">Dónde</dt><dd className="font-semibold">{b.place === "domicilio" ? `A domicilio: ${b.address}` : BUSINESS.location}</dd></div>
           <div className="grid grid-cols-2 gap-4">
             <div><dt className="text-sm text-white/60">A nombre de</dt><dd className="font-semibold">{b.name}</dd></div>

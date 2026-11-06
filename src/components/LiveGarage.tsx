@@ -91,12 +91,11 @@ export default function LiveGarage({ mapsUrl }: { mapsUrl: string }) {
               {status === "CERRADO" && (opensShort ? `Abre ${opensShort.slice(5).toLowerCase()}` : "")}
             </p>
 
-            <div className="mt-4 grid gap-2.5">
-              <button type="button" disabled={!spot} onClick={() => spot && openReserve({ date: spot.date, time: spot.time })}
+            <div className="mt-4">
+              <button type="button" disabled={!spot} onClick={() => spot && openReserve({ date: spot.date, time: spot.time, from: "banner" })}
                 className="btn-gold min-h-16 w-full text-lg disabled:opacity-50">
                 <span className="whitespace-nowrap">{spot ? (soon ? <>Apartar ahora · <span className="num">{hm(spot.time)}</span></> : <>Apartar {spotDay}<span className="num">{hm(spot.time)}</span></>) : "Buscando turno…"}</span>
               </button>
-              <button type="button" onClick={() => openReserve()} className="min-h-14 w-full rounded-full border-2 border-black/80 text-lg font-bold active:scale-[.98]">Otro día u hora</button>
             </div>
           </div>
           <p className="mt-4 text-center text-sm text-black/55">

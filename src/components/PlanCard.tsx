@@ -15,20 +15,26 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
 }) {
   const [v, setV] = useState<Vehicle>("carro");
   const soldOut = seats <= 0;
-  const perks = [`${washes} lavados sencillos al mes`, "Por fuera y por dentro, con aromatizante", "Tú eliges día y hora desde tu celular", "Tarjeta de socio con sello vivo", "Se renueva sola · cancelas cuando quieras"];
+  const perks = ["Lavado sencillo, por fuera y por dentro, con aromatizante", "Tarjeta de socio con sello vivo", "Se renueva sola · cancelas cuando quieras"];
   const perWash = Math.round(prices[v] / washes);
   const saving = single && single[v] > perWash ? Math.round((1 - perWash / single[v]) * 100) : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] p-px text-left shadow-[0_34px_70px_-30px_rgba(212,175,55,.6)] [background:linear-gradient(140deg,#f3dc8a,#8a6a12_35%,#d4af37_60%,#5c470d)]">
-    <div className="relative overflow-hidden rounded-[27px] bg-[linear-gradient(160deg,#211a08_0%,#100e0a_50%,#0b0b0c_100%)] p-6">
-      <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
-      <div className="relative flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-[.22em] text-gold">Suscripción mensual</h2>
-        {!soldOut && seats <= 10 && <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-gold">Quedan {seats}</span>}
+    <div className="relative overflow-hidden rounded-[30px] p-[3px] text-left shadow-[0_34px_70px_-30px_rgba(212,175,55,.6)] [background:linear-gradient(140deg,#f3dc8a,#8a6a12_35%,#d4af37_60%,#5c470d)]">
+    {/* Franja crema: lo primero que se lee es cuántas lavadas trae al mes */}
+    <div className="relative rounded-t-[27px] bg-[#f2f0eb] px-6 pb-5 pt-5 text-center text-ink">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xs font-semibold uppercase tracking-[.22em] text-[#8a6d1a]">Suscripción mensual</h2>
+        {!soldOut && seats <= 10 && <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-gold">Quedan {seats}</span>}
       </div>
+      <p className="num mt-2 text-[5rem] font-bold leading-none">{washes}</p>
+      <p className="text-2xl font-bold">lavadas al mes</p>
+      <p className="mt-1 text-sm text-black/60">Tú eliges día y hora desde tu celular</p>
+    </div>
+    <div className="relative overflow-hidden rounded-b-[27px] bg-[linear-gradient(160deg,#211a08_0%,#100e0a_50%,#0b0b0c_100%)] p-6">
+      <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
 
-      <div className="relative mt-5 grid grid-cols-3 rounded-2xl bg-white/[.06] p-1" role="radiogroup" aria-label="Vehículo">
+      <div className="relative grid grid-cols-3 rounded-2xl bg-white/[.06] p-1" role="radiogroup" aria-label="Vehículo">
         {VEHICLES.map((k) => (
           <button key={k} type="button" role="radio" aria-checked={v === k} onClick={() => setV(k)}
             className={`min-h-12 rounded-xl px-1 text-[15px] font-semibold leading-tight transition ${v === k ? "bg-gold text-ink shadow" : "text-white/70"}`}>
@@ -37,11 +43,11 @@ export default function PlanCard({ prices, single, washes, mpPublicKey, seats }:
         ))}
       </div>
 
-      <p className="relative mt-6 flex items-end gap-2">
-        <span className="num text-[3.6rem] font-bold leading-none text-white">${prices[v]}</span>
-        <span className="pb-2 text-lg text-white/60">/ mes</span>
+      <p className="relative mt-5 flex items-end justify-center gap-2">
+        <span className="num text-[2.6rem] font-bold leading-none text-white">${prices[v]}</span>
+        <span className="pb-1 text-lg text-white/60">al mes</span>
       </p>
-      <p className="num relative mt-2 text-base text-white/65">${perWash} por lavada{saving > 0 && <span className="ml-2 rounded-full bg-gold/15 px-2.5 py-0.5 text-sm font-semibold text-gold">ahorras {saving}%</span>}</p>
+      <p className="num relative mt-2 text-center text-base text-white/65">${perWash} por lavada{saving > 0 && <span className="ml-2 rounded-full bg-gold/15 px-2.5 py-0.5 text-sm font-semibold text-gold">ahorras {saving}%</span>}</p>
 
       <ul className="relative mt-6 grid gap-3 border-t border-white/10 pt-5 text-[1.05rem] text-white/85">
         {perks.map((t) => <li key={t} className="flex gap-3"><Check />{t}</li>)}

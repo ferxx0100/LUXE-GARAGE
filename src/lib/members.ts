@@ -6,9 +6,10 @@ import { z } from "zod";
 import {
   canChange, CELL, cellsFor, chargedMonths, dayWindow, fits, fromMin, isTimeStr, memberBookingError, memberCode, washMin,
   memberStatusFrom, memberValid, nipError, normalizePhone, vehicleLabel, periodFromCharges, shortCode, toMin, type MemberStatus, type Vehicle,
+  addDays,
 } from "./booking-core";
 import { serverKey } from "./auth";
-import { getBooking, getBookings, indexCode, saveIndexed, startAllowed, todayCtx, type Booking } from "./bookings";
+import { availability, getBooking, getBookings, indexCode, saveIndexed, startAllowed, todayCtx, type Booking } from "./bookings";
 import { toPublic } from "./garage-state";
 import { cancelPreapproval, createSubscription, createSubscriptionLink, getPreapproval, type MpAuthorizedPayment, type MpPreapproval } from "./payments/mercadopago";
 import { getSettings } from "./settings";
@@ -317,6 +318,30 @@ export async function bookWash(m: Member, date: string, time: string, walkIn = f
   } finally {
     await redis("DEL", lock);
   }
+}
+
+/**
+ * Banner "Apartar": el socio toma el turno que se le ofreció; si a esa hora no le alcanza (su tamaño tarda más)
+ * o ya se ocupó, se le da el SIGUIENTE turno libre que le alcance dentro de su mes pagado.
+ */
+export async function bookNextWash(m: Member, date?: string, time?: string): Promise<Result<Booking>> {
+  if (date && time) {
+    const r = await bookWash(m, date, time);
+    if (r.ok || !/no está libre|acaba de apartar/.test(r.error)) return r;
+  }
+  const today = (await todayCtx()).now.date;
+  for (let i = 0; i <= 31; i++) {
+    const day = addDays(today, i);
+    const used = usedThisPeriod(m, await memberWashes(m));
+    const err = memberBookingError({ ...m, used }, day, today);
+    if (err) { if (i === 0 || /mes pagado|apartaste|vigente/.test(err)) return fail(409, err); continue; }
+    const a = await availability(day, "completo", m.vehicle, "sencillo");
+    for (const t of a.next ? [a.next, ...a.starts.filter((x) => x !== a.next)] : a.starts) {
+      const r = await bookWash(m, day, t);
+      if (r.ok || !/no está libre|acaba de apartar/.test(r.error)) return r;
+    }
+  }
+  return fail(409, "No hay turnos libres en tu mes pagado. Toca Ayuda.");
 }
 
 /**

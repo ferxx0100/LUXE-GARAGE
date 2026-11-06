@@ -5,7 +5,7 @@ import { MpButton } from "./PayBrick";
 import SlotPicker from "./SlotPicker";
 import { DAY, durText, MONTH, SERVICE_DUR, SIZE_TAG, serviceLabel, toMin, wd, VEHICLES, vehicleLabel, type DayHours, type Service, type Vehicle } from "./fmt";
 
-export type ReserveDetail = { date?: string; time?: string; service?: Service; vehicle?: Vehicle };
+export type ReserveDetail = { date?: string; time?: string; service?: Service; vehicle?: Vehicle; from?: "banner" };
 /** Abre la ventana de apartar desde cualquier botón: window.dispatchEvent(new CustomEvent("lg:reserve", { detail })) */
 export const openReserve = (detail: ReserveDetail = {}) => window.dispatchEvent(new CustomEvent("lg:reserve", { detail }));
 
@@ -26,7 +26,13 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
-  const [step, setStep] = useState<"vehicle" | "pick" | "who" | "single" | "pay">("vehicle");
+  const [step, setStep] = useState<"start" | "socio" | "done" | "vehicle" | "pick" | "who" | "single" | "pay">("vehicle");
+  // Banner: primero "¿socio o pagar?". Socio = celular + NIP; cliente = nombre + celular + pago.
+  const [fromBanner, setFromBanner] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [nip, setNip] = useState("");
+  const [me, setMe] = useState<{ name: string } | null>(null);
+  const [booked, setBooked] = useState<{ date: string; time: string } | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle>("carro");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -43,7 +49,10 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
       const ok = d.date && d.time && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && /^\d{2}:\d{2}$/.test(d.time);
       setSlot(ok ? { date: d.date!, time: d.time! } : null);
       // Si ya eligió tamaño en el menú, no se vuelve a preguntar: directo a día y hora.
-      if (d.vehicle && !ok) { setVehicle(d.vehicle); setStep("pick"); } else setStep("vehicle");
+      const banner = d.from === "banner" && !!ok;
+      setFromBanner(banner); setPaying(false); setNip(""); setBooked(null); setMe(null);
+      if (banner) setStep("start");
+      else if (d.vehicle && !ok) { setVehicle(d.vehicle); setStep("pick"); } else setStep("vehicle");
       setError(""); setHold(null); setOpen(true);
     };
     window.addEventListener("lg:reserve", on);
@@ -91,14 +100,41 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
     try {
       const r = await fetch(`/api/booking/availability?date=${slot.date}&kind=completo&vehicle=${v}&service=${service}`, { cache: "no-store" });
       const d = await r.json();
-      if (Array.isArray(d.starts) && d.starts.includes(slot.time)) { setStep(service === "sencillo" ? "who" : "single"); return; }
+      if (Array.isArray(d.starts) && d.starts.includes(slot.time)) { setStep(service === "sencillo" && !paying ? "who" : "single"); return; }
     } catch { /* si falla, que elija otra hora */ }
     setError(`A esa hora no alcanza para ${vehicleLabel(v).toLowerCase()} (${durText(SERVICE_DUR[service][v])}). Elige otra.`);
     setSlot(null); setStep("pick");
   }
 
-  const back = step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => (service === "sencillo" ? setStep("who") : (setStep("pick"), setSlot(null))) : null;
-  const title = step === "vehicle" ? (askService ? "¿Qué lavado y tamaño?" : service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? serviceLabel(service) : "Pagar";
+  // Socio desde el banner: si ya tiene sesión, no vuelve a escribir nada.
+  async function startSocio() {
+    setError(""); setStep("socio");
+    try {
+      const r = await fetch("/api/socio/me", { cache: "no-store" });
+      if (r.ok) { const d = await r.json(); if (d?.member?.name) setMe({ name: String(d.member.name).split(" ")[0] }); }
+    } catch { /* sin sesión: pide celular y NIP */ }
+  }
+
+  async function bookSocio() {
+    if (!slot || busy) return;
+    setBusy(true); setError("");
+    try {
+      if (!me) {
+        const r = await fetch("/api/socio/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone, nip }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { setError(d.error ?? "Celular o NIP incorrectos."); setNip(""); return; }
+      }
+      const r = await fetch("/api/socio/book", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ next: true, date: slot.date, time: slot.time }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(d.error ?? "No se pudo apartar. Intenta de nuevo."); return; }
+      setBooked({ date: d.date, time: d.time }); setStep("done");
+    } catch { setError("Sin conexión. Intenta de nuevo."); }
+    finally { setBusy(false); }
+  }
+  const socioMissing = me ? "" : phone.replace(/\D/g, "").length < 10 ? "Escribe tu celular" : nip.length !== 4 ? "Escribe tu NIP" : "";
+
+  const back = step === "socio" ? () => { setStep("start"); setError(""); } : step === "vehicle" && fromBanner ? () => setStep("start") : step === "pick" ? () => setStep("vehicle") : step === "who" ? () => { setStep("pick"); setSlot(null); } : step === "single" ? () => (service === "sencillo" ? setStep("who") : (setStep("pick"), setSlot(null))) : null;
+  const title = step === "start" ? "Apartar este turno" : step === "socio" ? "Soy socio" : step === "done" ? "¡Listo!" : step === "vehicle" ? (askService ? "¿Qué lavado y tamaño?" : service === "sencillo" ? "¿Qué vas a lavar?" : serviceLabel(service)) : step === "pick" ? "Elige día y hora" : step === "who" ? "Apartar" : step === "single" ? serviceLabel(service) : "Pagar";
 
   const sheet = (
     <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm md:grid md:place-items-center md:p-6" role="dialog" aria-modal="true" aria-label={title}>
@@ -109,7 +145,13 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
           <button type="button" onClick={() => !busy && setOpen(false)} aria-label="Cerrar" className="grid size-12 place-items-center rounded-full bg-white/10 text-xl">✕</button>
         </header>
 
-        {slot && step !== "pick" && step !== "vehicle" && (
+        {slot && (step === "start" || step === "socio") && (
+          <div className="shrink-0 border-b border-white/10 px-5 py-3 text-center">
+            <p className="text-base text-white/70">Siguiente turno · {dayText(slot.date)}</p>
+            <p className="num text-3xl font-bold text-gold">{(() => { const m = toMin(slot.time); return `${Math.floor(m / 60) % 12 || 12}:${pad(m % 60)} ${m < 720 ? "am" : "pm"}`; })()}</p>
+          </div>
+        )}
+        {slot && step !== "pick" && step !== "vehicle" && step !== "start" && step !== "socio" && step !== "done" && (
           <div className="shrink-0 border-b border-white/10 px-5 py-3 text-center">
             <p className="text-base text-white/70">{dayText(slot.date)} · {vehicle === "suv" ? "SUV / pick up" : vehicleLabel(vehicle)}</p>
             <p className="num text-3xl font-bold text-gold">{range(slot.time, SERVICE_DUR[service][vehicle])}</p>
@@ -118,6 +160,46 @@ export default function ReserveSheet({ hours, prices, mpPublicKey }: { hours: Da
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
           {error && <p role="alert" className="mb-4 rounded-2xl bg-stop/15 p-4 text-base font-semibold text-red-200">{error}</p>}
+
+          {step === "start" && (
+            <div className="grid gap-3">
+              <button type="button" onClick={startSocio} className="flex min-h-24 items-center justify-between rounded-3xl border-2 border-gold bg-gold/10 px-6 text-left active:scale-[.98]">
+                <span><span className="block text-xl font-bold">Soy socio</span><span className="block text-sm text-white/65">Celular y NIP · no pagas</span></span>
+                <span className="text-2xl text-gold" aria-hidden>›</span>
+              </button>
+              <button type="button" onClick={() => { setPaying(true); setStep("vehicle"); }} className="flex min-h-24 items-center justify-between rounded-3xl border-2 border-white/15 bg-white/[.04] px-6 text-left active:scale-[.98]">
+                <span><span className="block text-xl font-bold">Pagar un lavado</span><span className="block text-sm text-white/65">Eliges el lavado · nombre y celular</span></span>
+                <span className="text-2xl text-white/60" aria-hidden>›</span>
+              </button>
+            </div>
+          )}
+
+          {step === "socio" && (
+            <div className="grid gap-3">
+              {me ? (
+                <p className="text-center text-lg">Hola <b>{me.name}</b>. Apartamos este turno con una de tus lavadas.</p>
+              ) : (
+                <>
+                  <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Celular (10 dígitos)" inputMode="tel" autoComplete="tel" maxLength={20} aria-label="Celular" />
+                  <input className={`${field} num text-center text-2xl tracking-[.6em]`} value={nip} onChange={(e) => setNip(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="NIP" inputMode="numeric" type="password" autoComplete="current-password" maxLength={4} aria-label="NIP de 4 números" />
+                </>
+              )}
+              <button type="button" onClick={bookSocio} disabled={!!socioMissing || busy} className="btn-gold min-h-16 w-full text-lg disabled:opacity-45">
+                {busy ? "Apartando…" : socioMissing || "Apartar mi turno"}
+              </button>
+              <p className="text-center text-xs text-white/50">Si a esta hora no alcanza para tu tamaño, te damos el siguiente turno libre.</p>
+            </div>
+          )}
+
+          {step === "done" && booked && (
+            <div className="grid gap-4 text-center">
+              <p className="text-base text-white/70">Tu turno quedó apartado</p>
+              <p className="num text-2xl font-bold text-gold">{dayText(booked.date)}</p>
+              <p className="num text-3xl font-bold">{(() => { const m = toMin(booked.time); return `${Math.floor(m / 60) % 12 || 12}:${pad(m % 60)} ${m < 720 ? "am" : "pm"}`; })()}</p>
+              <a href="/socio" className="btn-gold min-h-16 w-full text-lg">Ver mi cuenta</a>
+            </div>
+          )}
 
           {step === "vehicle" && (
             <div className="grid gap-3">

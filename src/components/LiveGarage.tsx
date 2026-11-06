@@ -94,7 +94,7 @@ export default function LiveGarage({ mapsUrl }: { mapsUrl: string }) {
             <div className="mt-4">
               <button type="button" disabled={!spot} onClick={() => spot && openReserve({ date: spot.date, time: spot.time, from: "banner" })}
                 className="btn-gold min-h-16 w-full text-lg disabled:opacity-50">
-                <span className="whitespace-nowrap">{spot ? (soon ? <>Apartar ahora · <span className="num">{hm(spot.time)}</span></> : <>Apartar {spotDay}<span className="num">{hm(spot.time)}</span></>) : "Buscando turno…"}</span>
+                <span className="whitespace-nowrap">{spot ? (soon ? <>Apartar ahora · <span className="num">{hm(spot.time)} {toMin(spot.time) < 720 ? "am" : "pm"}</span></> : <>Apartar {spotDay}<span className="num">{hm(spot.time)} {toMin(spot.time) < 720 ? "am" : "pm"}</span></>) : "Buscando turno…"}</span>
               </button>
             </div>
           </div>
